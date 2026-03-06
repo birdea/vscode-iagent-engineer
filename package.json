@@ -3,7 +3,7 @@
   "displayName": "FigmaLab",
   "description": "Figma MCP + AI Agent code generation for VSCode",
   "version": "0.1.0",
-  "publisher": "figmalab",
+  "publisher": "bd-creative",
   "engines": {
     "vscode": "^1.85.0"
   },
