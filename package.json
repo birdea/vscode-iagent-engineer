@@ -36,11 +36,27 @@
     "commands": [
       {
         "command": "figmalab.connect",
-        "title": "FigmaLab: Connect to Figma MCP"
+        "title": "Connect MCP",
+        "icon": "$(plug)"
       },
       {
         "command": "figmalab.generate",
         "title": "FigmaLab: Generate Code"
+      },
+      {
+        "command": "figmalab.agent.save",
+        "title": "Save Agent Settings",
+        "icon": "$(save)"
+      },
+      {
+        "command": "figmalab.agent.clear",
+        "title": "Clear Agent Settings",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "figmalab.prompt.generate",
+        "title": "Generate",
+        "icon": "$(play)"
       },
       {
         "command": "figmalab.log.clear",
@@ -61,6 +77,26 @@
     "menus": {
       "view/title": [
         {
+          "command": "figmalab.connect",
+          "when": "view == figmalab.figma",
+          "group": "navigation@1"
+        },
+        {
+          "command": "figmalab.agent.save",
+          "when": "view == figmalab.agent",
+          "group": "navigation@1"
+        },
+        {
+          "command": "figmalab.agent.clear",
+          "when": "view == figmalab.agent",
+          "group": "navigation@2"
+        },
+        {
+          "command": "figmalab.prompt.generate",
+          "when": "view == figmalab.prompt",
+          "group": "navigation@1"
+        },
+        {
           "command": "figmalab.log.clear",
           "when": "view == figmalab.log",
           "group": "navigation@1"
@@ -80,11 +116,6 @@
     "configuration": {
       "title": "FigmaLab",
       "properties": {
-        "figmalab.mcpEndpoint": {
-          "type": "string",
-          "default": "http://localhost:3845",
-          "description": "Figma MCP server endpoint"
-        },
         "figmalab.defaultAgent": {
           "type": "string",
           "enum": [

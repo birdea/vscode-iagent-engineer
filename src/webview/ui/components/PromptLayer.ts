@@ -36,7 +36,6 @@ export class PromptLayer {
     <span class="progress-text" id="prompt-progress-text">준비됨</span>
     <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="prompt-progress-fill"></div></div>
   </div>
-  <button class="primary" id="btn-generate" style="width:100%; margin-top: 8px;"><i class="codicon codicon-play"></i>Generate</button>
   <div class="notice hidden" id="prompt-notice" style="margin-top: 8px;"></div>
 </div>
 <div class="panel">
@@ -60,32 +59,6 @@ export class PromptLayer {
     useUserPromptEl?.addEventListener('change', () => this.updateEstimate());
     useMcpDataEl?.addEventListener('change', () => this.updateEstimate());
     outputFormatEl?.addEventListener('change', () => this.updateEstimate());
-
-    document.getElementById('btn-generate')?.addEventListener('click', () => {
-      const useUserPrompt = useUserPromptEl.checked;
-      const useMcpData = useMcpDataEl.checked;
-      const outputFormat = outputFormatEl.value as OutputFormat;
-
-      const payload: PromptPayload = {
-        userPrompt: useUserPrompt ? userPromptEl.value.trim() : undefined,
-        mcpData: useMcpData ? undefined : null,
-        outputFormat,
-      };
-
-      const codeOutput = document.getElementById('code-output') as HTMLPreElement;
-      codeOutput.textContent = '';
-      codeOutput.classList.add('visible');
-      const codeActions = document.getElementById('code-actions');
-      if (codeActions) {
-        codeActions.style.display = 'none';
-      }
-      this.generatedCode = '';
-      this.setNotice('info', '코드 생성을 시작합니다...');
-      this.setGeneratingState(true);
-      this.onGenerating(0);
-
-      vscode.postMessage({ command: 'prompt.generate', payload });
-    });
 
     document.getElementById('btn-open-editor')?.addEventListener('click', () => {
       if (this.generatedCode) {
@@ -111,6 +84,43 @@ export class PromptLayer {
     });
 
     this.updateEstimate();
+  }
+
+  onGenerateRequested() {
+    if (this.isGenerating) {
+      this.setNotice('warn', '이미 생성 중입니다.');
+      return;
+    }
+
+    const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
+    const outputFormatEl = document.getElementById('output-format') as HTMLSelectElement | null;
+    const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement | null;
+    const useMcpDataEl = document.getElementById('use-mcp-data') as HTMLInputElement | null;
+    if (!userPromptEl || !outputFormatEl || !useUserPromptEl || !useMcpDataEl) {
+      return;
+    }
+
+    const payload: PromptPayload = {
+      userPrompt: useUserPromptEl.checked ? userPromptEl.value.trim() : undefined,
+      mcpData: useMcpDataEl.checked ? undefined : null,
+      outputFormat: outputFormatEl.value as OutputFormat,
+    };
+
+    const codeOutput = document.getElementById('code-output') as HTMLPreElement | null;
+    if (codeOutput) {
+      codeOutput.textContent = '';
+      codeOutput.classList.add('visible');
+    }
+    const codeActions = document.getElementById('code-actions');
+    if (codeActions) {
+      codeActions.style.display = 'none';
+    }
+    this.generatedCode = '';
+    this.setNotice('info', '코드 생성을 시작합니다...');
+    this.setGeneratingState(true);
+    this.onGenerating(0);
+
+    vscode.postMessage({ command: 'prompt.generate', payload });
   }
 
   private updateEstimate() {
@@ -188,12 +198,6 @@ export class PromptLayer {
 
   private setGeneratingState(generating: boolean) {
     this.isGenerating = generating;
-    const button = document.getElementById('btn-generate') as HTMLButtonElement | null;
-    if (!button) return;
-    button.disabled = generating;
-    button.innerHTML = generating
-      ? '<i class="codicon codicon-loading codicon-modifier-spin"></i>Generating...'
-      : '<i class="codicon codicon-play"></i>Generate';
   }
 
   private setNotice(level: 'info' | 'success' | 'warn' | 'error', message: string) {

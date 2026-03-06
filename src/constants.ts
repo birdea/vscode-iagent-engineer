@@ -13,8 +13,8 @@ export const COMMANDS = {
 } as const;
 
 export const CONFIG_KEYS = {
-  MCP_ENDPOINT: 'figmalab.mcpEndpoint',
   DEFAULT_AGENT: 'figmalab.defaultAgent',
+  DEFAULT_MODEL: 'figmalab.defaultModel',
 } as const;
 
 export const SECRET_KEYS = {

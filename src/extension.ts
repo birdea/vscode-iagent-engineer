@@ -46,11 +46,21 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(COMMANDS.CONNECT, () => {
-      vscode.commands.executeCommand('workbench.view.extension.figmalab');
+    vscode.commands.registerCommand(COMMANDS.CONNECT, async () => {
+      await vscode.commands.executeCommand('workbench.view.extension.figmalab');
+      figmaProvider.postMessage({ event: 'figma.connectRequested' });
     }),
     vscode.commands.registerCommand(COMMANDS.GENERATE, () => {
       vscode.commands.executeCommand('workbench.view.extension.figmalab');
+    }),
+    vscode.commands.registerCommand('figmalab.agent.save', () => {
+      agentProvider.postMessage({ event: 'agent.saveRequested' });
+    }),
+    vscode.commands.registerCommand('figmalab.agent.clear', () => {
+      agentProvider.postMessage({ event: 'agent.clearRequested' });
+    }),
+    vscode.commands.registerCommand('figmalab.prompt.generate', () => {
+      promptProvider.postMessage({ event: 'prompt.generateRequested' });
     }),
     vscode.commands.registerCommand('figmalab.log.clear', () => {
       Logger.clear();

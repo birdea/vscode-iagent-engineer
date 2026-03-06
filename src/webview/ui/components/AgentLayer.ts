@@ -3,6 +3,8 @@ import { AgentType, ModelInfo } from '../../../types';
 
 export class AgentLayer {
   private models: ModelInfo[] = [];
+  private autoLoadTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastAutoLoadSignature = '';
 
   render(): string {
     return `
@@ -18,17 +20,16 @@ export class AgentLayer {
   <div class="field-group" style="margin-top: 8px;">
     <div class="row" style="justify-content: space-between;">
       <label for="api-key-input">API Key</label>
-      <a href="#" id="link-get-api-key" style="font-size: 11px;">Get API Key</a>
+      <a href="#" id="link-get-api-key" style="font-size: 11px;">Get</a>
     </div>
     <div class="row">
       <input type="password" id="api-key-input" placeholder="API Key 입력..." />
-      <button class="primary" id="btn-save-key"><i class="codicon codicon-save"></i>저장</button>
     </div>
   </div>
   <div class="field-group" style="margin-top: 8px;">
     <div class="row" style="justify-content: space-between;">
       <label for="model-select">모델 선택</label>
-      <a href="#" id="link-get-model-info" style="font-size: 11px;">Get Model Info</a>
+      <a href="#" id="link-get-model-info" style="font-size: 11px;">Info</a>
     </div>
     <div class="row">
       <select id="model-select">
@@ -48,6 +49,7 @@ export class AgentLayer {
       const agent = (e.target as HTMLSelectElement).value as AgentType;
       vscode.postMessage({ command: 'state.setAgent', agent });
       this.updateModelList([]);
+      this.lastAutoLoadSignature = '';
       this.updateStatus();
       this.setNotice('info', `${agent} 에이전트로 전환되었습니다. 모델을 다시 로드하세요.`);
     });
@@ -58,24 +60,14 @@ export class AgentLayer {
       vscode.postMessage({ command: 'agent.getApiKeyHelp', agent });
     });
 
-    document.getElementById('btn-save-key')?.addEventListener('click', () => {
-      const agent = (document.getElementById('agent-select') as HTMLSelectElement).value as AgentType;
-      const key = (document.getElementById('api-key-input') as HTMLInputElement).value.trim();
-      if (!key) {
-        this.setNotice('warn', '저장할 API Key를 입력하세요.');
-        return;
-      }
-      vscode.postMessage({ command: 'agent.setApiKey', agent, key });
-      const input = document.getElementById('api-key-input') as HTMLInputElement;
-      input.value = '';
-      input.placeholder = '저장됨 ✓';
-      this.setNotice('success', `${agent} API Key를 저장했습니다.`);
-    });
-
     document.getElementById('btn-load-models')?.addEventListener('click', () => {
       const agent = (document.getElementById('agent-select') as HTMLSelectElement).value as AgentType;
       this.setNotice('info', `${agent} 모델 목록을 불러오는 중입니다...`);
       vscode.postMessage({ command: 'agent.listModels', agent });
+    });
+
+    document.getElementById('api-key-input')?.addEventListener('input', () => {
+      this.scheduleAutoModelLoad();
     });
 
     document.getElementById('link-get-model-info')?.addEventListener('click', (e) => {
@@ -96,6 +88,7 @@ export class AgentLayer {
     });
 
     this.updateStatus();
+    vscode.postMessage({ command: 'agent.getState' });
   }
 
   onModelsResult(models: ModelInfo[]) {
@@ -109,9 +102,82 @@ export class AgentLayer {
     this.updateStatus();
   }
 
+  onState(agent: AgentType, model: string, hasApiKey: boolean) {
+    const agentSelect = document.getElementById('agent-select') as HTMLSelectElement | null;
+    const keyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+    if (agentSelect) {
+      agentSelect.value = agent;
+    }
+    if (keyInput) {
+      keyInput.value = '';
+      keyInput.placeholder = hasApiKey ? '저장된 API Key 있음 ✓' : 'API Key 입력...';
+    }
+    this.lastAutoLoadSignature = '';
+    this.updateModelList([]);
+    this.updateStatus();
+    if (!hasApiKey) {
+      this.setNotice('info', `${agent} API Key를 입력 후 Save를 눌러주세요.`);
+      return;
+    }
+    this.setNotice('info', `${agent} 설정을 불러오는 중입니다...`);
+    vscode.postMessage({ command: 'agent.listModels', agent });
+    if (model) {
+      // Keep preferred model until list result arrives, then restore selection.
+      const modelSelect = document.getElementById('model-select') as HTMLSelectElement | null;
+      if (modelSelect) {
+        modelSelect.dataset.preferredModel = model;
+      }
+    }
+  }
+
+  onSettingsSaved(agent: AgentType, model: string, hasApiKey: boolean) {
+    const keyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+    if (keyInput) {
+      keyInput.value = '';
+      keyInput.placeholder = hasApiKey ? '저장된 API Key 있음 ✓' : 'API Key 입력...';
+    }
+    this.lastAutoLoadSignature = '';
+    this.setNotice('success', `${agent} / ${model} 설정을 저장했습니다.`);
+  }
+
+  onSettingsCleared(agent: AgentType) {
+    const agentSelect = document.getElementById('agent-select') as HTMLSelectElement | null;
+    const keyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+    if (agentSelect) {
+      agentSelect.value = 'gemini';
+    }
+    if (keyInput) {
+      keyInput.value = '';
+      keyInput.placeholder = 'API Key 입력...';
+    }
+    this.lastAutoLoadSignature = '';
+    this.updateModelList([]);
+    this.updateStatus();
+    this.setNotice('info', `${agent} 저장값을 삭제했습니다.`);
+  }
+
+  onSaveRequested() {
+    const agent = (document.getElementById('agent-select') as HTMLSelectElement | null)?.value as AgentType | undefined;
+    const key = (document.getElementById('api-key-input') as HTMLInputElement | null)?.value.trim() ?? '';
+    const model = (document.getElementById('model-select') as HTMLSelectElement | null)?.value ?? '';
+    if (!agent) return;
+    if (!model) {
+      this.setNotice('warn', '저장할 모델을 먼저 선택하세요.');
+      return;
+    }
+    vscode.postMessage({ command: 'agent.saveSettings', agent, model, key: key || undefined });
+  }
+
+  onClearRequested() {
+    const agent = (document.getElementById('agent-select') as HTMLSelectElement | null)?.value as AgentType | undefined;
+    if (!agent) return;
+    vscode.postMessage({ command: 'agent.clearSettings', agent });
+  }
+
   private updateModelList(models: ModelInfo[]) {
     const select = document.getElementById('model-select') as HTMLSelectElement;
     if (!select) return;
+    const preferredModel = select.dataset.preferredModel ?? '';
     select.innerHTML = '';
     if (models.length === 0) {
       select.innerHTML = '<option value="">-- 모델 로드 --</option>';
@@ -123,14 +189,36 @@ export class AgentLayer {
       opt.textContent = m.name;
       select.appendChild(opt);
     });
-    // Sync model state with extension host
-    if (models.length > 0) {
-      vscode.postMessage({ command: 'state.setModel', model: models[0].id });
-    }
+    const selectedModel =
+      (preferredModel && models.some((m) => m.id === preferredModel) ? preferredModel : models[0].id) ?? '';
+    select.value = selectedModel;
+    delete select.dataset.preferredModel;
+    vscode.postMessage({ command: 'state.setModel', model: selectedModel });
   }
 
   onError(message: string) {
+    this.lastAutoLoadSignature = '';
     this.setNotice('error', message);
+  }
+
+  private scheduleAutoModelLoad() {
+    if (this.autoLoadTimer) {
+      clearTimeout(this.autoLoadTimer);
+    }
+
+    const agent = (document.getElementById('agent-select') as HTMLSelectElement | null)?.value as AgentType | undefined;
+    const key = (document.getElementById('api-key-input') as HTMLInputElement | null)?.value.trim() ?? '';
+    if (!agent || !key) return;
+    if (key.length < 16) return;
+
+    const signature = `${agent}:${key}`;
+    if (signature === this.lastAutoLoadSignature) return;
+
+    this.autoLoadTimer = setTimeout(() => {
+      this.lastAutoLoadSignature = signature;
+      this.setNotice('info', 'API Key를 확인 중입니다...');
+      vscode.postMessage({ command: 'agent.listModels', agent, key });
+    }, 700);
   }
 
   private updateStatus() {

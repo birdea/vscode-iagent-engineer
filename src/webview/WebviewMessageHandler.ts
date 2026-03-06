@@ -6,7 +6,7 @@ import { ScreenshotService } from '../figma/ScreenshotService';
 import { AgentFactory } from '../agent/AgentFactory';
 import { EditorIntegration } from '../editor/EditorIntegration';
 import { Logger } from '../logger/Logger';
-import { SECRET_KEYS } from '../constants';
+import { CONFIG_KEYS, DEFAULT_MCP_ENDPOINT, SECRET_KEYS } from '../constants';
 
 export class WebviewMessageHandler {
   // Shared state across all handler instances (agent/model/mcpData)
@@ -37,13 +37,16 @@ export class WebviewMessageHandler {
     try {
       switch (msg.command) {
         case 'figma.connect':
-          await this.handleFigmaConnect(msg.endpoint);
+          await this.handleFigmaConnect();
           break;
         case 'figma.fetchData':
           await this.handleFigmaFetch(msg.mcpData);
           break;
         case 'figma.screenshot':
           await this.handleScreenshot(msg.mcpData);
+          break;
+        case 'agent.getState':
+          await this.handleGetAgentState();
           break;
         case 'agent.getApiKeyHelp':
           await this.handleGetApiKeyHelp(msg.agent);
@@ -54,8 +57,14 @@ export class WebviewMessageHandler {
         case 'agent.setApiKey':
           await this.handleSetApiKey(msg.agent, msg.key);
           break;
+        case 'agent.saveSettings':
+          await this.handleSaveAgentSettings(msg.agent, msg.model, msg.key);
+          break;
+        case 'agent.clearSettings':
+          await this.handleClearAgentSettings(msg.agent);
+          break;
         case 'agent.listModels':
-          await this.handleListModels(msg.agent);
+          await this.handleListModels(msg.agent, msg.key);
           break;
         case 'state.setAgent':
           WebviewMessageHandler.currentAgent = msg.agent;
@@ -88,8 +97,8 @@ export class WebviewMessageHandler {
     return 'system';
   }
 
-  private async handleFigmaConnect(endpoint: string) {
-    this.mcpClient.setEndpoint(endpoint);
+  private async handleFigmaConnect() {
+    this.mcpClient.setEndpoint(DEFAULT_MCP_ENDPOINT);
     try {
       const connected = await this.mcpClient.initialize();
       const methods = connected ? await this.mcpClient.listTools() : [];
@@ -157,6 +166,23 @@ export class WebviewMessageHandler {
     }
   }
 
+  private async handleGetAgentState() {
+    const savedAgent = this.context.globalState.get<AgentType>(CONFIG_KEYS.DEFAULT_AGENT, 'gemini');
+    const savedModel = this.context.globalState.get<string>(CONFIG_KEYS.DEFAULT_MODEL, '');
+    const secretKey = SECRET_KEYS[`${savedAgent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
+    const key = await this.context.secrets.get(secretKey);
+
+    WebviewMessageHandler.currentAgent = savedAgent;
+    WebviewMessageHandler.currentModel = savedModel;
+
+    this.post({
+      event: 'agent.state',
+      agent: savedAgent,
+      model: savedModel,
+      hasApiKey: Boolean(key),
+    });
+  }
+
   private async handleGetModelInfoHelp(agent: AgentType, modelId: string) {
     try {
       const secretKey = SECRET_KEYS[`${agent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
@@ -184,11 +210,49 @@ export class WebviewMessageHandler {
     Logger.success('agent', `${agent} API key saved`);
   }
 
-  private async handleListModels(agent: AgentType) {
+  private async handleSaveAgentSettings(agent: AgentType, model: string, key?: string) {
+    if (key && key.trim()) {
+      await this.handleSetApiKey(agent, key.trim());
+    }
+
+    WebviewMessageHandler.currentAgent = agent;
+    WebviewMessageHandler.currentModel = model;
+    await this.context.globalState.update(CONFIG_KEYS.DEFAULT_AGENT, agent);
+    await this.context.globalState.update(CONFIG_KEYS.DEFAULT_MODEL, model);
+
     const secretKey = SECRET_KEYS[`${agent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
-    const key = await this.context.secrets.get(secretKey);
-    if (key) {
-      await AgentFactory.getAgent(agent).setApiKey(key);
+    const storedKey = await this.context.secrets.get(secretKey);
+
+    this.post({
+      event: 'agent.settingsSaved',
+      agent,
+      model,
+      hasApiKey: Boolean(storedKey),
+    });
+  }
+
+  private async handleClearAgentSettings(agent: AgentType) {
+    const secretKey = SECRET_KEYS[`${agent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
+    await this.context.secrets.delete(secretKey);
+
+    WebviewMessageHandler.currentAgent = 'gemini';
+    WebviewMessageHandler.currentModel = '';
+    await this.context.globalState.update(CONFIG_KEYS.DEFAULT_AGENT, 'gemini');
+    await this.context.globalState.update(CONFIG_KEYS.DEFAULT_MODEL, '');
+
+    this.post({ event: 'agent.settingsCleared', agent });
+  }
+
+  private async handleListModels(agent: AgentType, key?: string) {
+    const runtimeKey = key?.trim();
+    if (runtimeKey) {
+      await AgentFactory.getAgent(agent).setApiKey(runtimeKey);
+    } else {
+      const secretKey = SECRET_KEYS[`${agent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
+      const savedKey = await this.context.secrets.get(secretKey);
+      if (savedKey) {
+        await AgentFactory.getAgent(agent).setApiKey(savedKey);
+      }
     }
     const models = await AgentFactory.getAgent(agent).listModels();
     this.post({ event: 'agent.modelsResult', models });

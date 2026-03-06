@@ -53,6 +53,39 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.meta-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  letter-spacing: 0.1px;
+  flex-shrink: 0;
+}
+
+.meta-subtitle {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-row.meta-subtitle {
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -73,6 +106,25 @@ body {
 .description-text {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
+}
+
+.tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-chip {
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-badge-background, var(--vscode-editor-background));
+  color: var(--vscode-badge-foreground, var(--vscode-foreground));
+  border-radius: 999px;
+  font-size: 10px;
+  padding: 1px 8px;
+}
+
+.hidden {
+  display: none;
 }
 
 /* Inputs */
@@ -258,39 +310,21 @@ label {
   background: var(--vscode-progressBar-background, var(--vscode-button-background));
 }
 
-/* Log area */
-.log-area {
+/* Log terminal */
+.log-terminal {
   background: var(--vscode-terminal-background, var(--vscode-editor-background));
+  color: var(--vscode-terminal-foreground, var(--vscode-editor-foreground));
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--figmalab-radius);
-  max-height: 300px;
-  overflow-y: auto;
+  margin: 0;
   padding: 6px 8px;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
-  line-height: 1.6;
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+  max-height: calc(10 * 1.5em + 12px);
 }
-
-.log-entry {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.log-entry .log-time {
-  color: var(--vscode-descriptionForeground);
-  white-space: nowrap;
-}
-
-.log-entry .log-layer {
-  color: var(--vscode-textLink-foreground);
-  white-space: nowrap;
-}
-
-.log-entry.info .log-msg { color: var(--vscode-foreground); }
-.log-entry.warn .log-msg { color: var(--vscode-editorWarning-foreground); }
-.log-entry.error .log-msg { color: var(--vscode-editorError-foreground); }
-.log-entry.success .log-msg { color: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #4caf50)); }
 
 /* Code output */
 .code-output {
