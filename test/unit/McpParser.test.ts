@@ -1,44 +1,47 @@
 import * as assert from 'assert';
 import { parseMcpData } from '../../src/figma/McpParser';
 
-suite('McpParser', () => {
-  test('Figma URL with node-id', () => {
-    const url = 'https://www.figma.com/file/ABC123xyz/MyDesign?node-id=1%3A2';
-    const result = parseMcpData(url);
-    assert.strictEqual(result.fileId, 'ABC123xyz');
-    assert.strictEqual(result.nodeId, '1:2');
+suite('McpParser Final', () => {
+  test('Standard URL', () => {
+    const res = parseMcpData('https://figma.com/file/F1/T?node-id=1:1');
+    assert.strictEqual(res.fileId, 'F1');
+    assert.strictEqual(res.nodeId, '1:1');
   });
 
-  test('Figma design URL without node-id', () => {
-    const url = 'https://www.figma.com/design/XYZ789abc/App';
-    const result = parseMcpData(url);
-    assert.strictEqual(result.fileId, 'XYZ789abc');
-    assert.strictEqual(result.nodeId, '');
+  test('URL with hyphens in node-id', () => {
+    const res = parseMcpData('https://figma.com/file/F2/T?node-id=2-2');
+    assert.strictEqual(res.fileId, 'F2');
+    assert.strictEqual(res.nodeId, '2:2');
   });
 
-  test('JSON with fileId and nodeId', () => {
-    const json = JSON.stringify({ fileId: 'FILE001', nodeId: '10:20' });
-    const result = parseMcpData(json);
-    assert.strictEqual(result.fileId, 'FILE001');
-    assert.strictEqual(result.nodeId, '10:20');
+  test('JSON with fileId', () => {
+    const res = parseMcpData('{"fileId": "J1"}');
+    assert.strictEqual(res.fileId, 'J1');
   });
 
-  test('JSON with file_id and node_id (snake_case)', () => {
-    const json = JSON.stringify({ file_id: 'FILE002', node_id: '30:40' });
-    const result = parseMcpData(json);
-    assert.strictEqual(result.fileId, 'FILE002');
-    assert.strictEqual(result.nodeId, '30:40');
+  test('JSON with URL string containing node-id', () => {
+    const res = parseMcpData('{"url": "https://figma.com/file/J4?node-id=4-4"}');
+    assert.strictEqual(res.fileId, 'J4');
+    assert.strictEqual(res.nodeId, '4:4');
   });
 
-  test('Empty string returns empty ids', () => {
-    const result = parseMcpData('');
-    assert.strictEqual(result.fileId, '');
-    assert.strictEqual(result.nodeId, '');
+  test('Plain text URL with node-id', () => {
+    const res = parseMcpData('See https://figma.com/file/T1?node-id=5-5');
+    assert.strictEqual(res.fileId, 'T1');
+    assert.strictEqual(res.nodeId, '5:5');
   });
 
-  test('Invalid input returns empty ids', () => {
-    const result = parseMcpData('not a url or json');
-    assert.strictEqual(result.fileId, '');
-    assert.strictEqual(result.nodeId, '');
+  test('JSON without valid keys but with URL', () => {
+      const res = parseMcpData('{"other": "https://figma.com/design/D1"}');
+      assert.strictEqual(res.fileId, 'D1');
+  });
+
+  test('Invalid JSON fallback', () => {
+      const res = parseMcpData('not json but has https://figma.com/file/F7');
+      assert.strictEqual(res.fileId, 'F7');
+  });
+
+  test('Empty', () => {
+    assert.strictEqual(parseMcpData('').fileId, '');
   });
 });

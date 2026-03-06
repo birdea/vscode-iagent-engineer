@@ -133,17 +133,20 @@ export class PromptLayer {
   private updateEstimate() {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
-      const useUserPrompt = (document.getElementById('use-user-prompt') as HTMLInputElement)
-        .checked;
-      const useMcpData = (document.getElementById('use-mcp-data') as HTMLInputElement).checked;
-      const userPrompt = useUserPrompt
-        ? (document.getElementById('user-prompt') as HTMLTextAreaElement).value
-        : '';
+      const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement | null;
+      const useMcpDataEl = document.getElementById('use-mcp-data') as HTMLInputElement | null;
+      const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
+      const estimateEl = document.getElementById('token-estimate');
+
+      if (!useUserPromptEl || !useMcpDataEl || !userPromptEl || !estimateEl) return;
+
+      const useUserPrompt = useUserPromptEl.checked;
+      const useMcpData = useMcpDataEl.checked;
+      const userPrompt = useUserPrompt ? userPromptEl.value : '';
       const bytes = new TextEncoder().encode(userPrompt).length;
       const kb = (bytes / 1024).toFixed(1);
       const tokens = Math.ceil(userPrompt.length / 4).toLocaleString();
-      const el = document.getElementById('token-estimate');
-      if (el) el.textContent = `${kb}KB / ~${tokens} tok${useMcpData ? ' + MCP' : ''}`;
+      estimateEl.textContent = `${kb}KB / ~${tokens} tok${useMcpData ? ' + MCP' : ''}`;
     }, 300);
   }
 

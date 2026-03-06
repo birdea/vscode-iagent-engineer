@@ -13,6 +13,9 @@ export class FigmaLayer {
       <span id="figma-status-text" class="status-text">연결되지 않음</span>
     </div>
   </div>
+  <div class="btn-row" style="margin-top: 8px;">
+    <button class="primary" id="btn-connect"><i class="codicon codicon-plug"></i>Connect</button>
+  </div>
   <div class="tool-list hidden" id="figma-tool-list" style="margin-top: 8px;"></div>
 </div>
 <div class="panel">
@@ -47,6 +50,10 @@ export class FigmaLayer {
       }
       this.setNotice('info', 'MCP 데이터를 불러오는 중입니다...');
       vscode.postMessage({ command: 'figma.fetchData', mcpData });
+    });
+
+    document.getElementById('btn-connect')?.addEventListener('click', () => {
+      this.requestConnect();
     });
 
     document.getElementById('btn-screenshot')?.addEventListener('click', () => {
@@ -154,11 +161,11 @@ export class FigmaLayer {
 
   private escapeHtml(text: string): string {
     return text
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private stringifyForPreview(data: unknown): string {

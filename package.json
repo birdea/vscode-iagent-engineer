@@ -29,13 +29,13 @@
       "figmalab": [
         {
           "type": "webview",
-          "id": "figmalab.figma",
-          "name": "Figma"
+          "id": "figmalab.agent",
+          "name": "Agent"
         },
         {
           "type": "webview",
-          "id": "figmalab.agent",
-          "name": "Agent"
+          "id": "figmalab.figma",
+          "name": "Figma"
         },
         {
           "type": "webview",
@@ -154,12 +154,14 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "node ./out/test/runTest.js",
-    "test:unit": "mocha --ui tdd --require tsx \"test/unit/**/*.test.ts\"",
-    "test:coverage": "c8 --all --src \"src\" --reporter text --reporter html npm run test:unit",
+    "test:unit": "mocha --ui tdd --require tsx --require test/unit/globalSetup.ts \"test/unit/**/*.test.ts\"",
+    "test:coverage": "c8 --all --src \"src\" --exclude \"src/types.ts\" --reporter text --reporter html npm run test:unit",
     "package": "vsce package"
   },
   "devDependencies": {
+    "@types/jsdom": "^28.0.0",
     "@types/node": "^20.0.0",
+    "@types/sinon": "^21.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
@@ -169,8 +171,12 @@
     "esbuild": "^0.20.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^28.1.0",
     "mocha": "^11.7.5",
+    "module-alias": "^2.3.4",
+    "nock": "^14.0.11",
     "prettier": "^3.8.1",
+    "sinon": "^21.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.3.0"
   },
