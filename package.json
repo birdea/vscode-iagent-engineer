@@ -34,13 +34,13 @@
       "figma-mcp-helper": [
         {
           "type": "webview",
-          "id": "figma-mcp-helper.agent",
-          "name": "Agent"
+          "id": "figma-mcp-helper.figma",
+          "name": "Figma"
         },
         {
           "type": "webview",
-          "id": "figma-mcp-helper.figma",
-          "name": "Figma"
+          "id": "figma-mcp-helper.agent",
+          "name": "Agent"
         },
         {
           "type": "webview",
@@ -57,7 +57,7 @@
     "commands": [
       {
         "command": "figma-mcp-helper.connect",
-        "title": "Connect MCP",
+        "title": "MCP 연결",
         "icon": "$(plug)"
       },
       {
@@ -66,17 +66,17 @@
       },
       {
         "command": "figma-mcp-helper.agent.save",
-        "title": "Save Agent Settings",
+        "title": "Agent 설정 저장",
         "icon": "$(save)"
       },
       {
         "command": "figma-mcp-helper.agent.clear",
-        "title": "Clear Agent Settings",
+        "title": "Agent 설정 초기화",
         "icon": "$(trash)"
       },
       {
         "command": "figma-mcp-helper.prompt.generate",
-        "title": "Generate",
+        "title": "코드 생성",
         "icon": "$(play)"
       },
       {

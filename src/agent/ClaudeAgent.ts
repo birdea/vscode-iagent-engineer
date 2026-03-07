@@ -79,7 +79,7 @@ export class ClaudeAgent extends BaseAgent {
     return models.find((m) => m.id === modelId) ?? { id: modelId, name: modelId };
   }
 
-  async *generateCode(payload: PromptPayload): AsyncGenerator<string> {
+  async *generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string> {
     this.ensureApiKey();
     if (!this.client) {
       throw new Error('Claude client not initialized');
@@ -97,6 +97,11 @@ export class ClaudeAgent extends BaseAgent {
       });
 
       for await (const event of stream) {
+        if (signal?.aborted) {
+          const abort = (stream as { abort?: () => void }).abort;
+          abort?.call(stream);
+          throw new Error('사용자가 코드 생성을 취소했습니다.');
+        }
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
           yield event.delta.text;
         }

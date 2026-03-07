@@ -169,6 +169,11 @@ textarea {
   line-height: 1.4;
 }
 
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Buttons */
 .btn-row {
   display: flex;
@@ -364,6 +369,7 @@ label {
 
 /* Code output */
 .code-output {
+  margin-top: 8px;
   background: var(--vscode-editor-background);
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--figmalab-radius);

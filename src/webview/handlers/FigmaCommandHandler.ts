@@ -39,7 +39,9 @@ export class FigmaCommandHandler {
         event: 'figma.status',
         connected,
         methods,
-        error: connected ? undefined : `Connection failed. Please ensure the MCP server is running at ${endpoint}.`,
+        error: connected
+          ? undefined
+          : `MCP 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요. (${endpoint})`,
       });
     } catch (e) {
       const errMessage = (e as Error).message;
@@ -48,9 +50,16 @@ export class FigmaCommandHandler {
         event: 'figma.status',
         connected: false,
         methods: [],
-        error: `Connection error: ${errMessage}`,
+        error: this.toFriendlyConnectionMessage(errMessage, endpoint),
       });
     }
+  }
+
+  async openSettings() {
+    await vscode.commands.executeCommand(
+      'workbench.action.openSettings',
+      CONFIG_KEYS.MCP_ENDPOINT,
+    );
   }
 
   async fetchData(input: string) {
@@ -81,7 +90,7 @@ export class FigmaCommandHandler {
         );
         this.post({
           event: 'figma.dataFetchError',
-          message: `MCP fetch failed: ${err.message}`,
+          message: this.toFriendlyFetchMessage(err.message),
           fallbackData: parsed,
         });
       }
@@ -112,8 +121,28 @@ export class FigmaCommandHandler {
       this.post({
         event: 'error',
         source: 'figma',
-        message: `Screenshot fetch failed: ${(e as Error).message}`,
+        message: '스크린샷을 가져오지 못했습니다. MCP 연결과 입력한 Figma 데이터를 다시 확인하세요.',
       });
     }
+  }
+
+  private toFriendlyConnectionMessage(message: string, endpoint: string): string {
+    if (message.includes('ECONNREFUSED')) {
+      return `MCP 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요. (${endpoint})`;
+    }
+    if (message.toLowerCase().includes('timeout')) {
+      return `MCP 서버 응답이 지연되고 있습니다. 서버 상태와 엔드포인트를 확인하세요. (${endpoint})`;
+    }
+    return `MCP 연결 중 문제가 발생했습니다. 설정과 서버 상태를 확인하세요. (${endpoint})`;
+  }
+
+  private toFriendlyFetchMessage(message: string): string {
+    if (message.includes('ECONNREFUSED')) {
+      return 'MCP 서버에 연결할 수 없어 데이터를 가져오지 못했습니다. 서버 실행 상태를 확인하세요.';
+    }
+    if (message.toLowerCase().includes('timeout')) {
+      return 'MCP 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도하세요.';
+    }
+    return 'Figma 데이터를 가져오지 못했습니다. 입력한 URL/JSON과 MCP 서버 상태를 확인하세요.';
   }
 }

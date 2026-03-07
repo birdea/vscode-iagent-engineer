@@ -87,7 +87,7 @@ export class GeminiAgent extends BaseAgent {
     return found;
   }
 
-  async *generateCode(payload: PromptPayload): AsyncGenerator<string> {
+  async *generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string> {
     this.ensureApiKey();
     if (!this.client) {
       throw new Error('Gemini client not initialized');
@@ -101,6 +101,9 @@ export class GeminiAgent extends BaseAgent {
     try {
       const result = await model.generateContentStream(prompt);
       for await (const chunk of result.stream) {
+        if (signal?.aborted) {
+          throw new Error('사용자가 코드 생성을 취소했습니다.');
+        }
         const text = chunk.text();
         if (text) {
           yield text;

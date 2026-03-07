@@ -57,6 +57,9 @@ export class WebviewMessageHandler {
         case 'figma.connect':
           await this.figmaHandler.connect();
           break;
+        case 'figma.openSettings':
+          await this.figmaHandler.openSettings();
+          break;
         case 'figma.fetchData':
           await this.figmaHandler.fetchData(msg.mcpData);
           break;
@@ -92,6 +95,9 @@ export class WebviewMessageHandler {
           break;
         case 'prompt.generate':
           await this.promptHandler.generate(msg.payload);
+          break;
+        case 'prompt.cancel':
+          this.promptHandler.cancel(msg.requestId);
           break;
         case 'prompt.estimate':
           this.promptHandler.estimate(msg.payload);

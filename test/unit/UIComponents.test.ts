@@ -67,6 +67,12 @@ suite('UI Components Consolidated', () => {
         layer.onClearRequested();
         assert.ok(postMessageStub.calledWithMatch({ command: 'agent.clearSettings' }));
     });
+
+    test('internal save button triggers save flow', () => {
+        layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
+        document.getElementById('btn-save-settings')?.click();
+        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.saveSettings', model: 'm1' }));
+    });
   });
 
   suite('FigmaLayer', () => {
@@ -83,15 +89,20 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.connect' }));
     });
 
+    test('settings button click', () => {
+      document.getElementById('btn-open-settings')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.openSettings' }));
+    });
+
     test('onStatus handles methods and error', () => {
       layer.onStatus(true, ['tool1', 'tool2'], undefined);
       const text = document.getElementById('figma-status-text');
-      assert.ok(text?.textContent?.includes('2 tools'));
+      assert.ok(text?.textContent?.includes('2개'));
       assert.ok(document.getElementById('figma-tool-list')?.innerHTML.includes('tool1'));
 
       layer.onStatus(false, [], 'Connect error');
       const notice = document.getElementById('figma-notice');
-      assert.ok(notice?.textContent?.includes('error'));
+      assert.ok(notice?.textContent?.includes('Connect error'));
     });
 
     test('onDataResult and onScreenshotResult', () => {
@@ -157,10 +168,10 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(area.textContent, 'const x = 1;');
     });
 
-    test('onError updates output and notice', () => {
+    test('onError updates notice without polluting code output', () => {
         layer.onError('bad things');
         const area = document.getElementById('code-output');
-        assert.ok(area?.textContent?.includes('bad things'));
+        assert.strictEqual(area?.textContent, '');
         const notice = document.getElementById('prompt-notice');
         assert.strictEqual(notice?.textContent, 'bad things');
     });
@@ -183,9 +194,17 @@ suite('UI Components Consolidated', () => {
 
     test('onGenerateRequested validation', () => {
         (document.getElementById('use-user-prompt') as HTMLInputElement).checked = false;
+        (document.getElementById('use-user-prompt') as HTMLInputElement).dispatchEvent(new window.Event('change'));
+        assert.strictEqual((document.getElementById('user-prompt') as HTMLTextAreaElement).disabled, true);
         (document.getElementById('use-mcp-data') as HTMLInputElement).checked = false;
         layer.onGenerateRequested();
         assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
+    });
+
+    test('cancel button posts cancel command while generating', () => {
+        layer.onGenerateRequested();
+        document.getElementById('btn-cancel-generate')?.click();
+        assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.cancel' }));
     });
   });
 });

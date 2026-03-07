@@ -9,6 +9,8 @@ import { StateManager } from '../../state/StateManager';
 
 export class PromptCommandHandler {
   private isGenerating = false;
+  private currentRequestId: string | null = null;
+  private abortController: AbortController | null = null;
 
   constructor(
     private webview: vscode.Webview,
@@ -23,7 +25,11 @@ export class PromptCommandHandler {
 
   async generate(payload: PromptPayload) {
     if (this.isGenerating) {
-      this.post({ event: 'prompt.error', message: 'Generation already in progress' });
+      this.post({
+        event: 'prompt.error',
+        message: '이미 코드 생성이 진행 중입니다.',
+        code: 'failed',
+      });
       return;
     }
 
@@ -46,13 +52,21 @@ export class PromptCommandHandler {
     Logger.info('prompt', `Generating ${resolvedPayload.outputFormat} code with ${agent}:${model}`);
     this.post({ event: 'prompt.generating', progress: 0 });
     this.isGenerating = true;
+    this.currentRequestId = payload.requestId ?? null;
+    this.abortController = new AbortController();
 
     try {
       let fullCode = '';
       let progress = 5;
       this.post({ event: 'prompt.generating', progress });
-      const gen = AgentFactory.getAgent(agent).generateCode(resolvedPayload);
+      const gen = AgentFactory.getAgent(agent).generateCode(
+        resolvedPayload,
+        this.abortController.signal,
+      );
       for await (const chunk of gen) {
+        if (this.abortController.signal.aborted) {
+          throw new Error('사용자가 코드 생성을 취소했습니다.');
+        }
         fullCode += chunk;
         progress = Math.min(95, progress + 5);
         this.post({ event: 'prompt.generating', progress });
@@ -63,10 +77,30 @@ export class PromptCommandHandler {
       this.post({ event: 'prompt.result', code: fullCode, format: resolvedPayload.outputFormat });
     } catch (e) {
       const err = e as Error;
-      this.post({ event: 'prompt.error', message: err.message });
+      const isCancelled =
+        this.abortController?.signal.aborted || err.message === '사용자가 코드 생성을 취소했습니다.';
+      this.post({
+        event: 'prompt.error',
+        message: isCancelled ? '코드 생성을 취소했습니다.' : err.message,
+        code: isCancelled ? 'cancelled' : 'failed',
+      });
     } finally {
       this.isGenerating = false;
+      this.currentRequestId = null;
+      this.abortController = null;
     }
+  }
+
+  cancel(requestId?: string) {
+    if (!this.isGenerating || !this.abortController) {
+      return;
+    }
+    if (requestId && this.currentRequestId && requestId !== this.currentRequestId) {
+      return;
+    }
+
+    Logger.info('prompt', 'Code generation cancelled by user');
+    this.abortController.abort();
   }
 
   estimate(payload: PromptPayload) {

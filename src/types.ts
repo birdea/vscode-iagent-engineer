@@ -30,6 +30,7 @@ export interface PromptPayload {
   outputFormat: OutputFormat;
   model?: string;
   agent?: AgentType;
+  requestId?: string;
 }
 
 // MCP parsed data
@@ -42,6 +43,7 @@ export interface ParsedMcpData {
 // Webview → Host messages
 export type WebviewToHostMessage =
   | { command: 'figma.connect' }
+  | { command: 'figma.openSettings' }
   | { command: 'figma.fetchData'; mcpData: string }
   | { command: 'figma.screenshot'; mcpData: string }
   | { command: 'agent.getState' }
@@ -54,6 +56,7 @@ export type WebviewToHostMessage =
   | { command: 'state.setAgent'; agent: AgentType }
   | { command: 'state.setModel'; model: string }
   | { command: 'prompt.generate'; payload: PromptPayload }
+  | { command: 'prompt.cancel'; requestId?: string }
   | { command: 'prompt.estimate'; payload: PromptPayload }
   | { command: 'editor.open'; code: string; language?: string }
   | { command: 'editor.saveFile'; code: string; filename: string };
@@ -73,11 +76,12 @@ export type HostToWebviewMessage =
   | { event: 'agent.modelsResult'; models: ModelInfo[] }
   | { event: 'agent.modelInfo'; info: ModelInfo }
   | { event: 'prompt.generateRequested' }
+  | { event: 'prompt.cancelRequested' }
   | { event: 'prompt.generating'; progress: number }
   | { event: 'prompt.chunk'; text: string }
   | { event: 'prompt.result'; code: string; format: OutputFormat }
   | { event: 'prompt.estimateResult'; tokens: number; kb: number }
-  | { event: 'prompt.error'; message: string }
+  | { event: 'prompt.error'; message: string; code?: 'cancelled' | 'failed' }
   | { event: 'log.append'; entry: LogEntry }
   | { event: 'log.clear' }
   | { event: 'error'; source: LayerType; message: string };

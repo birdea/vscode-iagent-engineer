@@ -5,7 +5,7 @@ export interface IAgent {
   setApiKey(key: string): Promise<void>;
   listModels(): Promise<ModelInfo[]>;
   getModelInfo(modelId: string): Promise<ModelInfo>;
-  generateCode(payload: PromptPayload): AsyncGenerator<string>;
+  generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string>;
 }
 
 export abstract class BaseAgent implements IAgent {
@@ -18,7 +18,7 @@ export abstract class BaseAgent implements IAgent {
 
   abstract listModels(): Promise<ModelInfo[]>;
   abstract getModelInfo(modelId: string): Promise<ModelInfo>;
-  abstract generateCode(payload: PromptPayload): AsyncGenerator<string>;
+  abstract generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string>;
 
   protected ensureApiKey(): void {
     if (!this.apiKey) {

@@ -52,6 +52,12 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: true }));
   });
 
+  test('handle figma.openSettings', async () => {
+    const vscode = require('vscode');
+    await handler.handle({ command: 'figma.openSettings' });
+    assert.ok(vscode.commands.executeCommand.calledWith('workbench.action.openSettings'));
+  });
+
   test('handle agent.getState', async () => {
     mockContext.globalState.get.withArgs('figma-mcp-helper.defaultAgent').returns('claude');
     await handler.handle({ command: 'agent.getState' });
@@ -107,9 +113,42 @@ suite('WebviewMessageHandler Comprehensive', () => {
       payload: { userPrompt: 'two', outputFormat: 'html' },
     });
 
-    assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.error', message: 'Generation already in progress' }));
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.error', message: '이미 코드 생성이 진행 중입니다.' }));
     releaseChunk?.();
     await first;
+  });
+
+  test('handle prompt.cancel aborts running generation', async () => {
+    let releaseChunk: (() => void) | undefined;
+    const waitForRelease = new Promise<void>((resolve) => {
+      releaseChunk = resolve;
+    });
+    const mockAgent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function*(_payload: any, signal?: AbortSignal) {
+        await waitForRelease;
+        if (signal?.aborted) {
+          throw new Error('사용자가 코드 생성을 취소했습니다.');
+        }
+        yield 'chunk';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+
+    const first = handler.handle({
+      command: 'prompt.generate',
+      payload: { userPrompt: 'one', outputFormat: 'html', requestId: 'req-1' },
+    });
+    for (let i = 0; i < 20; i++) {
+      if ((handler as any).promptHandler.getGeneratingState()) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    await handler.handle({ command: 'prompt.cancel', requestId: 'req-1' });
+    releaseChunk?.();
+    await first;
+
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.error', code: 'cancelled' }));
   });
 
   test('handle editor.open', async () => {
@@ -170,7 +209,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
       sandbox.stub((handler as any).mcpClient, 'callTool').rejects(new Error('Fetch failed'));
       
       await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com/file/F' });
-      assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataFetchError', message: 'MCP fetch failed: Fetch failed' }));
+      assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataFetchError', message: 'Figma 데이터를 가져오지 못했습니다. 입력한 URL/JSON과 MCP 서버 상태를 확인하세요.' }));
       assert.ok(!postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }), 'figma.dataResult should not be sent on MCP failure');
   });
 
