@@ -161,7 +161,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
       
       await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com/file/F' });
       assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataFetchError', message: 'MCP fetch failed: Fetch failed' }));
-      assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }));
+      assert.ok(!postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }), 'figma.dataResult should not be sent on MCP failure');
   });
 
   test('handle prompt.generate failure', async () => {

@@ -183,7 +183,6 @@ export class WebviewMessageHandler {
           message: `MCP fetch failed: ${err.message}`,
           fallbackData: parsed,
         });
-        this.post({ event: 'figma.dataResult', data: parsed });
       }
     } else {
       Logger.info(
@@ -366,10 +365,13 @@ export class WebviewMessageHandler {
     } catch (e) {
       const err = e as Error;
       this.post({ event: 'prompt.error', message: err.message });
-      throw e;
     } finally {
       this.isGenerating = false;
     }
+  }
+
+  async dispose(): Promise<void> {
+    await this.screenshotService.cleanupTempFiles();
   }
 
   private async handleEstimate(payload: import('../types').PromptPayload) {

@@ -5,6 +5,8 @@ import { McpClient } from './McpClient';
 import { Logger } from '../logger/Logger';
 
 export class ScreenshotService {
+  private tmpFiles: vscode.Uri[] = [];
+
   constructor(private mcpClient: McpClient) {}
 
   async fetchScreenshot(fileId: string, nodeId: string): Promise<string> {
@@ -24,8 +26,21 @@ export class ScreenshotService {
     const tmpPath = path.join(os.tmpdir(), `figmalab-${fileId}-${Date.now()}.png`);
     const uri = vscode.Uri.file(tmpPath);
     await vscode.workspace.fs.writeFile(uri, buffer);
+    this.tmpFiles.push(uri);
     await vscode.commands.executeCommand('vscode.open', uri);
     Logger.info('figma', `Screenshot opened in editor: ${tmpPath}`);
+  }
+
+  async cleanupTempFiles(): Promise<void> {
+    const toDelete = this.tmpFiles.splice(0);
+    for (const uri of toDelete) {
+      try {
+        await vscode.workspace.fs.delete(uri, { useTrash: false });
+        Logger.info('figma', `Deleted temp screenshot: ${uri.fsPath}`);
+      } catch {
+        // File may already be gone; ignore
+      }
+    }
   }
 
   async saveToWorkspace(base64: string, filename?: string): Promise<void> {

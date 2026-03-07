@@ -52,6 +52,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.onDidDispose(() => {
       this.logSubscription?.dispose();
       this.logSubscription = undefined;
+      this.handler?.dispose();
     });
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
