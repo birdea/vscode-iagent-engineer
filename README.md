@@ -27,8 +27,8 @@ Current gaps:
 
 FigmaLab is organized as four sidebar views:
 
-- `Figma`: connect to MCP, paste Figma URL/JSON, fetch design data or screenshots
 - `Agent`: choose an AI provider, save an API key, and load available models
+- `Figma`: connect to MCP, paste Figma URL/JSON, fetch design data or screenshots
 - `Prompt`: choose output format, add instructions, generate code, insert or save the result
 - `Log`: inspect extension activity and troubleshooting details
 
@@ -76,11 +76,11 @@ Launch it in VS Code:
 
 Use the extension:
 
-1. Connect the `Figma` panel to your MCP endpoint
-2. Paste a Figma URL or MCP JSON payload
-3. Fetch data or a screenshot
-4. Open the `Agent` panel and save an API key
-5. Load a model
+1. Open the `Agent` panel, choose a provider, and save an API key
+2. Load a model
+3. Open the `Figma` panel and connect to your MCP endpoint
+4. Paste a Figma URL or MCP JSON payload
+5. Fetch data or a screenshot
 6. Open the `Prompt` panel and choose an output format
 7. Generate code
 8. Insert it into the active editor or save it as a file
@@ -115,6 +115,26 @@ Lint:
 
 ```bash
 npm run lint
+npm run lint:fix
+```
+
+Format:
+
+```bash
+npm run format
+npm run format:check
+```
+
+Run unit tests:
+
+```bash
+npm run test:unit
+```
+
+Run unit tests with coverage:
+
+```bash
+npm run test:coverage
 ```
 
 Package the extension:
@@ -156,11 +176,15 @@ src/
   logger/     Output channel and in-memory log store
   prompt/     Prompt building and token estimation helpers
   webview/    Sidebar providers, message handling, and UI
+  constants.ts
   extension.ts
+  types.ts
+test/
+  unit/       Unit tests for all source modules
 ```
 
 ## Notes
 
 - This project is currently optimized for local experimentation and extension development.
 - If you are evaluating the codebase, start with `src/extension.ts` and `src/webview/WebviewMessageHandler.ts`.
-- For a deeper assessment of architecture, UX, bugs, and technical debt, see `NEW_CODE_REVIEW.md`.
+- Development plans and architectural notes are in the `docs/` directory.
