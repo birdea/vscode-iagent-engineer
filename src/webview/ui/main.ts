@@ -4,7 +4,7 @@ import { PromptLayer } from './components/PromptLayer';
 import { LogLayer } from './components/LogLayer';
 import { HostToWebviewMessage } from '../../types';
 
-function init() {
+export function init() {
   const app = document.getElementById('app');
   if (!app) return;
 

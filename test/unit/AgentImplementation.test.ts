@@ -23,7 +23,7 @@ suite('Agent Implementations', () => {
 
     test('PromptBuilder includes context for agent payload', () => {
       const payload = { 
-        outputFormat: 'html', 
+        outputFormat: 'html' as any, 
         userPrompt: 'make it blue',
         mcpData: { component: 'Button' }
       };
@@ -33,14 +33,73 @@ suite('Agent Implementations', () => {
       assert.ok(prompt.includes('Button'));
     });
 
+    test('listModels success', async () => {
+      await agent.setApiKey('test-key');
+      nock('https://generativelanguage.googleapis.com')
+        .get('/v1beta/models')
+        .reply(200, {
+          models: [
+            {
+              name: 'models/gemini-2.0-flash',
+              displayName: 'Gemini 2.0 Flash',
+              description: 'Latest Gemini model',
+              inputTokenLimit: 1000000,
+              outputTokenLimit: 8192,
+            },
+          ],
+        });
+
+      const models = await agent.listModels();
+      assert.strictEqual(models.length, 1);
+      assert.strictEqual(models[0].id, 'gemini-2.0-flash');
+      assert.strictEqual(models[0].name, 'Gemini 2.0 Flash');
+    });
+
+    test('listModels failure', async () => {
+      await agent.setApiKey('test-key');
+      nock('https://generativelanguage.googleapis.com')
+        .get('/v1beta/models')
+        .reply(500, 'Error');
+
+      try {
+        await agent.listModels();
+        assert.fail('Should throw');
+      } catch (e) {
+        assert.ok(e);
+      }
+    });
+
+    test('getModelInfo returns specific model', async () => {
+      await agent.setApiKey('test-key');
+      nock('https://generativelanguage.googleapis.com')
+        .get('/v1beta/models')
+        .reply(200, {
+          models: [{ name: 'models/gemini-pro', displayName: 'Gemini Pro' }],
+        });
+
+      const info = await agent.getModelInfo('gemini-pro');
+      assert.strictEqual(info.id, 'gemini-pro');
+    });
+
+    test('getModelInfo fallback when not found', async () => {
+      await agent.setApiKey('test-key');
+      nock('https://generativelanguage.googleapis.com')
+        .get('/v1beta/models')
+        .reply(200, { models: [] });
+
+      const info = await agent.getModelInfo('unknown-model');
+      assert.strictEqual(info.id, 'unknown-model');
+    });
+
     test('generateCode handles errors', async () => {
       await agent.setApiKey('test-key');
+      // Mock the SDK internal fetch or error during streaming
       nock('https://generativelanguage.googleapis.com')
         .post(/.*/)
         .reply(500, 'Error');
 
       try {
-        const gen = agent.generateCode({ outputFormat: 'html', userPrompt: 'test' });
+        const gen = agent.generateCode({ outputFormat: 'html' as any, userPrompt: 'test' });
         await gen.next();
         assert.fail('Should throw');
       } catch (e) {
@@ -58,7 +117,7 @@ suite('Agent Implementations', () => {
 
     test('PromptBuilder includes context for agent payload', () => {
       const payload = { 
-        outputFormat: 'tsx', 
+        outputFormat: 'tsx' as any, 
         userPrompt: 'dark mode',
       };
       const prompt = new PromptBuilder().build(payload);
@@ -91,7 +150,7 @@ suite('Agent Implementations', () => {
         .reply(401, { error: { message: 'Invalid' } });
 
       try {
-        const gen = agent.generateCode({ outputFormat: 'tsx', userPrompt: 'test' });
+        const gen = agent.generateCode({ outputFormat: 'tsx' as any, userPrompt: 'test' });
         await gen.next();
         assert.fail('Should throw');
       } catch (e: any) {

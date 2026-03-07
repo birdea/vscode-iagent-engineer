@@ -134,7 +134,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
       assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.modelsResult' }));
   });
 
-  test('handle agent.clearSettings', async () => {
+  test('handle agent.settingsCleared', async () => {
       await handler.handle({ command: 'agent.clearSettings', agent: 'gemini' });
       assert.ok(mockContext.secrets.delete.calledWith('figmalab.geminiApiKey'));
       assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsCleared', agent: 'gemini' }));
@@ -183,5 +183,28 @@ suite('WebviewMessageHandler Comprehensive', () => {
       const saveSpy = sandbox.stub((handler as any).editorIntegration, 'saveAsNewFile').resolves();
       await handler.handle({ command: 'editor.saveFile', code: 'c', filename: 'f.ts' });
       assert.ok(saveSpy.calledWith('c', 'f.ts'));
+  });
+
+  test('handle prompt.estimate', async () => {
+    await handler.handle({ command: 'prompt.estimate', payload: { userPrompt: 'test', outputFormat: 'html' } });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.estimateResult' }));
+  });
+
+  test('handle agent.listModels with saved key', async () => {
+    const mockAgent = {
+        setApiKey: sandbox.stub().resolves(),
+        listModels: sandbox.stub().resolves([])
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+    mockContext.secrets.get.resolves('saved-key');
+    
+    await handler.handle({ command: 'agent.listModels', agent: 'gemini' });
+    assert.ok(mockAgent.setApiKey.calledWith('saved-key'));
+  });
+
+  test('handle figma.fetchData with disconnected client', async () => {
+      sandbox.stub((handler as any).mcpClient, 'isConnected').returns(false);
+      await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com' });
+      assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }));
   });
 });
