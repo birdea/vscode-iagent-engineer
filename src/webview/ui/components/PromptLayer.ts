@@ -201,7 +201,7 @@ export class PromptLayer {
     this.generatedCode += text;
     const codeOutput = document.getElementById('code-output') as HTMLPreElement;
     if (codeOutput) {
-      codeOutput.textContent = this.generatedCode;
+      codeOutput.insertAdjacentText('beforeend', text);
       codeOutput.scrollTop = codeOutput.scrollHeight;
     }
   }

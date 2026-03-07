@@ -110,4 +110,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   Logger.info('system', 'Figma MCP Helper deactivated');
+  AgentFactory.clear();
+  Logger.clear();
 }

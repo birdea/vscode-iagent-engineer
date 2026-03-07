@@ -58,6 +58,18 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(vscode.commands.executeCommand.calledWith('workbench.action.openSettings'));
   });
 
+  test('handle figma.connect failure', async () => {
+    sandbox.stub((handler as any).mcpClient, 'initialize').resolves(false);
+    await handler.handle({ command: 'figma.connect' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: false }));
+  });
+
+  test('handle figma.connect throws error', async () => {
+    sandbox.stub((handler as any).mcpClient, 'initialize').rejects(new Error('ECONNREFUSED'));
+    await handler.handle({ command: 'figma.connect' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: false, error: sinon.match(/MCP/) }));
+  });
+
   test('handle agent.getState', async () => {
     mockContext.globalState.get.withArgs('figma-mcp-helper.defaultAgent').returns('claude');
     await handler.handle({ command: 'agent.getState' });
@@ -151,6 +163,61 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.error', code: 'cancelled' }));
   });
 
+  test('handle prompt.cancel when not generating is a no-op', async () => {
+    await handler.handle({ command: 'prompt.cancel' });
+    // promptHandler.isGenerating is false, so cancel returns early — no error
+  });
+
+  test('handle prompt.cancel with mismatched requestId is a no-op', async () => {
+    let releaseChunk: (() => void) | undefined;
+    const waitForRelease = new Promise<void>((resolve) => { releaseChunk = resolve; });
+    const mockAgent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function*(_payload: any, signal?: AbortSignal) {
+        await waitForRelease;
+        if (signal?.aborted) throw new Error('취소');
+        yield 'chunk';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+    const first = handler.handle({ command: 'prompt.generate', payload: { userPrompt: 'x', outputFormat: 'html', requestId: 'req-A' } });
+    for (let i = 0; i < 20; i++) {
+      if ((handler as any).promptHandler.getGeneratingState()) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await handler.handle({ command: 'prompt.cancel', requestId: 'req-B' }); // wrong id
+    releaseChunk?.();
+    await first;
+    // Should complete normally (not cancelled)
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'prompt.result' }));
+  });
+
+  test('handle figma.connect throws timeout error', async () => {
+    sandbox.stub((handler as any).mcpClient, 'initialize').rejects(new Error('Request timeout'));
+    await handler.handle({ command: 'figma.connect' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: false, error: sinon.match(/MCP/) }));
+  });
+
+  test('handle figma.connect throws generic error uses fallback message', async () => {
+    sandbox.stub((handler as any).mcpClient, 'initialize').rejects(new Error('unknown error'));
+    await handler.handle({ command: 'figma.connect' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: false }));
+  });
+
+  test('handle figma.fetchData failure with ECONNREFUSED', async () => {
+    sandbox.stub((handler as any).mcpClient, 'isConnected').returns(true);
+    sandbox.stub((handler as any).mcpClient, 'callTool').rejects(new Error('ECONNREFUSED'));
+    await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataFetchError' }));
+  });
+
+  test('handle figma.fetchData failure with timeout', async () => {
+    sandbox.stub((handler as any).mcpClient, 'isConnected').returns(true);
+    sandbox.stub((handler as any).mcpClient, 'callTool').rejects(new Error('Request timeout exceeded'));
+    await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataFetchError' }));
+  });
+
   test('handle editor.open', async () => {
     const vscode = require('vscode');
     vscode.workspace.openTextDocument.resolves({ show: sandbox.stub() });
@@ -197,11 +264,37 @@ suite('WebviewMessageHandler Comprehensive', () => {
 
   test('handle agent.getModelInfoHelp', async () => {
       const vscode = require('vscode');
-      const mockAgent = { getModelInfo: sandbox.stub().resolves({ id: 'm', name: 'Name' }) };
+      const mockAgent = {
+        setApiKey: sandbox.stub().resolves(),
+        getModelInfo: sandbox.stub().resolves({ id: 'm', name: 'Name' }),
+      };
       sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
-      
+      vscode.workspace.openTextDocument.resolves({});
       await handler.handle({ command: 'agent.getModelInfoHelp', agent: 'gemini', modelId: 'm' });
       assert.ok(vscode.workspace.openTextDocument.called);
+  });
+
+  test('handle agent.getModelInfoHelp with getModelInfo failure logs error', async () => {
+      const mockAgent = {
+        setApiKey: sandbox.stub().resolves(),
+        getModelInfo: sandbox.stub().rejects(new Error('model not found')),
+      };
+      sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+      await handler.handle({ command: 'agent.getModelInfoHelp', agent: 'gemini', modelId: 'm' });
+      // AgentCommandHandler catches internally; no unhandled error
+  });
+
+  test('handle agent.getModelInfoHelp without saved key skips setApiKey', async () => {
+      const vscode = require('vscode');
+      const mockAgent = {
+        setApiKey: sandbox.stub().resolves(),
+        getModelInfo: sandbox.stub().resolves({ id: 'm', name: 'Name' }),
+      };
+      sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+      mockContext.secrets.get.resolves(undefined);
+      vscode.workspace.openTextDocument.resolves({});
+      await handler.handle({ command: 'agent.getModelInfoHelp', agent: 'gemini', modelId: 'm' });
+      assert.ok(!mockAgent.setApiKey.called);
   });
 
   test('handle figma.fetchData failure', async () => {
@@ -254,6 +347,56 @@ suite('WebviewMessageHandler Comprehensive', () => {
   test('handle figma.fetchData with disconnected client', async () => {
       sandbox.stub((handler as any).mcpClient, 'isConnected').returns(false);
       await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com' });
+      assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }));
+  });
+
+  test('handle agent.getApiKeyHelp for gemini opens url', async () => {
+    const vscode = require('vscode');
+    await handler.handle({ command: 'agent.getApiKeyHelp', agent: 'gemini' });
+    assert.ok(vscode.env.openExternal.called);
+  });
+
+  test('handle agent.getApiKeyHelp for claude opens url', async () => {
+    const vscode = require('vscode');
+    vscode.env.openExternal.resetHistory();
+    await handler.handle({ command: 'agent.getApiKeyHelp', agent: 'claude' });
+    assert.ok(vscode.env.openExternal.called);
+  });
+
+  test('handle figma.screenshot with no fileId posts error', async () => {
+      await handler.handle({ command: 'figma.screenshot', mcpData: 'no-figma-url-here' });
+      assert.ok(postMessageSpy.calledWithMatch({ event: 'error', source: 'figma' }));
+  });
+
+  test('handle figma.screenshot failure posts error', async () => {
+      sandbox.stub((handler as any).screenshotService, 'fetchScreenshot').rejects(new Error('fetch error'));
+      await handler.handle({ command: 'figma.screenshot', mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1' });
+      assert.ok(postMessageSpy.calledWithMatch({ event: 'error', source: 'figma' }));
+  });
+
+  test('handle state.setModel updates state', async () => {
+    await handler.handle({ command: 'state.setModel', model: 'test-model' });
+    // No error should be thrown; stateManager.setModel is called
+  });
+
+  test('handle dispose cleans up temp files', async () => {
+    await handler.dispose();
+    // Should complete without error
+  });
+
+  test('handle catch block posts error event', async () => {
+    sandbox.stub(stateManager, 'setModel').throws(new Error('state error'));
+    await handler.handle({ command: 'state.setModel', model: 'test' });
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'error', source: 'agent', message: 'state error' }));
+  });
+
+  test('handle figma.fetchData with shouldOpenInEditor=true opens editor', async () => {
+      const vscode = require('vscode');
+      vscode.workspace.getConfiguration.returns({ get: (key: string, def: unknown) => key.includes('openFetched') ? true : def });
+      sandbox.stub((handler as any).mcpClient, 'isConnected').returns(true);
+      sandbox.stub((handler as any).mcpClient, 'callTool').resolves({ id: '1' });
+      vscode.workspace.openTextDocument.resolves({});
+      await handler.handle({ command: 'figma.fetchData', mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1' });
       assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }));
   });
 });

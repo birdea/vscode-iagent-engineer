@@ -123,7 +123,11 @@ export class McpClient {
 
   async listTools(): Promise<string[]> {
     try {
-      const result = (await this.sendRequest('tools/list')) as { tools: Array<{ name: string }> };
+      const result = (await this.sendRequest('tools/list')) as { tools?: Array<{ name: string }> };
+      if (!Array.isArray(result?.tools)) {
+        Logger.warn('figma', 'MCP tools/list response has unexpected shape — returning empty list');
+        return [];
+      }
       return result.tools.map((t) => t.name);
     } catch (e) {
       Logger.error('figma', `Failed to list MCP tools: ${(e as Error).message}`);

@@ -172,6 +172,24 @@ suite('McpClient', () => {
     assert.strictEqual(client.isConnected(), true);
   });
 
+  test('listTools returns empty array when tools is missing from response', async () => {
+    nock('http://localhost:3845')
+      .post('/')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+
+    const tools = await client.listTools();
+    assert.deepStrictEqual(tools, []);
+  });
+
+  test('listTools returns empty array when tools is null', async () => {
+    nock('http://localhost:3845')
+      .post('/')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: { tools: null } });
+
+    const tools = await client.listTools();
+    assert.deepStrictEqual(tools, []);
+  });
+
   test('callTool accepts string JSON-RPC id', async () => {
     nock('http://localhost:3845')
       .post('/')
@@ -184,5 +202,27 @@ suite('McpClient', () => {
 
     const result = await client.callTool('get_file', { fileId: '123' });
     assert.deepStrictEqual(result, { data: 'ok' });
+  });
+
+  test('getImage falls back to data field when base64 absent', async () => {
+    nock('http://localhost:3845')
+      .post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    await client.initialize();
+
+    nock('http://localhost:3845')
+      .post('/').reply(200, { jsonrpc: '2.0', id: 2, result: { data: 'fallback' } });
+    const img = await client.getImage('file', 'node');
+    assert.strictEqual(img, 'fallback');
+  });
+
+  test('getImage returns empty string when neither base64 nor data', async () => {
+    nock('http://localhost:3845')
+      .post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    await client.initialize();
+
+    nock('http://localhost:3845')
+      .post('/').reply(200, { jsonrpc: '2.0', id: 2, result: {} });
+    const img = await client.getImage('file', 'node');
+    assert.strictEqual(img, '');
   });
 });

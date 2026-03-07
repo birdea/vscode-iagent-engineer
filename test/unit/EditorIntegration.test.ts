@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sinon from 'sinon';
@@ -23,7 +24,7 @@ suite('EditorIntegration', () => {
     const vscode = require('vscode');
     const saveDialogStub = vscode.window.showSaveDialog;
     vscode.window.showSaveDialog.resolves({ fsPath: '/test/path.ts' });
-    
+
     await integration.saveAsNewFile('code', 'test.ts');
     const saveArgs = saveDialogStub.firstCall.args[0];
     if (saveArgs.defaultUri?.fsPath) {
@@ -31,4 +32,14 @@ suite('EditorIntegration', () => {
     }
     assert.ok(vscode.window.showInformationMessage.called);
   });
+
+  test('saveAsNewFile cancelled by user does not write file', async () => {
+    const vscode = require('vscode');
+    vscode.window.showSaveDialog.resolves(undefined);
+    vscode.workspace.fs.writeFile.resetHistory();
+
+    await integration.saveAsNewFile('code', 'test.ts');
+    assert.ok(!vscode.workspace.fs.writeFile.called);
+  });
+
 });

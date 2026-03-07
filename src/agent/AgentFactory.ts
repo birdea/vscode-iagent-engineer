@@ -27,4 +27,8 @@ export class AgentFactory {
         throw new Error(`Unsupported agent type: ${type}`);
     }
   }
+
+  static clear() {
+    this.instances.clear();
+  }
 }

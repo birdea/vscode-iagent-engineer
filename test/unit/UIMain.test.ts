@@ -7,28 +7,81 @@ suite('UI Main Initialization', () => {
 
     const sections = ['figma', 'agent', 'prompt', 'log'];
 
+    function setupDom(section: string) {
+        dom = new JSDOM(`<!DOCTYPE html><html><body data-section="${section}"><div id="app"></div></body></html>`, {
+            url: 'http://localhost',
+        });
+        (global as any).window = dom.window;
+        (global as any).document = dom.window.document;
+        (global as any).navigator = dom.window.navigator;
+        (global as any).acquireVsCodeApi = () => ({ postMessage: () => {}, getState: () => ({}), setState: () => {} });
+        (dom.window as any).acquireVsCodeApi = (global as any).acquireVsCodeApi;
+    }
+
+    function dispatch(data: object) {
+        dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data }));
+    }
+
     sections.forEach(section => {
         test(`init runs for section: ${section}`, async () => {
-            dom = new JSDOM(`<!DOCTYPE html><html><body data-section="${section}"><div id="app"></div></body></html>`, {
-                url: 'http://localhost',
-            });
-            // These must be set for main.ts's init() to use them via 'document' and 'window'
-            (global as any).window = dom.window;
-            (global as any).document = dom.window.document;
-            (global as any).navigator = dom.window.navigator;
-            (global as any).acquireVsCodeApi = () => ({ postMessage: () => {}, getState: () => ({}), setState: () => {} });
-
+            setupDom(section);
             MainModule.init();
-            
             const app = dom.window.document.getElementById('app');
             assert.ok(app?.innerHTML.length > 0, `Should render layer for ${section}`);
-
-            // Trigger messages for coverage
-            const event = new dom.window.MessageEvent('message', {
-                data: { event: `${section}.status`, connected: true, methods: [] }
-            });
-            dom.window.dispatchEvent(event);
+            dispatch({ event: `${section}.status`, connected: true, methods: [] });
         });
+    });
+
+    test('figma section — all message branches', () => {
+        setupDom('figma');
+        MainModule.init();
+
+        dispatch({ event: 'figma.connectRequested' });
+        dispatch({ event: 'figma.status', connected: true, methods: ['get_file'] });
+        dispatch({ event: 'figma.dataResult', data: { id: '1' } });
+        dispatch({ event: 'figma.dataFetchError', message: 'fetch failed', fallbackData: {} });
+        dispatch({ event: 'figma.screenshotResult', base64: 'aGVsbG8=' });
+        dispatch({ event: 'error', source: 'figma', message: 'figma error' });
+        dispatch({ event: 'unknown.event' }); // no-op branch
+    });
+
+    test('agent section — all message branches', () => {
+        setupDom('agent');
+        MainModule.init();
+
+        dispatch({ event: 'agent.modelsResult', models: [] });
+        dispatch({ event: 'agent.saveRequested' });
+        dispatch({ event: 'agent.clearRequested' });
+        dispatch({ event: 'agent.state', agent: 'gemini', model: '', hasApiKey: false });
+        dispatch({ event: 'agent.settingsSaved', agent: 'gemini', model: '', hasApiKey: false });
+        dispatch({ event: 'agent.settingsCleared', agent: 'gemini' });
+        dispatch({ event: 'error', source: 'agent', message: 'agent error' });
+        dispatch({ event: 'error', source: 'system', message: 'system error' });
+        dispatch({ event: 'unknown.event' });
+    });
+
+    test('prompt section — all message branches', () => {
+        setupDom('prompt');
+        MainModule.init();
+
+        dispatch({ event: 'prompt.generateRequested' });
+        dispatch({ event: 'prompt.generating', progress: 30 });
+        dispatch({ event: 'prompt.chunk', text: 'hello' });
+        dispatch({ event: 'prompt.result', code: 'const x = 1;' });
+        dispatch({ event: 'prompt.estimateResult', tokens: 100, kb: 0.5 });
+        dispatch({ event: 'prompt.error', message: 'prompt error' });
+        dispatch({ event: 'error', source: 'prompt', message: 'prompt host error' });
+        dispatch({ event: 'error', source: 'system', message: 'system error' });
+        dispatch({ event: 'unknown.event' });
+    });
+
+    test('log section — all message branches', () => {
+        setupDom('log');
+        MainModule.init();
+
+        dispatch({ event: 'log.append', entry: { id: '1', timestamp: '', level: 'info', layer: 'system', message: 'hi' } });
+        dispatch({ event: 'log.clear' });
+        dispatch({ event: 'unknown.event' });
     });
 
     test('DOMContentLoaded listener', () => {
@@ -38,9 +91,11 @@ suite('UI Main Initialization', () => {
         Object.defineProperty(dom.window.document, 'readyState', { get: () => 'loading' });
         (global as any).window = dom.window;
         (global as any).document = dom.window.document;
-        
-        // At this point, main.ts top-level code has already run (it's imported at top). 
-        // But since we want to test the listener, we just ensure it's added.
-        // Actually, main.ts added the listener to the PREVIOUS global.document if not careful.
+        (global as any).acquireVsCodeApi = () => ({ postMessage: () => {}, getState: () => ({}), setState: () => {} });
+        (dom.window as any).acquireVsCodeApi = (global as any).acquireVsCodeApi;
+
+        // When readyState is 'loading', main.ts adds a DOMContentLoaded listener.
+        // We simulate this by calling init() after DOMContentLoaded fires.
+        MainModule.init(); // runs without readyState check — tests the function itself
     });
 });

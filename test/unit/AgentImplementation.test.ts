@@ -157,5 +157,23 @@ suite('Agent Implementations', () => {
         assert.ok(e.message);
       }
     });
+
+    test('listModels returns defaults when all configured models are invalid', async () => {
+      const vscode = require('vscode');
+      const getStub = vscode.workspace.getConfiguration().get;
+      getStub.withArgs('figma-mcp-helper.claudeModels').returns([
+        { id: '' },              // empty id — invalid
+        { not_a_model: true },   // wrong shape
+      ]);
+
+      const models = await agent.listModels();
+      assert.ok(models.length > 0);
+      assert.ok(models.some((m: any) => m.id.includes('claude')));
+    });
+
+    test('generateCode rejects when no API key set', async () => {
+      const gen = agent.generateCode({ outputFormat: 'tsx' as any });
+      await assert.rejects(() => gen.next(), /No API key set/);
+    });
   });
 });
