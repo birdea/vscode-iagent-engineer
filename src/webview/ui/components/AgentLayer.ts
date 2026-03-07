@@ -15,19 +15,19 @@ export class AgentLayer {
       <option value="claude">Claude</option>
     </select>
   </div>
-  <div class="field-group" style="margin-top: 8px;">
-    <div class="row" style="justify-content: space-between;">
+  <div class="field-group stack-gap-sm">
+    <div class="row row-space-between">
       <label for="api-key-input">API Key</label>
-      <a href="#" id="link-get-api-key" style="font-size: 11px;">Get</a>
+      <a href="#" id="link-get-api-key" class="link-meta">Get</a>
     </div>
     <div class="row">
       <input type="password" id="api-key-input" placeholder="API Key 입력..." />
     </div>
   </div>
-  <div class="field-group" style="margin-top: 8px;">
-    <div class="row" style="justify-content: space-between;">
+  <div class="field-group stack-gap-sm">
+    <div class="row row-space-between">
       <label for="model-select">모델 선택</label>
-      <a href="#" id="link-get-model-info" style="font-size: 11px;">Info</a>
+      <a href="#" id="link-get-model-info" class="link-meta">Info</a>
     </div>
     <div class="row">
       <select id="model-select">
@@ -36,8 +36,8 @@ export class AgentLayer {
       <button class="secondary icon-btn" id="btn-load-models" title="모델 목록 새로고침"><i class="codicon codicon-refresh"></i></button>
     </div>
   </div>
-  <div class="description-text" id="agent-status" style="margin-top: 8px;">모델을 불러오면 현재 agent/model 상태가 여기에 표시됩니다.</div>
-  <div class="notice hidden" id="agent-notice" style="margin-top: 8px;"></div>
+  <div class="description-text stack-gap-sm" id="agent-status">모델을 불러오면 현재 agent/model 상태가 여기에 표시됩니다.</div>
+  <div class="notice hidden stack-gap-sm" id="agent-notice"></div>
 </div>
 `;
   }

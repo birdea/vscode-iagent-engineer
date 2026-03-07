@@ -13,10 +13,10 @@ export class FigmaLayer {
       <span id="figma-status-text" class="status-text">연결되지 않음</span>
     </div>
   </div>
-  <div class="btn-row" style="margin-top: 8px;">
+  <div class="btn-row stack-gap-sm">
     <button class="primary" id="btn-connect"><i class="codicon codicon-plug"></i>Connect</button>
   </div>
-  <div class="tool-list hidden" id="figma-tool-list" style="margin-top: 8px;"></div>
+  <div class="tool-list hidden stack-gap-sm" id="figma-tool-list"></div>
 </div>
 <div class="panel">
   <div class="meta-row">
@@ -26,11 +26,11 @@ export class FigmaLayer {
   <div class="field-group">
     <textarea id="mcp-data" placeholder="https://figma.com/file/... 또는 JSON"></textarea>
   </div>
-  <div class="btn-row" style="margin-top: 8px;">
+  <div class="btn-row stack-gap-sm">
     <button class="primary" id="btn-fetch"><i class="codicon codicon-cloud-download"></i>Fetch Data</button>
     <button class="primary" id="btn-screenshot"><i class="codicon codicon-device-camera"></i>Screenshot</button>
   </div>
-  <div class="notice hidden" id="figma-notice" style="margin-top: 8px;"></div>
+  <div class="notice hidden stack-gap-sm" id="figma-notice"></div>
   <pre class="code-output" id="figma-data-preview"></pre>
   <img class="screenshot-preview" id="figma-screenshot-preview" alt="Figma screenshot preview" />
 </div>
@@ -84,12 +84,11 @@ export class FigmaLayer {
 
     if (dot) dot.className = `status-dot${connected ? ' connected' : ''}`;
     if (text) {
+      text.classList.toggle('status-text-error', !connected);
       if (connected) {
         text.textContent = `연결됨 (${methods.length} tools available)`;
-        text.style.color = '';
       } else {
         text.textContent = '연결되지 않음';
-        text.style.color = 'var(--vscode-errorForeground)';
         if (error) {
           this.setNotice('error', `연결 실패: ${error}`);
         } else {

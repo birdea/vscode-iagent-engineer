@@ -151,6 +151,11 @@
           "default": "http://localhost:3845",
           "description": "Figma MCP server endpoint"
         },
+        "figma-mcp-helper.openFetchedDataInEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open fetched MCP JSON in a VS Code editor automatically after a successful fetch"
+        },
         "figma-mcp-helper.claudeModels": {
           "type": "array",
           "default": [

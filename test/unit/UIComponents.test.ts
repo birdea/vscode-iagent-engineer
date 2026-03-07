@@ -146,9 +146,9 @@ suite('UI Components Consolidated', () => {
 
     test('onGenerating sets progress bar width', () => {
       layer.onGenerating(50);
-      const bar = document.getElementById('prompt-progress-fill');
+      const bar = document.getElementById('prompt-progress') as HTMLProgressElement | null;
       assert.ok(bar);
-      assert.strictEqual(bar?.style.width, '50%');
+      assert.strictEqual(bar?.value, 50);
     });
 
     test('onResult updates generated code', () => {

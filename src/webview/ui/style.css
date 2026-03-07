@@ -30,6 +30,14 @@ body {
   margin-top: var(--figmalab-gap);
 }
 
+.stack-gap-sm {
+  margin-top: 8px;
+}
+
+.stack-gap-xs {
+  margin-top: 6px;
+}
+
 .panel-title {
   font-size: 11px;
   font-weight: 600;
@@ -103,6 +111,10 @@ body {
   color: var(--vscode-foreground);
 }
 
+.status-text-error {
+  color: var(--vscode-errorForeground);
+}
+
 .description-text {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
@@ -162,6 +174,16 @@ textarea {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-space-between {
+  justify-content: space-between;
 }
 
 button {
@@ -232,11 +254,19 @@ button:focus-visible {
   cursor: pointer;
 }
 
+.label-inline {
+  margin: 0;
+}
+
 /* Label */
 label {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
   display: block;
+}
+
+.link-meta {
+  font-size: 11px;
 }
 
 .notice {
@@ -292,22 +322,28 @@ label {
 }
 
 .progress-track {
-  position: relative;
+  appearance: none;
   flex: 1;
   min-width: 80px;
   height: 4px;
-  background: var(--vscode-progressBar-background, var(--vscode-editorWidget-background));
+  border: 0;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
   border-radius: var(--figmalab-radius);
-  overflow: hidden;
 }
 
-.progress-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
+.progress-track::-webkit-progress-bar {
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border-radius: var(--figmalab-radius);
+}
+
+.progress-track::-webkit-progress-value {
   background: var(--vscode-progressBar-background, var(--vscode-button-background));
+  border-radius: var(--figmalab-radius);
+}
+
+.progress-track::-moz-progress-bar {
+  background: var(--vscode-progressBar-background, var(--vscode-button-background));
+  border-radius: var(--figmalab-radius);
 }
 
 /* Log terminal */
@@ -365,13 +401,6 @@ a {
 
 a:hover {
   text-decoration: underline;
-}
-
-/* Row layout */
-.row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
 }
 
 .row input,

@@ -4,6 +4,7 @@ import { WebviewMessageHandler } from './WebviewMessageHandler';
 import { Logger } from '../logger/Logger';
 import { DEFAULT_MCP_ENDPOINT, CONFIG_KEYS } from '../constants';
 import { WebviewToHostMessage } from '../types';
+import { StateManager } from '../state/StateManager';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
@@ -15,6 +16,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     private readonly section: string,
     private readonly extensionUri: vscode.Uri,
     private readonly context: vscode.ExtensionContext,
+    private readonly stateManager: StateManager,
     private readonly onLog?: (entry: import('../types').LogEntry) => void,
   ) {}
 
@@ -40,6 +42,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       webviewView.webview,
       this.context,
       mcpEndpoint,
+      this.stateManager,
+      this.context.extension.packageJSON.version,
     );
 
     if (this.onLog) {
@@ -83,7 +87,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const csp = [
       `default-src 'none'`,
       `script-src 'nonce-${nonce}'`,
-      `style-src ${webview.cspSource} 'unsafe-inline'`,
+      `style-src ${webview.cspSource}`,
       `img-src ${webview.cspSource} data: blob:`,
       `font-src ${webview.cspSource}`,
     ].join('; ');

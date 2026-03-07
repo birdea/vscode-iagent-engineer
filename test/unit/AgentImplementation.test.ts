@@ -133,7 +133,7 @@ suite('Agent Implementations', () => {
     test('listModels uses configured catalog when provided', async () => {
       const vscode = require('vscode');
       const getStub = vscode.workspace.getConfiguration().get;
-      getStub.withArgs('figmalab.claudeModels').returns([
+      getStub.withArgs('figma-mcp-helper.claudeModels').returns([
         { id: 'claude-custom', name: 'Claude Custom', outputTokenLimit: 4096 },
       ]);
 

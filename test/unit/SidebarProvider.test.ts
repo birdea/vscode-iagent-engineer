@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { SidebarProvider } from '../../src/webview/SidebarProvider';
 import { Logger } from '../../src/logger/Logger';
+import { StateManager } from '../../src/state/StateManager';
 
 suite('SidebarProvider', () => {
   let provider: SidebarProvider;
@@ -9,6 +10,7 @@ suite('SidebarProvider', () => {
   let mockContext: any;
   let mockUri: any;
   let sandbox: sinon.SinonSandbox;
+  let stateManager: StateManager;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -30,7 +32,8 @@ suite('SidebarProvider', () => {
       secrets: { get: sandbox.stub().resolves('key') },
       extension: { packageJSON: { version: '1.0.0' } }
     };
-    provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext);
+    stateManager = new StateManager();
+    provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext, stateManager);
     Logger.initialize({ appendLine: () => {}, clear: () => {} } as any);
   });
 
@@ -40,12 +43,13 @@ suite('SidebarProvider', () => {
 
   test('resolveWebviewView sets options, handler and html', () => {
     const onLog = sandbox.stub();
-    provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext, onLog);
+    provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext, stateManager, onLog);
     provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
     
     assert.ok(mockWebviewView.webview.options.enableScripts);
     assert.ok(mockWebviewView.webview.html.includes('data-section="figma"'));
     assert.ok(mockWebviewView.webview.html.includes('csp'));
+    assert.ok(!mockWebviewView.webview.html.includes("'unsafe-inline'"));
   });
 
   test('postMessage handles null view gracefully', () => {

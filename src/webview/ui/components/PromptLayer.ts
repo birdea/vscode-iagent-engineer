@@ -13,15 +13,15 @@ export class PromptLayer {
   <div class="field-group">
     <div class="checkbox-row">
       <input type="checkbox" id="use-user-prompt" checked />
-      <label for="use-user-prompt" style="margin:0">사용자 프롬프트 포함</label>
+      <label for="use-user-prompt" class="label-inline">사용자 프롬프트 포함</label>
     </div>
     <textarea id="user-prompt" placeholder="추가 지시사항 입력..."></textarea>
   </div>
-  <div class="checkbox-row" style="margin-top: 8px;">
+  <div class="checkbox-row stack-gap-sm">
     <input type="checkbox" id="use-mcp-data" checked />
-    <label for="use-mcp-data" style="margin:0">MCP 데이터 포함</label>
+    <label for="use-mcp-data" class="label-inline">MCP 데이터 포함</label>
   </div>
-  <div class="field-group" style="margin-top: 8px;">
+  <div class="field-group stack-gap-sm">
     <label for="output-format">출력 포맷</label>
     <select id="output-format">
       <option value="tsx">TSX (React)</option>
@@ -31,14 +31,14 @@ export class PromptLayer {
       <option value="kotlin">Kotlin (Compose)</option>
     </select>
   </div>
-  <div class="token-estimate" id="token-estimate" style="margin-top: 6px;">0.0KB / ~0 tok</div>
-  <div class="progress-row" style="margin-top: 8px;">
+  <div class="token-estimate stack-gap-xs" id="token-estimate">0.0KB / ~0 tok</div>
+  <div class="progress-row stack-gap-sm">
     <span class="progress-text" id="prompt-progress-text">준비됨</span>
-    <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="prompt-progress-fill"></div></div>
+    <progress class="progress-track" id="prompt-progress" max="100" value="0" aria-label="Prompt generation progress"></progress>
   </div>
-  <div class="notice hidden" id="prompt-notice" style="margin-top: 8px;"></div>
+  <div class="notice hidden stack-gap-sm" id="prompt-notice"></div>
 </div>
-<div class="btn-row" id="code-actions" style="display:none;">
+<div class="btn-row hidden" id="code-actions">
   <button class="primary" id="btn-open-editor"><i class="codicon codicon-go-to-file"></i>에디터에서 열기</button>
   <button class="secondary" id="btn-save-file"><i class="codicon codicon-save"></i>파일로 저장</button>
 </div>
@@ -120,7 +120,7 @@ export class PromptLayer {
     }
     const codeActions = document.getElementById('code-actions');
     if (codeActions) {
-      codeActions.style.display = 'none';
+      codeActions.classList.add('hidden');
     }
     this.generatedCode = '';
     this.setNotice('info', '코드 생성을 시작합니다...');
@@ -163,11 +163,11 @@ export class PromptLayer {
 
   onGenerating(progress: number) {
     const safeProgress = Math.max(0, Math.min(100, progress));
-    const progressFill = document.getElementById('prompt-progress-fill') as HTMLDivElement | null;
+    const progressBar = document.getElementById('prompt-progress') as HTMLProgressElement | null;
     const progressText = document.getElementById('prompt-progress-text');
 
-    if (progressFill) {
-      progressFill.style.width = `${safeProgress}%`;
+    if (progressBar) {
+      progressBar.value = safeProgress;
     }
     if (progressText) {
       progressText.textContent = safeProgress >= 100 ? '완료됨' : `생성 중... ${safeProgress}%`;
@@ -191,7 +191,7 @@ export class PromptLayer {
       codeOutput.classList.add('visible');
     }
     const actions = document.getElementById('code-actions');
-    if (actions) actions.style.display = 'flex';
+    if (actions) actions.classList.remove('hidden');
     this.onGenerating(100);
     this.setGeneratingState(false);
     this.setNotice('success', '코드 생성이 완료되었습니다.');
@@ -205,7 +205,7 @@ export class PromptLayer {
     }
 
     const actions = document.getElementById('code-actions');
-    if (actions) actions.style.display = 'none';
+    if (actions) actions.classList.add('hidden');
 
     this.setGeneratingState(false);
     this.onGenerating(0);

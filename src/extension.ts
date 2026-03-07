@@ -4,10 +4,12 @@ import { Logger } from './logger/Logger';
 import { AgentFactory } from './agent/AgentFactory';
 import { COMMANDS, VIEW_IDS, SECRET_KEYS } from './constants';
 import { AgentType } from './types';
+import { StateManager } from './state/StateManager';
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel('Figma MCP Helper');
   Logger.initialize(outputChannel);
+  const stateManager = new StateManager();
 
   // Load saved API keys at activation
   const agents: AgentType[] = ['gemini', 'claude'];
@@ -19,19 +21,33 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  const figmaProvider = new SidebarProvider(VIEW_IDS.FIGMA, 'figma', context.extensionUri, context);
-  const agentProvider = new SidebarProvider(VIEW_IDS.AGENT, 'agent', context.extensionUri, context);
+  const figmaProvider = new SidebarProvider(
+    VIEW_IDS.FIGMA,
+    'figma',
+    context.extensionUri,
+    context,
+    stateManager,
+  );
+  const agentProvider = new SidebarProvider(
+    VIEW_IDS.AGENT,
+    'agent',
+    context.extensionUri,
+    context,
+    stateManager,
+  );
   const promptProvider = new SidebarProvider(
     VIEW_IDS.PROMPT,
     'prompt',
     context.extensionUri,
     context,
+    stateManager,
   );
   const logProvider = new SidebarProvider(
     VIEW_IDS.LOG,
     'log',
     context.extensionUri,
     context,
+    stateManager,
     (entry) => logProvider.postMessage({ event: 'log.append', entry }),
   );
 

@@ -21,7 +21,13 @@ export class McpClient {
   private requestId = 0;
   private initialized = false;
 
-  constructor(endpoint: string) {
+  constructor(
+    endpoint: string,
+    private readonly clientInfo: { name: string; version: string } = {
+      name: 'vscode-figmalab',
+      version: '0.1.0',
+    },
+  ) {
     this.endpoint = endpoint;
   }
 
@@ -104,7 +110,7 @@ export class McpClient {
       await this.sendRequest('initialize', {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'vscode-figmalab', version: '0.1.0' },
+        clientInfo: this.clientInfo,
       });
       this.initialized = true;
       Logger.success('figma', `MCP server connected: ${this.endpoint}`);

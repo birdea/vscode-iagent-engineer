@@ -3,6 +3,7 @@ import * as sinon from 'sinon';
 import { WebviewMessageHandler } from '../../src/webview/WebviewMessageHandler';
 import { AgentFactory } from '../../src/agent/AgentFactory';
 import { Logger } from '../../src/logger/Logger';
+import { StateManager } from '../../src/state/StateManager';
 
 suite('WebviewMessageHandler Comprehensive', () => {
   let handler: WebviewMessageHandler;
@@ -10,6 +11,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
   let mockContext: any;
   let sandbox: sinon.SinonSandbox;
   let postMessageSpy: sinon.SinonSpy;
+  let stateManager: StateManager;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -19,8 +21,16 @@ suite('WebviewMessageHandler Comprehensive', () => {
       globalState: { get: sandbox.stub(), update: sandbox.stub().resolves() },
       secrets: { get: sandbox.stub().resolves('key'), store: sandbox.stub().resolves(), delete: sandbox.stub().resolves() },
       extensionUri: { path: '/test' },
+      extension: { packageJSON: { version: '1.0.0' } },
     };
-    handler = new WebviewMessageHandler(mockWebview, mockContext, 'http://localhost:3845');
+    stateManager = new StateManager();
+    handler = new WebviewMessageHandler(
+      mockWebview,
+      mockContext,
+      'http://localhost:3845',
+      stateManager,
+      '1.0.0',
+    );
     Logger.initialize({ appendLine: () => {}, clear: () => {} } as any);
   });
 
@@ -43,7 +53,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.getState', async () => {
-    mockContext.globalState.get.withArgs('figmalab.defaultAgent').returns('claude');
+    mockContext.globalState.get.withArgs('figma-mcp-helper.defaultAgent').returns('claude');
     await handler.handle({ command: 'agent.getState' });
     assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.state', agent: 'claude' }));
   });
@@ -89,7 +99,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
       payload: { userPrompt: 'one', outputFormat: 'html' },
     });
     for (let i = 0; i < 20; i++) {
-      if ((handler as any).isGenerating) break;
+      if ((handler as any).promptHandler.getGeneratingState()) break;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     await handler.handle({
@@ -120,7 +130,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
 
   test('handle agent.setApiKey', async () => {
       await handler.handle({ command: 'agent.setApiKey', agent: 'gemini', key: 'new-key' });
-      assert.ok(mockContext.secrets.store.calledWith('figmalab.geminiApiKey', 'new-key'));
+      assert.ok(mockContext.secrets.store.calledWith('figma-mcp-helper.geminiApiKey', 'new-key'));
   });
 
   test('handle agent.listModels with key', async () => {
@@ -136,13 +146,13 @@ suite('WebviewMessageHandler Comprehensive', () => {
 
   test('handle agent.settingsCleared', async () => {
       await handler.handle({ command: 'agent.clearSettings', agent: 'gemini' });
-      assert.ok(mockContext.secrets.delete.calledWith('figmalab.geminiApiKey'));
+      assert.ok(mockContext.secrets.delete.calledWith('figma-mcp-helper.geminiApiKey'));
       assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsCleared', agent: 'gemini' }));
   });
 
   test('handle agent.saveSettings', async () => {
       await handler.handle({ command: 'agent.saveSettings', agent: 'claude', model: 'opus', key: 'key' });
-      assert.ok(mockContext.secrets.store.calledWith('figmalab.claudeApiKey', 'key'));
+      assert.ok(mockContext.secrets.store.calledWith('figma-mcp-helper.claudeApiKey', 'key'));
       assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsSaved', model: 'opus' }));
   });
 

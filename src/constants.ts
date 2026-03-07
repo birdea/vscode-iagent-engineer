@@ -16,6 +16,7 @@ export const CONFIG_KEYS = {
   DEFAULT_AGENT: 'figma-mcp-helper.defaultAgent',
   DEFAULT_MODEL: 'figma-mcp-helper.defaultModel',
   MCP_ENDPOINT: 'figma-mcp-helper.mcpEndpoint',
+  OPEN_FETCH_RESULT_IN_EDITOR: 'figma-mcp-helper.openFetchedDataInEditor',
   CLAUDE_MODELS: 'figma-mcp-helper.claudeModels',
 } as const;
 

@@ -40,17 +40,17 @@ suite('Extension Comprehensive', () => {
     
     const commands = vscode.commands.registerCommand.args;
     
-    // Trigger figmalab.connect
-    const connect = commands.find((c: any) => c[0] === 'figmalab.connect')[1];
+    const connect = commands.find((c: any) => c[0] === 'figma-mcp-helper.connect')?.[1];
+    assert.ok(connect);
     await connect();
-    assert.ok(vscode.commands.executeCommand.calledWith('workbench.view.extension.figmalab'));
+    assert.ok(vscode.commands.executeCommand.calledWith('workbench.view.extension.figma-mcp-helper'));
 
-    // Trigger figmalab.log.clear
-    const clearLog = commands.find((c: any) => c[0] === 'figmalab.log.clear')[1];
+    const clearLog = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.clear')?.[1];
+    assert.ok(clearLog);
     clearLog();
     
-    // Trigger figmalab.log.save
-    const saveLog = commands.find((c: any) => c[0] === 'figmalab.log.save')[1];
+    const saveLog = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.save')?.[1];
+    assert.ok(saveLog);
     vscode.window.showSaveDialog.resolves({ fsPath: '/test.json' });
     await saveLog();
     assert.ok(vscode.workspace.fs.writeFile.called);
