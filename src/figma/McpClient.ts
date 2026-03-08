@@ -2,6 +2,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { Logger } from '../logger/Logger';
 import { MCP_DEFAULT_PORT, REQUEST_TIMEOUT_MS } from '../constants';
 import { ValidationError, TimeoutError, NetworkError, toErrorMessage } from '../errors';
@@ -48,6 +49,7 @@ export class McpClient {
   private endpoint: string;
   private requestId = 0;
   private initialized = false;
+  private readonly approvedExternalEndpoints = new Set<string>();
 
   constructor(
     endpoint: string,
@@ -64,6 +66,31 @@ export class McpClient {
     const body: JsonRpcRequest = { jsonrpc: '2.0', id, method, params };
     const bodyStr = JSON.stringify(body);
 
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.performRequest(id, bodyStr);
+      } catch (e) {
+        if (!(e instanceof Error)) {
+          throw e;
+        }
+        lastError = e;
+        if (!this.shouldRetry(e, attempt)) {
+          throw e;
+        }
+        const delayMs = 250 * 2 ** attempt;
+        Logger.warn(
+          'figma',
+          `Retrying MCP ${method} request (${attempt + 2}/3) after ${delayMs}ms: ${e.message}`,
+        );
+        await this.delay(delayMs);
+      }
+    }
+
+    throw lastError ?? new NetworkError('MCP request failed after retries');
+  }
+
+  private performRequest(id: number, bodyStr: string): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const url = new URL(this.endpoint);
       if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -138,7 +165,58 @@ export class McpClient {
     });
   }
 
+  private shouldRetry(error: Error, attempt: number): boolean {
+    if (attempt >= 2) {
+      return false;
+    }
+    if (error instanceof ValidationError) {
+      return false;
+    }
+    if (error instanceof TimeoutError || error instanceof NetworkError) {
+      return true;
+    }
+    return /MCP HTTP 5\d{2}/.test(error.message);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async confirmEndpointSafety(): Promise<void> {
+    let url: URL;
+    try {
+      url = new URL(this.endpoint);
+    } catch {
+      return;
+    }
+
+    if (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname === '::1'
+    ) {
+      return;
+    }
+
+    if (this.approvedExternalEndpoints.has(this.endpoint)) {
+      return;
+    }
+
+    const choice = await vscode.window.showWarningMessage(
+      `The configured MCP endpoint is not local: ${this.endpoint}`,
+      { modal: true },
+      'Connect',
+    );
+
+    if (choice !== 'Connect') {
+      throw new ValidationError(`MCP connection cancelled for non-local endpoint: ${this.endpoint}`);
+    }
+
+    this.approvedExternalEndpoints.add(this.endpoint);
+  }
+
   async initialize(): Promise<boolean> {
+    await this.confirmEndpointSafety();
     try {
       await this.sendRequest('initialize', {
         protocolVersion: '2024-11-05',

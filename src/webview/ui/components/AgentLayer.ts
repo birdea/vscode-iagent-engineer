@@ -219,9 +219,12 @@ export class AgentLayer {
     const select = document.getElementById('model-select') as HTMLSelectElement;
     if (!select) return;
     const preferredModel = select.dataset.preferredModel ?? '';
-    select.innerHTML = '';
+    select.replaceChildren();
     if (models.length === 0) {
-      select.innerHTML = `<option value="">${this.msg('agent.modelLoadPrompt')}</option>`;
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = this.msg('agent.modelLoadPrompt');
+      select.appendChild(emptyOption);
       vscode.postMessage({ command: 'state.setModel', model: '' });
       return;
     }

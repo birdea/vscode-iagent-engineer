@@ -38,6 +38,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       `The MCP server is taking too long to respond. Check the server status and endpoint. (${endpoint})`,
     'host.figma.connectGeneric': ({ endpoint }) =>
       `A problem occurred while connecting to MCP. Check the settings and server status. (${endpoint})`,
+    'host.figma.connectCancelled': ({ endpoint }) =>
+      `Connection to a non-local MCP endpoint was cancelled. Review the endpoint before retrying. (${endpoint})`,
     'host.figma.fileIdMissing': 'Could not find a fileId in the Figma URL or JSON payload.',
     'host.figma.screenshotFailed':
       'Could not fetch the screenshot. Recheck the MCP connection and the Figma input.',
@@ -108,6 +110,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'system.logCopied': 'Log copied to clipboard',
     'system.saveLog': 'Save Log',
     'system.logSaved': ({ path }) => `Log saved: ${path}`,
+    'system.saveScreenshot': 'Save Screenshot',
+    'system.screenshotSaved': ({ path }) => `Screenshot saved: ${path}`,
   },
   ko: {
     'figma.connectionTitle': 'Figma 연결',
@@ -141,6 +145,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       `MCP 서버 응답이 지연되고 있습니다. 서버 상태와 엔드포인트를 확인하세요. (${endpoint})`,
     'host.figma.connectGeneric': ({ endpoint }) =>
       `MCP 연결 중 문제가 발생했습니다. 설정과 서버 상태를 확인하세요. (${endpoint})`,
+    'host.figma.connectCancelled': ({ endpoint }) =>
+      `로컬이 아닌 MCP 엔드포인트 연결이 취소되었습니다. 엔드포인트를 확인한 뒤 다시 시도하세요. (${endpoint})`,
     'host.figma.fileIdMissing': 'Figma URL 또는 JSON에서 fileId를 찾을 수 없습니다.',
     'host.figma.screenshotFailed':
       '스크린샷을 가져오지 못했습니다. MCP 연결과 입력한 Figma 데이터를 다시 확인하세요.',
@@ -211,6 +217,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'system.logCopied': '로그를 클립보드에 복사했습니다.',
     'system.saveLog': '로그 저장',
     'system.logSaved': ({ path }) => `로그를 저장했습니다: ${path}`,
+    'system.saveScreenshot': '스크린샷 저장',
+    'system.screenshotSaved': ({ path }) => `스크린샷을 저장했습니다: ${path}`,
   },
 };
 

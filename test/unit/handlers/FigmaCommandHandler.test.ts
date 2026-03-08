@@ -96,6 +96,21 @@ suite('FigmaCommandHandler', () => {
     assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', error: sinon.match(/문제가 발생/) }));
   });
 
+  test('connect maps cancelled non-local confirmation to a dedicated message', async () => {
+    mcpClient.initialize.rejects(new Error('MCP connection cancelled for non-local endpoint'));
+    const getStub = sandbox.stub().returns('https://example.com/mcp');
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+
+    await handler.connect();
+
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.status',
+        error: sinon.match(/연결이 취소되었습니다/),
+      }),
+    );
+  });
+
   test('openSettings forwards to VS Code command', async () => {
     await handler.openSettings();
     assert.ok((vscode.commands.executeCommand as sinon.SinonStub).calledWith('workbench.action.openSettings'));

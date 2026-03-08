@@ -10,7 +10,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -39,6 +39,12 @@ jobs:
         with:
           name: vsix-${{ github.ref_name }}
           path: figma-mcp-helper-${{ github.ref_name }}.vsix
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: figma-mcp-helper-${{ github.ref_name }}.vsix
 
       - name: Publish to VS Code Marketplace
         if: startsWith(github.ref, 'refs/tags/v')

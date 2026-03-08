@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import nock from 'nock';
+import * as sinon from 'sinon';
 import { McpClient } from '../../src/figma/McpClient';
 import { Logger } from '../../src/logger/Logger';
 const packageJson = require('../../package.json') as { version: string };
@@ -11,6 +12,9 @@ suite('McpClient', () => {
   setup(() => {
     client = new McpClient(endpoint);
     Logger.initialize({ appendLine: () => {}, clear: () => {} } as any);
+    const vscode = require('vscode');
+    vscode.window.showWarningMessage.resetHistory();
+    vscode.window.showWarningMessage.resolves('Connect');
     if (!nock.isActive()) nock.activate();
   });
 
@@ -131,6 +135,50 @@ suite('McpClient', () => {
       assert.strictEqual(client.isConnected(), false);
   });
 
+  test('initialize requests confirmation for non-local endpoints', async () => {
+    client.setEndpoint('https://example.com/mcp');
+    const vscode = require('vscode');
+
+    nock('https://example.com')
+      .post('/mcp')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: { protocolVersion: '2024-11-05' } });
+
+    const success = await client.initialize();
+
+    assert.strictEqual(success, true);
+    assert.ok(
+      vscode.window.showWarningMessage.calledWithMatch(
+        sinon.match(/not local/),
+        { modal: true },
+        'Connect',
+      ),
+    );
+  });
+
+  test('initialize aborts when non-local endpoint is not confirmed', async () => {
+    client.setEndpoint('https://example.com/mcp');
+    const vscode = require('vscode');
+    vscode.window.showWarningMessage.resolves(undefined);
+
+    await assert.rejects(
+      () => client.initialize(),
+      /MCP connection cancelled for non-local endpoint/,
+    );
+    assert.strictEqual(client.isConnected(), false);
+  });
+
+  test('sendRequest retries transient failures up to success', async () => {
+    nock('http://localhost:3845')
+      .post('/')
+      .replyWithError('temporary outage')
+      .post('/')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: { tools: [{ name: 'get_file' }] } });
+
+    const tools = await client.listTools();
+
+    assert.deepStrictEqual(tools, ['get_file']);
+  });
+
   test('callTool rejects JSON-RPC id mismatch', async () => {
     nock('http://localhost:3845')
       .post('/')
@@ -230,5 +278,16 @@ suite('McpClient', () => {
       () => client.getImage('file', 'node'),
       /returned no image data/,
     );
+  });
+
+  test('sendRequest does not retry validation failures', async () => {
+    nock('http://localhost:3845')
+      .post('/')
+      .reply(200, 'not-json');
+
+    const success = await client.initialize();
+
+    assert.strictEqual(success, false);
+    assert.ok(nock.isDone());
   });
 });

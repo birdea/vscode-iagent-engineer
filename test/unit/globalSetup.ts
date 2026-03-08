@@ -33,6 +33,7 @@ const dom = new JSDOM('<!DOCTYPE html><html><body><div id="app"></div></body></h
 const mockVscode = {
   window: {
     showInformationMessage: sinon.stub(),
+    showWarningMessage: sinon.stub(),
     showErrorMessage: sinon.stub(),
     showTextDocument: sinon.stub(),
     createWebviewPanel: sinon.stub(),

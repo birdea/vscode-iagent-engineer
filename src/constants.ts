@@ -34,6 +34,7 @@ export const PROGRESS_CAP = 95;
 
 export const MAX_LOG_ENTRIES = 500;
 
+// Approximate 1 token per 4 characters for mixed natural-language/code prompts.
 export const TOKEN_ESTIMATE_DIVISOR = 4;
 
 export const DEBOUNCE_MS = 300;

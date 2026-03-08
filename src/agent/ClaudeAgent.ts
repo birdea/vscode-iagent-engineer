@@ -46,6 +46,8 @@ export class ClaudeAgent extends BaseAgent {
 
   async setApiKey(key: string): Promise<void> {
     await super.setApiKey(key);
+    // The extension host uses the SDK from a VS Code webview/extension context rather than a
+    // plain Node CLI environment, so Anthropic requires this flag to permit fetch usage here.
     this.client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
     Logger.info('agent', 'Claude API key updated');
   }
@@ -101,25 +103,26 @@ export class ClaudeAgent extends BaseAgent {
     Logger.info('agent', `Generating with Claude: ${modelId}`);
 
     try {
-      const stream = this.client.messages.stream({
-        model: modelId,
-        max_tokens: modelInfo.outputTokenLimit ?? 8192,
-        system: `You are an expert UI developer. Generate ${payload.outputFormat} code that faithfully reproduces the Figma design. Output ONLY valid code. No explanation.`,
-        messages: [{ role: 'user', content: prompt }],
-      });
+      const stream = this.client.messages.stream(
+        {
+          model: modelId,
+          max_tokens: modelInfo.outputTokenLimit ?? 8192,
+          system: `You are an expert UI developer. Generate ${payload.outputFormat} code that faithfully reproduces the Figma design. Output ONLY valid code. No explanation.`,
+          messages: [{ role: 'user', content: prompt }],
+        },
+        { signal },
+      );
 
       for await (const event of stream) {
-        if (signal?.aborted) {
-          const abort = (stream as { abort?: () => void }).abort;
-          abort?.call(stream);
-          throw new Error(USER_CANCELLED_CODE_GENERATION);
-        }
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
           yield event.delta.text;
         }
       }
       Logger.success('agent', 'Claude code generation complete');
     } catch (e) {
+      if (signal?.aborted) {
+        throw new Error(USER_CANCELLED_CODE_GENERATION);
+      }
       Logger.error('agent', `Claude generation failed: ${toErrorMessage(e)}`);
       throw e;
     }

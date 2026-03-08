@@ -209,7 +209,6 @@ suite('Agent Implementations', () => {
     test('generateCode uses selected model output token limit', async () => {
       const streamStub = sinon.stub().returns({
         async *[Symbol.asyncIterator]() {},
-        abort: sinon.stub(),
       });
       (agent as any).apiKey = 'test-key';
       (agent as any).client = { messages: { stream: streamStub } };
@@ -218,6 +217,27 @@ suite('Agent Implementations', () => {
       await gen.next();
 
       assert.strictEqual(streamStub.firstCall.args[0].max_tokens, 32768);
+      assert.strictEqual(streamStub.firstCall.args[1]?.signal, undefined);
+    });
+
+    test('generateCode forwards AbortSignal to official SDK stream options', async () => {
+      const streamStub = sinon.stub().returns({
+        async *[Symbol.asyncIterator]() {
+          throw new Error('aborted');
+        },
+      });
+      const abortController = new AbortController();
+      abortController.abort();
+      (agent as any).apiKey = 'test-key';
+      (agent as any).client = { messages: { stream: streamStub } };
+
+      const gen = agent.generateCode(
+        { outputFormat: 'tsx' as any, model: 'claude-opus-4-6' },
+        abortController.signal,
+      );
+
+      await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
+      assert.strictEqual(streamStub.firstCall.args[1]?.signal, abortController.signal);
     });
   });
 });

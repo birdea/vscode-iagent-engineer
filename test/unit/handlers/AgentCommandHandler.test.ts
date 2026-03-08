@@ -176,6 +176,14 @@ suite('AgentCommandHandler', () => {
     assert.ok(context.secrets.store.notCalled);
   });
 
+  test('setApiKey rejects Claude keys without sk-ant- prefix', async () => {
+    await assert.rejects(
+      () => handler.setApiKey('claude', 'sk-test-abcdefghijklmnopqrstuvwxyz'),
+      /Invalid API key format for claude/,
+    );
+    assert.ok(context.secrets.store.notCalled);
+  });
+
   test('saveSettings skips setApiKey when key is blank', async () => {
     const setApiKeyStub = sandbox.stub(handler, 'setApiKey').resolves();
     context.secrets.get.resolves(undefined);

@@ -2,6 +2,7 @@ import * as sinon from 'sinon';
 
 export const window = {
   showInformationMessage: sinon.stub(),
+  showWarningMessage: sinon.stub(),
   showErrorMessage: sinon.stub(),
   showTextDocument: sinon.stub(),
   createWebviewPanel: sinon.stub(),

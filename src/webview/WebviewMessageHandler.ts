@@ -31,7 +31,7 @@ export class WebviewMessageHandler {
       name: 'vscode-figmalab',
       version: extensionVersion,
     });
-    this.screenshotService = new ScreenshotService(this.mcpClient);
+    this.screenshotService = new ScreenshotService(this.mcpClient, locale);
     this.editorIntegration = new EditorIntegration();
     this.figmaHandler = new FigmaCommandHandler(
       webview,

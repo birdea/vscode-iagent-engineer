@@ -118,7 +118,11 @@ export class FigmaCommandHandler {
       const base64 = await this.screenshotService.fetchScreenshot(parsed.fileId, parsed.nodeId);
       await this.screenshotService.openInEditor(base64, parsed.fileId, parsed.nodeId);
       this.post({ event: 'figma.screenshotResult', base64 });
-    } catch {
+    } catch (e) {
+      Logger.error(
+        'figma',
+        `Screenshot fetch failed for fileId=${parsed.fileId}, nodeId=${parsed.nodeId}: ${toErrorMessage(e)}`,
+      );
       this.post({
         event: 'error',
         source: 'figma',
@@ -128,6 +132,9 @@ export class FigmaCommandHandler {
   }
 
   private toFriendlyConnectionMessage(message: string, endpoint: string): string {
+    if (message.toLowerCase().includes('cancelled')) {
+      return t(this.locale, 'host.figma.connectCancelled', { endpoint });
+    }
     if (message.includes('ECONNREFUSED')) {
       return t(this.locale, 'host.figma.connectRefused', { endpoint });
     }

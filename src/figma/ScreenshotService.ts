@@ -4,11 +4,15 @@ import * as path from 'path';
 import { McpClient } from './McpClient';
 import { Logger } from '../logger/Logger';
 import { toErrorMessage } from '../errors';
+import { t, UiLocale } from '../i18n';
 
 export class ScreenshotService {
   private tmpFiles: vscode.Uri[] = [];
 
-  constructor(private mcpClient: McpClient) {}
+  constructor(
+    private mcpClient: McpClient,
+    private readonly locale: UiLocale = 'en',
+  ) {}
 
   async fetchScreenshot(fileId: string, nodeId: string): Promise<string> {
     Logger.info('figma', `Fetching screenshot: fileId=${fileId}, nodeId=${nodeId}`);
@@ -58,14 +62,16 @@ export class ScreenshotService {
         ? vscode.Uri.joinPath(workspaceFolders[0].uri, defaultName)
         : undefined,
       filters: { Images: ['png'] },
-      saveLabel: 'Save Screenshot',
+      saveLabel: t(this.locale, 'system.saveScreenshot'),
     });
 
     if (saveUri) {
       const buffer = Buffer.from(base64, 'base64');
       await vscode.workspace.fs.writeFile(saveUri, buffer);
       Logger.success('figma', `Screenshot saved: ${saveUri.fsPath}`);
-      vscode.window.showInformationMessage(`Screenshot saved: ${saveUri.fsPath}`);
+      vscode.window.showInformationMessage(
+        t(this.locale, 'system.screenshotSaved', { path: saveUri.fsPath }),
+      );
     }
   }
 

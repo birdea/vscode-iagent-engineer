@@ -126,7 +126,7 @@ export class AgentCommandHandler {
     }
 
     const pattern =
-      agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-[A-Za-z0-9_-]{10,}$/;
+      agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-ant-[A-Za-z0-9_-]{10,}$/;
     if (!pattern.test(trimmed)) {
       throw new ValidationError(`Invalid API key format for ${agent}`);
     }
