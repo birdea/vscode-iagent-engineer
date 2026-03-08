@@ -1,201 +1,61 @@
 # Figma MCP Helper
 
-Figma MCP Helper is a VS Code extension prototype for turning Figma MCP context into working code inside the editor.
+Convert Figma designs into code directly inside VS Code.
 
-It connects to a Figma MCP server, pulls design data or screenshots, sends that context to an AI model, and lets you insert or save the generated result without leaving VS Code.
+Paste a Figma URL, pick an AI model (Gemini or Claude), and generate production-ready code — without leaving your editor.
 
-## Status
-
-This repository is currently an experimental extension, not a finished product.
-
-What works today:
-
-- Connect to a Figma MCP endpoint over JSON-RPC
-- Parse Figma URLs or JSON payloads into `fileId` / `nodeId`
-- Fetch Figma file data and open the result as JSON in VS Code
-- Fetch screenshots and open them in the editor
-- Generate code with Gemini or Claude
-- Save generated output to a new file or insert it at the current cursor
-- View activity logs in a dedicated sidebar panel
-- Follow the VS Code display language for Korean and English UI text
-
-Current gaps:
-
-- Codex is not implemented
-- `figma-mcp-helper.defaultAgent` setting is declared in the extension manifest but runtime agent selection uses `globalState` (saved via the Agent panel), not the VS Code setting
-
-## Main Workflow
-
-Figma MCP Helper is organized as three sidebar views:
-
-- `Setup`: use the `Figma` section to connect to MCP and fetch design data or screenshots, then use the `Agent` section to choose a provider, save an API key, and load models
-- `Prompt`: choose output format, add instructions, generate code, then open or save the result
-- `Log`: inspect extension activity and troubleshooting details
-
-## Language Support
-
-- The webview UI follows the VS Code display language automatically.
-- Korean (`ko`) is rendered in Korean.
-- Other languages currently fall back to English.
-- View names, command titles, and configuration descriptions are localized through VS Code `package.nls` files.
-
-## Supported Output Formats
-
-- `tsx`
-- `html`
-- `scss`
-- `tailwind`
-- `kotlin`
-
-## Supported Agents
-
-- Gemini
-- Claude
+> This is an experimental prototype. Core features work, but some rough edges remain.
 
 ## Requirements
 
-- Node.js 18+
 - VS Code 1.85+
 - A running Figma MCP server
 - At least one AI API key:
-  - Gemini: Google AI Studio
-  - Claude: Anthropic Console
+  - Gemini — [Google AI Studio](https://aistudio.google.com)
+  - Claude — [Anthropic Console](https://console.anthropic.com)
 
 ## Quick Start
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Build the extension:
-
-```bash
 npm run build
 ```
 
-Launch it in VS Code:
+Then in VS Code:
 
-1. Open this repository in VS Code
-2. Run the `Run Extension` launch configuration
-3. In the Extension Development Host, open the `Figma MCP Helper` activity bar view
+1. Open this repository
+2. Run the **Run Extension** launch configuration
+3. Click the **Figma MCP Helper** icon in the activity bar
 
-Use the extension:
+## How to Use
 
-1. Open the `Agent` panel, choose a provider, and save an API key
-2. Load a model
-3. Open the `Figma` panel and connect to your MCP endpoint
-4. Paste a Figma URL or MCP JSON payload
-5. Fetch data or a screenshot
-6. Open the `Prompt` panel and choose an output format
-7. Generate code
-8. Open it in the editor or save it as a file
+The sidebar has three panels:
 
-## Configuration
+### Setup
 
-Available extension settings:
+| Section | What to do |
+|---------|------------|
+| **Figma** | Connect to your MCP server, then paste a Figma URL or JSON payload to fetch design data or a screenshot |
+| **Agent** | Choose Gemini or Claude, save your API key, and load a model |
 
-- `figma-mcp-helper.mcpEndpoint`
-  - Default: `http://localhost:3845`
-  - Figma MCP server endpoint
-- `figma-mcp-helper.openFetchedDataInEditor`
-  - Default: `false`
-  - Open fetched MCP JSON in a VS Code editor automatically after a successful fetch
-- `figma-mcp-helper.defaultAgent`
-  - Declared in the extension manifest. Runtime selection is managed via the Agent panel and stored in `globalState`; this setting is not read at runtime.
-- `figma-mcp-helper.claudeModels`
-  - Array of Claude model definitions shown in the Agent panel. Editable to add or override available models.
+### Prompt
 
-## Local Development
+Choose an output format, add any instructions, and click **Generate**. Then open the result in the editor or save it as a file.
 
-Build once:
+**Output formats:** `tsx` · `html` · `scss` · `tailwind` · `kotlin`
 
-```bash
-npm run build
-```
+### Log
 
-Watch mode:
+View extension activity and troubleshooting details.
 
-```bash
-npm run watch
-```
+## Settings
 
-Lint:
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `figma-mcp-helper.mcpEndpoint` | `http://localhost:3845` | Figma MCP server URL |
+| `figma-mcp-helper.openFetchedDataInEditor` | `false` | Auto-open fetched JSON in the editor |
+| `figma-mcp-helper.claudeModels` | — | Claude model list shown in the Agent panel |
 
-```bash
-npm run lint
-npm run lint:fix
-```
+## Language Support
 
-Format:
-
-```bash
-npm run format
-npm run format:check
-```
-
-Run unit tests:
-
-```bash
-npm run test:unit
-```
-
-Run unit tests with coverage:
-
-```bash
-npm run test:coverage
-```
-
-Package the extension:
-
-```bash
-npm run package
-```
-
-## Mock MCP Server
-
-The repository includes a simple mock server for local UI development.
-
-Start it with:
-
-```bash
-node mock-mcp-server.js
-```
-
-Default endpoint:
-
-```text
-http://localhost:3845
-```
-
-Implemented mock methods:
-
-- `initialize`
-- `tools/list`
-- `tools/call` for `get_file`
-- `tools/call` for `get_image`
-
-## Project Structure
-
-```text
-src/
-  agent/      AI provider adapters and factory
-  editor/     Editor insertion and file save integration
-  figma/      MCP client, parser, and screenshot service
-  logger/     Output channel and in-memory log store
-  prompt/     Prompt building and token estimation helpers
-  webview/    Sidebar providers, message handling, and UI
-  constants.ts
-  extension.ts
-  types.ts
-test/
-  unit/       Unit tests for all source modules
-```
-
-## Notes
-
-- This project is currently optimized for local experimentation and extension development.
-- If you are evaluating the codebase, start with `src/extension.ts` and `src/webview/WebviewMessageHandler.ts`.
-- Runtime UI strings live in `src/i18n.ts`, and extension manifest localization lives in `package.nls.json` and `package.nls.ko.json`.
-- Development plans and architectural notes are in the `docs/` directory.
+The UI follows your VS Code display language automatically. Korean (`ko`) and English are supported; other languages fall back to English.
