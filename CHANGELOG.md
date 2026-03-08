@@ -4,6 +4,10 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-03-08
+
+- Fixed remote authentication recovery so the extension restarts the OAuth flow when a saved token is rejected.
+
 ## [0.3.0] - 2026-03-08
 
 - Added `local / remote` connection mode selection in the Setup panel.

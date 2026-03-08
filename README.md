@@ -6,7 +6,7 @@ Figma MCP Helper connects to Figma from the VS Code sidebar, lets you inspect fe
 
 ![Figma MCP Helper screenshot](images/screenshot-1.png)
 
-> `v0.3.0`: local MCP and remote OAuth + REST workflows are available, with the remote flow still limited to fetch/screenshot parity.
+> `v0.3.1`: local MCP and remote OAuth + REST workflows are available, and rejected saved remote tokens now trigger a fresh OAuth restart automatically.
 
 ## What It Does
 
