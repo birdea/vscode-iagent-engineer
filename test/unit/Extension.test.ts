@@ -107,6 +107,30 @@ suite('Extension Comprehensive', () => {
     assert.ok(!vscode.workspace.fs.writeFile.called);
   });
 
+  test('uri handler ignores non-remote-auth paths and reports callback failures', async () => {
+    const vscode = require('vscode');
+    await activate(mockContext);
+
+    const uriHandler = vscode.window.registerUriHandler.args[0][0];
+    assert.ok(uriHandler);
+
+    await uriHandler.handleUri(
+      vscode.Uri.parse(
+        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/not-figma-remote-auth?access_token=test-token`,
+      ),
+    );
+    assert.ok(mockContext.secrets.store.notCalled);
+
+    mockContext.secrets.store.rejects(new Error('store failed'));
+    await uriHandler.handleUri(
+      vscode.Uri.parse(
+        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?access_token=test-token`,
+      ),
+    );
+
+    assert.ok(vscode.window.showErrorMessage.calledOnce);
+  });
+
   test('deactivate disposes providers and output channel', async () => {
     await activate(mockContext);
     await deactivate();
