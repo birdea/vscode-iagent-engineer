@@ -4,6 +4,12 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-03-08
+
+- Improved prompt streaming and cancellation handling to preserve partial output more reliably.
+- Added API key format validation and stronger Claude/screenshot error handling.
+- Tightened CI and release workflows, including dependency auditing and changed-file format checks.
+
 ## [0.1.4] - 2026-03-08
 
 - Added CI/CD automation and security documentation.
