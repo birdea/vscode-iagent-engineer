@@ -4,6 +4,12 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-03-08
+
+- Updated Marketplace listing content for the extension details page.
+- Moved the mock MCP server into the E2E test helpers area.
+- Tightened VSIX packaging exclusions so test and repository metadata stay out of releases.
+
 ## [0.2.0] - 2026-03-08
 
 - Improved prompt streaming and cancellation handling to preserve partial output more reliably.
