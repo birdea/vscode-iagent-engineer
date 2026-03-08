@@ -40,6 +40,7 @@ const mockVscode = {
     showSaveDialog: sinon.stub(),
     createOutputChannel: sinon.stub(),
     registerWebviewViewProvider: sinon.stub(),
+    registerUriHandler: sinon.stub().returns({ dispose: sinon.stub() }),
   },
   workspace: {
     getConfiguration: sinon.stub().returns({
@@ -54,7 +55,18 @@ const mockVscode = {
     },
   },
   Uri: {
-    parse: sinon.stub().returns({}),
+    parse: sinon.stub().callsFake((value: string) => {
+      const parsed = new URL(value);
+      return {
+        scheme: parsed.protocol.replace(':', ''),
+        authority: parsed.host,
+        path: parsed.pathname,
+        query: parsed.search.replace(/^\?/, ''),
+        fragment: parsed.hash.replace(/^#/, ''),
+        fsPath: parsed.pathname,
+        toString: () => value,
+      };
+    }),
     file: sinon.stub().returns({}),
     joinPath: sinon.stub().returns({}),
   },
@@ -64,6 +76,7 @@ const mockVscode = {
   },
   env: {
     language: 'ko',
+    uriScheme: 'vscode',
     clipboard: {
       writeText: sinon.stub().resolves(),
     },

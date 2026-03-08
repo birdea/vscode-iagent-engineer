@@ -53,9 +53,23 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.connectCancelled': ({ endpoint }) =>
       `Connection to a non-local MCP endpoint was cancelled. Review the endpoint before retrying. (${endpoint})`,
     'host.figma.remoteAuthUrlMissing':
-      'Remote auth URL is not configured. Add figma-mcp-helper.remoteMcpAuthUrl in Settings.',
+      'Remote auth URL is unavailable. Check the remote authentication settings and try again.',
     'host.figma.remoteAuthUrlInvalid':
       'Remote auth URL is invalid. Review figma-mcp-helper.remoteMcpAuthUrl in Settings.',
+    'host.figma.remoteEndpointMissing':
+      'Remote API endpoint is unavailable. Check the remote endpoint settings and try again.',
+    'host.figma.remoteAuthRequired':
+      'Remote authentication is required. Start Auth Login and complete the browser flow.',
+    'host.figma.remoteConnectGeneric':
+      'Could not validate the remote Figma session. Check the remote settings and sign in again.',
+    'host.figma.remoteFetchGeneric':
+      'Could not fetch remote Figma data. Check the remote auth session and endpoint.',
+    'host.figma.remoteScreenshotFailed':
+      'Could not fetch the remote screenshot. Check the remote auth session and endpoint.',
+    'host.figma.remoteAuthCompleted':
+      'Remote Figma authentication completed. Return to Setup and connect again.',
+    'host.figma.remoteAuthCallbackFailed':
+      'Remote auth callback failed. Check the redirect flow and try again.',
     'host.figma.fileIdMissing': 'Could not find a fileId in the Figma URL or JSON payload.',
     'host.figma.screenshotFailed':
       'Could not fetch the screenshot. Recheck the MCP connection and the Figma input.',
@@ -175,9 +189,23 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.connectCancelled': ({ endpoint }) =>
       `로컬이 아닌 MCP 엔드포인트 연결이 취소되었습니다. 엔드포인트를 확인한 뒤 다시 시도하세요. (${endpoint})`,
     'host.figma.remoteAuthUrlMissing':
-      'Remote auth URL이 설정되지 않았습니다. 설정에서 figma-mcp-helper.remoteMcpAuthUrl 값을 추가하세요.',
+      'Remote auth URL을 사용할 수 없습니다. remote 인증 설정을 확인한 뒤 다시 시도하세요.',
     'host.figma.remoteAuthUrlInvalid':
       'Remote auth URL 형식이 올바르지 않습니다. 설정의 figma-mcp-helper.remoteMcpAuthUrl 값을 확인하세요.',
+    'host.figma.remoteEndpointMissing':
+      'Remote API 엔드포인트를 사용할 수 없습니다. remote 엔드포인트 설정을 확인한 뒤 다시 시도하세요.',
+    'host.figma.remoteAuthRequired':
+      'Remote 인증이 필요합니다. Auth Login으로 브라우저 인증을 완료하세요.',
+    'host.figma.remoteConnectGeneric':
+      'Remote Figma 세션을 확인하지 못했습니다. remote 설정과 로그인 상태를 다시 확인하세요.',
+    'host.figma.remoteFetchGeneric':
+      'Remote Figma 데이터를 가져오지 못했습니다. remote 인증 상태와 엔드포인트를 확인하세요.',
+    'host.figma.remoteScreenshotFailed':
+      'Remote 스크린샷을 가져오지 못했습니다. remote 인증 상태와 엔드포인트를 확인하세요.',
+    'host.figma.remoteAuthCompleted':
+      'Remote Figma 인증이 완료되었습니다. Setup으로 돌아가 다시 연결하세요.',
+    'host.figma.remoteAuthCallbackFailed':
+      'Remote 인증 callback 처리에 실패했습니다. redirect 흐름을 확인한 뒤 다시 시도하세요.',
     'host.figma.fileIdMissing': 'Figma URL 또는 JSON에서 fileId를 찾을 수 없습니다.',
     'host.figma.screenshotFailed':
       '스크린샷을 가져오지 못했습니다. MCP 연결과 입력한 Figma 데이터를 다시 확인하세요.',

@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { WebviewMessageHandler } from '../../src/webview/WebviewMessageHandler';
+import { RemoteFigmaAuthService } from '../../src/figma/RemoteFigmaAuthService';
 import { AgentFactory } from '../../src/agent/AgentFactory';
 import { Logger } from '../../src/logger/Logger';
 import { StateManager } from '../../src/state/StateManager';
@@ -23,6 +24,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
   let sandbox: sinon.SinonSandbox;
   let postMessageSpy: sinon.SinonSpy;
   let stateManager: StateManager;
+  let remoteAuthService: RemoteFigmaAuthService;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -32,9 +34,11 @@ suite('WebviewMessageHandler Comprehensive', () => {
     });
     mockContext = createExtensionContextStub(sandbox);
     stateManager = new StateManager();
+    remoteAuthService = new RemoteFigmaAuthService(mockContext.secrets as any);
     handler = new WebviewMessageHandler(
       asWebview(mockWebview),
       asExtensionContext(mockContext),
+      remoteAuthService,
       'http://localhost:3845',
       stateManager,
       '1.0.0',
@@ -65,7 +69,11 @@ suite('WebviewMessageHandler Comprehensive', () => {
     const vscode = require('vscode');
     vscode.workspace.getConfiguration.returns({
       get: (key: string) =>
-        key === 'figma-mcp-helper.remoteMcpAuthUrl' ? 'https://example.com/login' : '',
+        key === 'figma-mcp-helper.remoteMcpAuthUrl'
+          ? 'https://example.com/login'
+          : key === 'figma-mcp-helper.remoteMcpEndpoint'
+            ? 'https://worker.example.com'
+            : '',
     });
 
     await handler.handle({ command: 'figma.connect', mode: 'remote' });

@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import { RemoteFigmaAuthService } from '../../../src/figma/RemoteFigmaAuthService';
 import { FigmaCommandHandler } from '../../../src/webview/handlers/FigmaCommandHandler';
 import { Logger } from '../../../src/logger/Logger';
 import { StateManager } from '../../../src/state/StateManager';
@@ -8,7 +9,10 @@ import { StateManager } from '../../../src/state/StateManager';
 suite('FigmaCommandHandler', () => {
   let sandbox: sinon.SinonSandbox;
   let webview: { postMessage: sinon.SinonSpy };
+  let context: any;
   let mcpClient: any;
+  let remoteApiClient: any;
+  let remoteAuthService: RemoteFigmaAuthService;
   let screenshotService: any;
   let editorIntegration: any;
   let stateManager: StateManager;
@@ -17,6 +21,14 @@ suite('FigmaCommandHandler', () => {
   setup(() => {
     sandbox = sinon.createSandbox();
     webview = { postMessage: sandbox.spy() };
+    context = {
+      extension: { id: 'bd-creative.figma-mcp-helper', packageJSON: { version: '1.0.0' } },
+      secrets: {
+        get: sandbox.stub().resolves(undefined),
+        store: sandbox.stub().resolves(),
+        delete: sandbox.stub().resolves(),
+      },
+    };
     mcpClient = {
       setEndpoint: sandbox.stub(),
       initialize: sandbox.stub().resolves(true),
@@ -24,6 +36,12 @@ suite('FigmaCommandHandler', () => {
       isConnected: sandbox.stub().returns(true),
       callTool: sandbox.stub().resolves({ name: 'Frame' }),
     };
+    remoteApiClient = {
+      checkStatus: sandbox.stub().resolves({ connected: true }),
+      fetchDesignContext: sandbox.stub().resolves({ name: 'Remote Frame' }),
+      fetchScreenshot: sandbox.stub().resolves({ data: 'remote-base64', mimeType: 'image/png' }),
+    };
+    remoteAuthService = new RemoteFigmaAuthService(context.secrets);
     screenshotService = {
       fetchScreenshot: sandbox.stub().resolves('base64-image'),
       openInEditor: sandbox.stub().resolves(),
@@ -34,7 +52,10 @@ suite('FigmaCommandHandler', () => {
     stateManager = new StateManager();
     handler = new FigmaCommandHandler(
       webview as any,
+      context,
       mcpClient,
+      remoteApiClient,
+      remoteAuthService,
       screenshotService,
       editorIntegration,
       stateManager,
@@ -60,7 +81,9 @@ suite('FigmaCommandHandler', () => {
   test('connect in remote mode opens external auth flow', async () => {
     const getStub = sandbox.stub();
     getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('https://example.com/login');
+    getStub.withArgs('figma-mcp-helper.remoteMcpEndpoint').returns('https://worker.example.com');
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    context.secrets.get.resolves(undefined);
 
     await handler.connect('remote');
 
@@ -69,10 +92,14 @@ suite('FigmaCommandHandler', () => {
     assert.ok(mcpClient.initialize.notCalled);
   });
 
-  test('connect in remote mode reports missing auth url', async () => {
-    const getStub = sandbox.stub().returns('');
+  test('connect in remote mode reports invalid auth url', async () => {
+    const getStub = sandbox.stub();
+    getStub.withArgs('figma-mcp-helper.remoteMcpEndpoint').returns('https://worker.example.com');
+    getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('not a valid url');
+    getStub.returns(undefined);
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
     (vscode.env.openExternal as sinon.SinonStub).resetHistory();
+    context.secrets.get.resolves(undefined);
 
     await handler.connect('remote');
 
@@ -81,9 +108,24 @@ suite('FigmaCommandHandler', () => {
       webview.postMessage.calledWithMatch({
         event: 'figma.status',
         connected: false,
-        error: sinon.match(/Remote auth URL/),
+        error: sinon.match(/Remote auth URL|auth URL/i),
       }),
     );
+  });
+
+  test('connect in remote mode validates saved session with status endpoint', async () => {
+    const getStub = sandbox.stub();
+    getStub.withArgs('figma-mcp-helper.remoteMcpEndpoint').returns('https://worker.example.com');
+    getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('https://example.com/login');
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    (vscode.env.openExternal as sinon.SinonStub).resetHistory();
+    context.secrets.get.resolves(JSON.stringify({ accessToken: 'token' }));
+
+    await handler.connect('remote');
+
+    assert.ok(remoteApiClient.checkStatus.calledWith('https://worker.example.com', 'token'));
+    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', connected: true }));
+    assert.ok((vscode.env.openExternal as sinon.SinonStub).notCalled);
   });
 
   test('connect posts disconnected status when initialize returns false', async () => {
@@ -219,6 +261,26 @@ suite('FigmaCommandHandler', () => {
     );
   });
 
+  test('fetchData uses remote REST client in remote mode', async () => {
+    const getStub = sandbox.stub();
+    getStub.withArgs('figma-mcp-helper.remoteMcpEndpoint').returns('https://worker.example.com');
+    getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('https://example.com/login');
+    getStub.withArgs('figma-mcp-helper.openFetchedDataInEditor', false).returns(false);
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    context.secrets.get.resolves(JSON.stringify({ accessToken: 'token' }));
+
+    await handler.connect('remote');
+    await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(remoteApiClient.fetchDesignContext.calledOnce);
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: { name: 'Remote Frame' },
+      }),
+    );
+  });
+
   test('fetchData posts parse-only result when fileId is missing', async () => {
     await handler.fetchData('not-a-figma-url');
     assert.ok(
@@ -282,6 +344,26 @@ suite('FigmaCommandHandler', () => {
       webview.postMessage.calledWithMatch({
         event: 'figma.screenshotResult',
         base64: 'base64-image',
+      }),
+    );
+  });
+
+  test('fetchScreenshot uses remote REST client in remote mode', async () => {
+    const getStub = sandbox.stub();
+    getStub.withArgs('figma-mcp-helper.remoteMcpEndpoint').returns('https://worker.example.com');
+    getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('https://example.com/login');
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    context.secrets.get.resolves(JSON.stringify({ accessToken: 'token' }));
+
+    await handler.connect('remote');
+    await handler.fetchScreenshot('https://figma.com/file/ABCDE/demo?node-id=4-5');
+
+    assert.ok(remoteApiClient.fetchScreenshot.calledOnce);
+    assert.ok(screenshotService.openInEditor.calledWith('remote-base64', 'ABCDE', '4:5'));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.screenshotResult',
+        base64: 'remote-base64',
       }),
     );
   });

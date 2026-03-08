@@ -41,6 +41,12 @@ export interface ParsedMcpData {
   raw: unknown;
 }
 
+export interface RemoteAuthSession {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
 // Webview → Host messages
 export type WebviewToHostMessage =
   | { command: 'figma.connect'; mode?: ConnectionMode }

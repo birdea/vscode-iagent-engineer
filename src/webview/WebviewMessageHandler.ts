@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { WebviewToHostMessage, HostToWebviewMessage, LayerType } from '../types';
 import { McpClient } from '../figma/McpClient';
+import { RemoteFigmaApiClient } from '../figma/RemoteFigmaApiClient';
+import { RemoteFigmaAuthService } from '../figma/RemoteFigmaAuthService';
 import { ScreenshotService } from '../figma/ScreenshotService';
 import { EditorIntegration } from '../editor/EditorIntegration';
 import { Logger } from '../logger/Logger';
@@ -13,6 +15,7 @@ import { toErrorMessage } from '../errors';
 
 export class WebviewMessageHandler {
   private mcpClient: McpClient;
+  private remoteApiClient: RemoteFigmaApiClient;
   private screenshotService: ScreenshotService;
   private editorIntegration: EditorIntegration;
   private figmaHandler: FigmaCommandHandler;
@@ -22,6 +25,7 @@ export class WebviewMessageHandler {
   constructor(
     private webview: vscode.Webview,
     context: vscode.ExtensionContext,
+    remoteAuthService: RemoteFigmaAuthService,
     mcpEndpoint: string,
     private stateManager: StateManager,
     extensionVersion: string,
@@ -31,11 +35,15 @@ export class WebviewMessageHandler {
       name: 'vscode-figmalab',
       version: extensionVersion,
     });
+    this.remoteApiClient = new RemoteFigmaApiClient();
     this.screenshotService = new ScreenshotService(this.mcpClient, locale);
     this.editorIntegration = new EditorIntegration();
     this.figmaHandler = new FigmaCommandHandler(
       webview,
+      context,
       this.mcpClient,
+      this.remoteApiClient,
+      remoteAuthService,
       this.screenshotService,
       this.editorIntegration,
       stateManager,

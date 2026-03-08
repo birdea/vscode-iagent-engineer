@@ -26,7 +26,7 @@ export interface ExtensionContextStub extends Partial<vscode.ExtensionContext> {
     delete: sinon.SinonStub;
   };
   extensionUri: vscode.Uri;
-  extension: { packageJSON: { version: string } };
+  extension: { id: string; packageJSON: { version: string } };
 }
 
 export interface OutputChannelStub extends Partial<vscode.OutputChannel> {
@@ -83,7 +83,7 @@ export function createExtensionContextStub(
       delete: sandbox.stub().resolves(),
     },
     extensionUri: { path: '/test', fsPath: '/test' } as unknown as vscode.Uri,
-    extension: { packageJSON: { version: '1.0.0' } },
+    extension: { id: 'bd-creative.figma-mcp-helper', packageJSON: { version: '1.0.0' } },
     ...overrides,
   };
 }

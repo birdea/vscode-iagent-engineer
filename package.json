@@ -169,12 +169,12 @@
         },
         "figma-mcp-helper.remoteMcpEndpoint": {
           "type": "string",
-          "default": "",
+          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev",
           "description": "%configuration.remoteMcpEndpoint.description%"
         },
         "figma-mcp-helper.remoteMcpAuthUrl": {
           "type": "string",
-          "default": "",
+          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev/api/figma/oauth/start",
           "description": "%configuration.remoteMcpAuthUrl.description%"
         },
         "figma-mcp-helper.openFetchedDataInEditor": {

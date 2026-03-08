@@ -20,7 +20,7 @@ suite('Extension Comprehensive', () => {
         delete: sandbox.stub().resolves(),
       },
       globalState: { get: sandbox.stub().returns('gemini'), update: sandbox.stub().resolves() },
-      extension: { packageJSON: { version: '1.0.0' } },
+      extension: { id: 'bd-creative.figma-mcp-helper', packageJSON: { version: '1.0.0' } },
     };
 
     const vscode = require('vscode');
@@ -31,6 +31,7 @@ suite('Extension Comprehensive', () => {
       dispose: sandbox.stub(),
     };
     vscode.window.createOutputChannel.returns(outputChannel);
+    vscode.window.registerUriHandler = sandbox.stub().returns({ dispose: sandbox.stub() });
     vscode.commands.registerCommand = sandbox.stub();
     vscode.window.registerWebviewViewProvider = sandbox.stub();
     vscode.commands.executeCommand = sandbox.stub();
@@ -65,6 +66,15 @@ suite('Extension Comprehensive', () => {
     )?.[1];
     assert.ok(promptGenerate);
     promptGenerate();
+
+    const uriHandler = vscode.window.registerUriHandler.args[0][0];
+    assert.ok(uriHandler);
+    await uriHandler.handleUri(
+      vscode.Uri.parse(
+        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?access_token=test-token`,
+      ),
+    );
+    assert.ok(mockContext.secrets.store.called);
 
     const logCopy = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.copy')?.[1];
     assert.ok(logCopy);

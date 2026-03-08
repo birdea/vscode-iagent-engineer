@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { SidebarProvider } from '../../src/webview/SidebarProvider';
+import { RemoteFigmaAuthService } from '../../src/figma/RemoteFigmaAuthService';
 import { Logger } from '../../src/logger/Logger';
 import { StateManager } from '../../src/state/StateManager';
 import {
@@ -20,6 +21,7 @@ suite('SidebarProvider', () => {
   let mockContext: ExtensionContextStub;
   let sandbox: sinon.SinonSandbox;
   let stateManager: StateManager;
+  let remoteAuthService: RemoteFigmaAuthService;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -36,12 +38,14 @@ suite('SidebarProvider', () => {
       },
     });
     stateManager = new StateManager();
+    remoteAuthService = new RemoteFigmaAuthService(mockContext.secrets as never);
     provider = new SidebarProvider(
       'viewId',
       'figma',
       mockContext.extensionUri,
       asExtensionContext(mockContext),
       stateManager,
+      remoteAuthService,
     );
     Logger.initialize(asOutputChannel(createOutputChannelStub(sandbox)));
   });
@@ -58,6 +62,7 @@ suite('SidebarProvider', () => {
       mockContext.extensionUri,
       asExtensionContext(mockContext),
       stateManager,
+      remoteAuthService,
       onLog,
     );
     provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
@@ -95,6 +100,7 @@ suite('SidebarProvider', () => {
       mockContext.extensionUri,
       asExtensionContext(mockContext),
       stateManager,
+      remoteAuthService,
       onLog,
     );
     provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);

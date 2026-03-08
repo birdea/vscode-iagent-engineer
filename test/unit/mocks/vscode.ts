@@ -13,6 +13,7 @@ export const window = {
     clear: sinon.stub(),
   }),
   registerWebviewViewProvider: sinon.stub(),
+  registerUriHandler: sinon.stub().returns({ dispose: sinon.stub() }),
   clipboard: {
     writeText: sinon.stub().resolves(),
   },
@@ -35,7 +36,18 @@ export const commands = {
 };
 
 export const Uri = {
-  parse: (val: string) => ({ path: val }),
+  parse: (val: string) => {
+    const parsed = new URL(val);
+    return {
+      scheme: parsed.protocol.replace(':', ''),
+      authority: parsed.host,
+      path: parsed.pathname,
+      query: parsed.search.replace(/^\?/, ''),
+      fragment: parsed.hash.replace(/^#/, ''),
+      fsPath: parsed.pathname,
+      toString: () => val,
+    };
+  },
   file: (val: string) => ({ fsPath: val, path: val }),
   joinPath: (uri: any, ...paths: string[]) => ({
     path: (uri.path || '') + '/' + paths.join('/'),
@@ -44,6 +56,7 @@ export const Uri = {
 };
 
 export const env = {
+  uriScheme: 'vscode',
   openExternal: sinon.stub(),
   clipboard: {
     writeText: sinon.stub().resolves(),

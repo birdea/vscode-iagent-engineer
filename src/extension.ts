@@ -3,6 +3,7 @@ import { SidebarProvider } from './webview/SidebarProvider';
 import { Logger } from './logger/Logger';
 import { AgentFactory } from './agent/AgentFactory';
 import { COMMANDS, VIEW_IDS, getSecretStorageKey } from './constants';
+import { RemoteFigmaAuthService } from './figma/RemoteFigmaAuthService';
 import { AgentType } from './types';
 import { StateManager } from './state/StateManager';
 import { resolveLocale, t } from './i18n';
@@ -16,6 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
   outputChannelRef = outputChannel;
   Logger.initialize(outputChannel);
   const stateManager = new StateManager();
+  const remoteAuthService = new RemoteFigmaAuthService(context.secrets);
 
   // Load saved API keys at activation
   const agents: AgentType[] = ['gemini', 'claude'];
@@ -32,6 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.extensionUri,
     context,
     stateManager,
+    remoteAuthService,
   );
   const promptProvider = new SidebarProvider(
     VIEW_IDS.PROMPT,
@@ -39,6 +42,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.extensionUri,
     context,
     stateManager,
+    remoteAuthService,
   );
   const logProvider = new SidebarProvider(
     VIEW_IDS.LOG,
@@ -46,11 +50,27 @@ export async function activate(context: vscode.ExtensionContext) {
     context.extensionUri,
     context,
     stateManager,
+    remoteAuthService,
     (entry) => logProvider.postMessage({ event: 'log.append', entry }),
   );
   sidebarProviders = [setupProvider, promptProvider, logProvider];
 
   context.subscriptions.push(
+    vscode.window.registerUriHandler({
+      handleUri: async (uri) => {
+        if (uri.path !== '/figma-remote-auth') {
+          return;
+        }
+
+        try {
+          await remoteAuthService.handleCallbackUri(uri);
+          vscode.window.showInformationMessage(t(locale, 'host.figma.remoteAuthCompleted'));
+        } catch (error) {
+          Logger.error('figma', `Remote auth callback failed: ${String(error)}`);
+          vscode.window.showErrorMessage(t(locale, 'host.figma.remoteAuthCallbackFailed'));
+        }
+      },
+    }),
     vscode.window.registerWebviewViewProvider(VIEW_IDS.SETUP, setupProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),

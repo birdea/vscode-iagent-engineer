@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { WebviewMessageHandler } from './WebviewMessageHandler';
 import { Logger } from '../logger/Logger';
 import { DEFAULT_MCP_ENDPOINT, CONFIG_KEYS } from '../constants';
+import { RemoteFigmaAuthService } from '../figma/RemoteFigmaAuthService';
 import { WebviewToHostMessage } from '../types';
 import { StateManager } from '../state/StateManager';
 import { resolveLocale } from '../i18n';
@@ -20,6 +21,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri,
     private readonly context: vscode.ExtensionContext,
     private readonly stateManager: StateManager,
+    private readonly remoteAuthService: RemoteFigmaAuthService,
     private readonly onLog?: (entry: import('../types').LogEntry) => void,
   ) {}
 
@@ -45,6 +47,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.handler = new WebviewMessageHandler(
       webviewView.webview,
       this.context,
+      this.remoteAuthService,
       mcpEndpoint,
       this.stateManager,
       this.context.extension.packageJSON.version,

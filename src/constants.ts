@@ -27,6 +27,7 @@ export const CONFIG_KEYS = {
 export const SECRET_KEYS = {
   GEMINI_API_KEY: 'figma-mcp-helper.geminiApiKey',
   CLAUDE_API_KEY: 'figma-mcp-helper.claudeApiKey',
+  REMOTE_FIGMA_AUTH: 'figma-mcp-helper.remoteFigmaAuth',
 } as const;
 
 export function getSecretStorageKey(agent: AgentType): string {
@@ -34,7 +35,10 @@ export function getSecretStorageKey(agent: AgentType): string {
 }
 
 export const DEFAULT_MCP_ENDPOINT = 'http://localhost:3845';
-export const DEFAULT_REMOTE_MCP_AUTH_URL = '';
+export const DEFAULT_REMOTE_MCP_ENDPOINT =
+  'https://vscode-figma-mcp-helper-workers.birdea.workers.dev';
+export const DEFAULT_REMOTE_MCP_AUTH_URL =
+  'https://vscode-figma-mcp-helper-workers.birdea.workers.dev/api/figma/oauth/start';
 
 export const MCP_DEFAULT_PORT = 3845;
 

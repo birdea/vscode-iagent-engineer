@@ -3,6 +3,7 @@ import * as path from 'path';
 import { fork, ChildProcess } from 'child_process';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import { RemoteFigmaAuthService } from '../../src/figma/RemoteFigmaAuthService';
 import { WebviewMessageHandler } from '../../src/webview/WebviewMessageHandler';
 import { StateManager } from '../../src/state/StateManager';
 import { AgentFactory } from '../../src/agent/AgentFactory';
@@ -54,6 +55,7 @@ suite('Webview workflow E2E', function () {
     const handler = new WebviewMessageHandler(
       webview as any,
       context as any,
+      new RemoteFigmaAuthService(context.secrets as any),
       `http://127.0.0.1:${port}`,
       new StateManager(),
       '1.0.0',
@@ -100,6 +102,7 @@ suite('Webview workflow E2E', function () {
     const handler = new WebviewMessageHandler(
       webview as any,
       context as any,
+      new RemoteFigmaAuthService(context.secrets as any),
       `http://127.0.0.1:${port}`,
       new StateManager(),
       '1.0.0',
