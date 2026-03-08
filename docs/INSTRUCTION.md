@@ -6,7 +6,7 @@ VSCode 확장 프로그램(Plugin)을 개발하자.
 앱이름 = vscode-figmalab
 주요기능 = 이를 통해 개발자는 VSCode 내부에서 직접 Figma 디자인(Design Context, Screenshot)을 불러오고 Gemini API를 활용하여 코드를 생성/적용할 수 있습니다.
 
-1. Figma Desktop App 과 MCP 연결하여, MCP data fetch, screenshot 및 그외 MCP api가 제공하는 기능 활용하기
+1. Figma 연결 방식은 `local / remote`를 모두 고려하되, 현재 요구 범위는 `local Desktop MCP`와 `remote OAuth + REST` 기준으로 동일한 fetch/screenshot 기능을 제공하기
 2. AI Agent (Gemini, Claude, Code) API 를 활용한 prompt -> html, tsx, tailwind 및 기타 형식으로 prompt 결과 파일 얻기
 3. 에디터 통합: 생성된 결과를 단순 복사하는 것을 넘어, 활성화된 문서에 코드를 바로 삽입하거나 새로운 파일로 저장하는 VSCode 내장 FileSystem API와 연동할 수 있습니다.
 
@@ -14,9 +14,11 @@ VSCode 확장 프로그램(Plugin)을 개발하자.
 
 VSCode Application
 ├─ Figma Layer
-├── Figma Desktop 앱 설치 상태, MCP 연결 상태 화면 조회
-├── MCP 연결에 필요한 설정값 조회/변경
-├── MCP 연결 후 사용 가능한 API method?를 리스트로 출력
+├── `local / remote` 연결 방식 선택 화면 조회
+├── local: Figma Desktop 앱 설치 상태, MCP 연결 상태 화면 조회
+├── remote: OAuth 로그인 상태 화면 조회
+├── 연결에 필요한 설정값 조회/변경
+├── local 연결 시 사용 가능한 API method?를 리스트로 출력
 ├── Figma Desktop 앱의 가이드북에서 추출한 MCP data를 바로 붙여넣을 수 있는 MCP data 입력창 제공
 ├── 입력받은 MCP data에서 fileid, nodeid를 추출할 수 있도록 Parser 구현
 ├── 입력받은 MCP data를 fetch하여 화면 출력 (복사하기)

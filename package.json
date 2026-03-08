@@ -153,10 +153,29 @@
           "default": "",
           "description": "%configuration.defaultModel.description%"
         },
+        "figma-mcp-helper.mcpConnectionMode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "remote"
+          ],
+          "default": "local",
+          "description": "%configuration.mcpConnectionMode.description%"
+        },
         "figma-mcp-helper.mcpEndpoint": {
           "type": "string",
           "default": "http://localhost:3845",
           "description": "%configuration.mcpEndpoint.description%"
+        },
+        "figma-mcp-helper.remoteMcpEndpoint": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.remoteMcpEndpoint.description%"
+        },
+        "figma-mcp-helper.remoteMcpAuthUrl": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.remoteMcpAuthUrl.description%"
         },
         "figma-mcp-helper.openFetchedDataInEditor": {
           "type": "boolean",

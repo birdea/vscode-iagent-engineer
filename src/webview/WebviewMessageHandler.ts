@@ -60,10 +60,10 @@ export class WebviewMessageHandler {
     try {
       switch (msg.command) {
         case 'figma.connect':
-          await this.figmaHandler.connect();
+          await this.figmaHandler.connect(msg.mode);
           break;
         case 'figma.openSettings':
-          await this.figmaHandler.openSettings();
+          await this.figmaHandler.openSettings(msg.mode);
           break;
         case 'figma.fetchData':
           await this.figmaHandler.fetchData(msg.mcpData);

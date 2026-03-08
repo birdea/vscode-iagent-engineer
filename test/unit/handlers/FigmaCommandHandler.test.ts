@@ -57,6 +57,35 @@ suite('FigmaCommandHandler', () => {
     assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', connected: true }));
   });
 
+  test('connect in remote mode opens external auth flow', async () => {
+    const getStub = sandbox.stub();
+    getStub.withArgs('figma-mcp-helper.remoteMcpAuthUrl').returns('https://example.com/login');
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+
+    await handler.connect('remote');
+
+    assert.ok((vscode.env.openExternal as sinon.SinonStub).calledOnce);
+    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.authStarted', mode: 'remote' }));
+    assert.ok(mcpClient.initialize.notCalled);
+  });
+
+  test('connect in remote mode reports missing auth url', async () => {
+    const getStub = sandbox.stub().returns('');
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    (vscode.env.openExternal as sinon.SinonStub).resetHistory();
+
+    await handler.connect('remote');
+
+    assert.ok((vscode.env.openExternal as sinon.SinonStub).notCalled);
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.status',
+        connected: false,
+        error: sinon.match(/Remote auth URL/),
+      }),
+    );
+  });
+
   test('connect posts disconnected status when initialize returns false', async () => {
     mcpClient.initialize.resolves(false);
     const getStub = sandbox.stub().returns('http://localhost:3845');
@@ -132,6 +161,16 @@ suite('FigmaCommandHandler', () => {
     assert.ok(
       (vscode.commands.executeCommand as sinon.SinonStub).calledWith(
         'workbench.action.openSettings',
+      ),
+    );
+  });
+
+  test('openSettings in remote mode opens remote auth setting', async () => {
+    await handler.openSettings('remote');
+    assert.ok(
+      (vscode.commands.executeCommand as sinon.SinonStub).calledWith(
+        'workbench.action.openSettings',
+        'figma-mcp-helper.remoteMcpAuthUrl',
       ),
     );
   });

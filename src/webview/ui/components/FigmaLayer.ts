@@ -1,9 +1,12 @@
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, t, UiLocale } from '../../../i18n';
+import { ConnectionMode } from '../../../types';
 
 export class FigmaLayer {
   private connected = false;
   private connecting = false;
+  private connectionMode: ConnectionMode =
+    document.body?.dataset.mcpMode === 'remote' ? 'remote' : 'local';
   private readonly locale: UiLocale = getDocumentLocale();
 
   render(): string {
@@ -18,6 +21,16 @@ export class FigmaLayer {
       </div>
     </div>
     <button class="text-btn" id="btn-open-settings">${this.msg('figma.settings')}</button>
+  </div>
+  <div class="btn-row">
+    <div class="field-group mode-field">
+      <label>${this.msg('figma.connectionMode')}</label>
+      <div class="mode-switch" id="figma-mode-switch" role="tablist" aria-label="${this.msg('figma.connectionMode')}">
+        <button class="mode-option active" id="btn-mode-local" type="button" data-mode="local">${this.msg('figma.modeLocal')}</button>
+        <button class="mode-option" id="btn-mode-remote" type="button" data-mode="remote">${this.msg('figma.modeRemote')}</button>
+      </div>
+      <div class="inline-note" id="figma-mode-hint">${this.msg('figma.modeHintLocal')}</div>
+    </div>
   </div>
   <div class="btn-row">
     <button class="primary" id="btn-connect"><i class="codicon codicon-plug"></i>${this.msg('figma.connect')}</button>
@@ -61,8 +74,16 @@ export class FigmaLayer {
       this.requestConnect();
     });
 
+    document.getElementById('btn-mode-local')?.addEventListener('click', () => {
+      this.setConnectionMode('local');
+    });
+
+    document.getElementById('btn-mode-remote')?.addEventListener('click', () => {
+      this.setConnectionMode('remote');
+    });
+
     document.getElementById('btn-open-settings')?.addEventListener('click', () => {
-      vscode.postMessage({ command: 'figma.openSettings' });
+      vscode.postMessage({ command: 'figma.openSettings', mode: this.connectionMode });
     });
 
     document.getElementById('btn-screenshot')?.addEventListener('click', () => {
@@ -80,13 +101,19 @@ export class FigmaLayer {
     });
 
     this.updateActionState();
+    this.syncConnectionModeUI();
+    this.syncConnectButton();
   }
 
   requestConnect() {
     this.connecting = true;
     this.syncConnectButton();
-    this.setGuideMessage(this.msg('figma.info.connecting'));
-    vscode.postMessage({ command: 'figma.connect' });
+    this.setGuideMessage(
+      this.connectionMode === 'remote'
+        ? this.msg('figma.guide.remoteLogin')
+        : this.msg('figma.info.connecting'),
+    );
+    vscode.postMessage({ command: 'figma.connect', mode: this.connectionMode });
   }
 
   onStatus(connected: boolean, methods: string[], error?: string) {
@@ -109,10 +136,16 @@ export class FigmaLayer {
         text.textContent = this.msg('figma.statusDisconnected');
         if (error) {
           this.setNotice('error', error);
-          this.setGuideMessage(this.msg('figma.guide.checkServer'));
+          this.setGuideMessage(
+            this.connectionMode === 'remote'
+              ? this.msg('figma.guide.remoteLogin')
+              : this.msg('figma.guide.checkServer'),
+          );
         } else {
           this.clearNotice();
-          this.setGuideMessage('');
+          this.setGuideMessage(
+            this.connectionMode === 'remote' ? this.msg('figma.guide.remoteLogin') : '',
+          );
         }
       }
     }
@@ -141,8 +174,25 @@ export class FigmaLayer {
     this.setNotice('success', this.msg('figma.success.screenshotLoaded'));
   }
 
+  onAuthStarted() {
+    this.connecting = false;
+    this.syncConnectButton();
+    this.setNotice('info', this.msg('figma.info.remoteAuthStarted'));
+    this.setGuideMessage(this.msg('figma.guide.remoteLogin'));
+  }
+
   onError(message: string) {
     this.setNotice('error', message);
+  }
+
+  private setConnectionMode(mode: ConnectionMode) {
+    if (this.connectionMode === mode) return;
+    this.connectionMode = mode;
+    this.syncConnectionModeUI();
+    this.syncConnectButton();
+    if (!this.connected) {
+      this.setGuideMessage(mode === 'remote' ? this.msg('figma.guide.remoteLogin') : '');
+    }
   }
 
   private updateActionState() {
@@ -193,12 +243,36 @@ export class FigmaLayer {
     const connectBtn = document.getElementById('btn-connect') as HTMLButtonElement | null;
     if (!connectBtn) return;
     connectBtn.disabled = this.connecting;
+    const isRemote = this.connectionMode === 'remote';
     connectBtn.replaceChildren(
-      this.createCodicon(this.connecting ? 'loading codicon-modifier-spin' : 'plug'),
+      this.createCodicon(
+        this.connecting ? 'loading codicon-modifier-spin' : isRemote ? 'globe' : 'plug',
+      ),
       document.createTextNode(
-        this.connecting ? this.msg('figma.connecting') : this.msg('figma.connect'),
+        this.connecting
+          ? isRemote
+            ? this.msg('figma.authStarting')
+            : this.msg('figma.connecting')
+          : isRemote
+            ? this.msg('figma.authLogin')
+            : this.msg('figma.connect'),
       ),
     );
+  }
+
+  private syncConnectionModeUI() {
+    const localBtn = document.getElementById('btn-mode-local') as HTMLButtonElement | null;
+    const remoteBtn = document.getElementById('btn-mode-remote') as HTMLButtonElement | null;
+    const hint = document.getElementById('figma-mode-hint');
+    const isRemote = this.connectionMode === 'remote';
+
+    localBtn?.classList.toggle('active', !isRemote);
+    remoteBtn?.classList.toggle('active', isRemote);
+    localBtn?.setAttribute('aria-selected', String(!isRemote));
+    remoteBtn?.setAttribute('aria-selected', String(isRemote));
+    if (hint) {
+      hint.textContent = this.msg(isRemote ? 'figma.modeHintRemote' : 'figma.modeHintLocal');
+    }
   }
 
   private renderToolList(methods: string[], connected: boolean) {

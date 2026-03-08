@@ -43,6 +43,9 @@ export function init() {
           case 'figma.status':
             figma.onStatus(msg.connected, msg.methods, msg.error);
             break;
+          case 'figma.authStarted':
+            figma.onAuthStarted();
+            break;
           case 'figma.dataResult':
             figma.onDataResult(msg.data);
             break;

@@ -100,6 +100,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     ].join('; ');
 
     const locale = resolveLocale(vscode.env.language);
+    const config = vscode.workspace.getConfiguration();
+    const connectionMode = config.get<string>(CONFIG_KEYS.MCP_CONNECTION_MODE, 'local');
 
     return `<!DOCTYPE html>
 <html lang="${locale}">
@@ -111,7 +113,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   <link rel="stylesheet" href="${codiconUri}" />
   <link rel="stylesheet" href="${styleUri}" />
 </head>
-<body data-section="${this.section}" data-locale="${locale}">
+<body data-section="${this.section}" data-locale="${locale}" data-mcp-mode="${connectionMode}">
   <div id="app"></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

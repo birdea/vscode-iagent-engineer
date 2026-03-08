@@ -34,6 +34,7 @@ suite('UI Main Initialization', () => {
     MainModule.init();
 
     dispatch({ event: 'figma.connectRequested' });
+    dispatch({ event: 'figma.authStarted', mode: 'remote', authUrl: 'https://example.com/login' });
     dispatch({ event: 'figma.status', connected: true, methods: ['get_file'] });
     dispatch({ event: 'figma.dataResult', data: { id: '1' } });
     dispatch({ event: 'figma.dataFetchError', message: 'fetch failed', fallbackData: {} });

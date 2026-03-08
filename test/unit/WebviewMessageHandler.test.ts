@@ -61,10 +61,34 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: true }));
   });
 
+  test('handle figma.connect in remote mode', async () => {
+    const vscode = require('vscode');
+    vscode.workspace.getConfiguration.returns({
+      get: (key: string) =>
+        key === 'figma-mcp-helper.remoteMcpAuthUrl' ? 'https://example.com/login' : '',
+    });
+
+    await handler.handle({ command: 'figma.connect', mode: 'remote' });
+
+    assert.ok(vscode.env.openExternal.called);
+    assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.authStarted', mode: 'remote' }));
+  });
+
   test('handle figma.openSettings', async () => {
     const vscode = require('vscode');
     await handler.handle({ command: 'figma.openSettings' });
     assert.ok(vscode.commands.executeCommand.calledWith('workbench.action.openSettings'));
+  });
+
+  test('handle figma.openSettings in remote mode', async () => {
+    const vscode = require('vscode');
+    await handler.handle({ command: 'figma.openSettings', mode: 'remote' });
+    assert.ok(
+      vscode.commands.executeCommand.calledWith(
+        'workbench.action.openSettings',
+        'figma-mcp-helper.remoteMcpAuthUrl',
+      ),
+    );
   });
 
   test('handle figma.connect failure', async () => {

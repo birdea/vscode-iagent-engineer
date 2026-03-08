@@ -168,9 +168,24 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.connect' }));
     });
 
+    test('remote mode changes primary action to auth login', () => {
+      document.getElementById('btn-mode-remote')?.click();
+      const connectBtn = document.getElementById('btn-connect');
+      assert.ok(connectBtn?.textContent?.includes('Auth Login'));
+
+      connectBtn?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.connect', mode: 'remote' }));
+    });
+
     test('settings button click', () => {
       document.getElementById('btn-open-settings')?.click();
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.openSettings' }));
+    });
+
+    test('remote mode forwards mode when opening settings', () => {
+      document.getElementById('btn-mode-remote')?.click();
+      document.getElementById('btn-open-settings')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.openSettings', mode: 'remote' }));
     });
 
     test('onStatus handles methods and error', () => {
@@ -246,6 +261,18 @@ suite('UI Components Consolidated', () => {
       layer.onError('some error');
       const notice = document.getElementById('figma-notice');
       assert.strictEqual(notice?.textContent, 'some error');
+    });
+
+    test('onAuthStarted clears loading state and shows remote guide', () => {
+      document.getElementById('btn-mode-remote')?.click();
+      document.getElementById('btn-connect')?.click();
+      layer.onAuthStarted();
+
+      const notice = document.getElementById('figma-notice');
+      const connectBtn = document.getElementById('btn-connect') as HTMLButtonElement;
+      assert.ok(notice?.textContent?.includes('브라우저'));
+      assert.ok(!connectBtn.disabled);
+      assert.ok(connectBtn.textContent?.includes('Auth Login'));
     });
 
     test('fetch button click with data posts figma.fetchData', () => {

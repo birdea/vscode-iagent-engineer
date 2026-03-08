@@ -11,8 +11,15 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.statusDisconnected': 'Disconnected',
     'figma.statusConnected': 'Connected',
     'figma.settings': 'Settings',
+    'figma.connectionMode': 'Connection Mode',
+    'figma.modeLocal': 'Local',
+    'figma.modeRemote': 'Remote',
+    'figma.modeHintLocal': 'Use the Desktop MCP server running on your machine.',
+    'figma.modeHintRemote': 'Use a remote MCP server that requires browser login.',
     'figma.connect': 'Connect',
+    'figma.authLogin': 'Auth Login',
     'figma.connecting': 'Connecting...',
+    'figma.authStarting': 'Opening remote login...',
     'figma.designDataTitle': 'Design Data',
     'figma.mcpPlaceholder': 'https://figma.com/file/... or JSON',
     'figma.fetchData': 'Fetch Data',
@@ -24,9 +31,13 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.warn.connectBeforeScreenshot': 'Screenshots are available only after connecting to MCP.',
     'figma.info.generatingScreenshot': 'Generating screenshot...',
     'figma.info.connecting': 'Attempting to connect.',
+    'figma.info.remoteAuthStarted':
+      'Remote login opened in your browser. Finish authentication, then retry the MCP connection once the remote endpoint is ready.',
     'figma.guide.availableTools': ({ count }) => `${count} tools available`,
     'figma.guide.checkServer':
       'Check whether the server is running and whether the endpoint is correct.',
+    'figma.guide.remoteLogin':
+      'Use Auth Login to continue in the browser, then return here to finish setup.',
     'figma.success.dataLoaded': 'Data loaded.',
     'figma.success.screenshotLoaded': 'Screenshot loaded.',
     'figma.title.fetchDisabled': 'Available after entering a Figma URL or JSON payload.',
@@ -41,6 +52,10 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       `A problem occurred while connecting to MCP. Check the settings and server status. (${endpoint})`,
     'host.figma.connectCancelled': ({ endpoint }) =>
       `Connection to a non-local MCP endpoint was cancelled. Review the endpoint before retrying. (${endpoint})`,
+    'host.figma.remoteAuthUrlMissing':
+      'Remote auth URL is not configured. Add figma-mcp-helper.remoteMcpAuthUrl in Settings.',
+    'host.figma.remoteAuthUrlInvalid':
+      'Remote auth URL is invalid. Review figma-mcp-helper.remoteMcpAuthUrl in Settings.',
     'host.figma.fileIdMissing': 'Could not find a fileId in the Figma URL or JSON payload.',
     'host.figma.screenshotFailed':
       'Could not fetch the screenshot. Recheck the MCP connection and the Figma input.',
@@ -119,8 +134,15 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.statusDisconnected': '연결되지 않음',
     'figma.statusConnected': '연결됨',
     'figma.settings': '설정',
+    'figma.connectionMode': '연결 방식',
+    'figma.modeLocal': 'Local',
+    'figma.modeRemote': 'Remote',
+    'figma.modeHintLocal': '현재 PC에서 실행 중인 Desktop MCP 서버에 연결합니다.',
+    'figma.modeHintRemote': '브라우저 인증이 필요한 Remote MCP 서버를 사용합니다.',
     'figma.connect': '연결하기',
+    'figma.authLogin': 'Auth Login',
     'figma.connecting': '연결 중...',
+    'figma.authStarting': '원격 로그인 창을 여는 중...',
     'figma.designDataTitle': '디자인 데이터',
     'figma.mcpPlaceholder': 'https://figma.com/file/... 또는 JSON',
     'figma.fetchData': '데이터 가져오기',
@@ -132,8 +154,12 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.warn.connectBeforeScreenshot': '스크린샷은 MCP 연결 후에만 가능합니다.',
     'figma.info.generatingScreenshot': '스크린샷을 생성하는 중입니다...',
     'figma.info.connecting': '연결을 시도하는 중입니다.',
+    'figma.info.remoteAuthStarted':
+      '브라우저에서 원격 로그인을 시작했습니다. 인증을 마친 뒤 Remote MCP 엔드포인트가 준비되면 다시 연결을 시도하세요.',
     'figma.guide.availableTools': ({ count }) => `도구 ${count}개 사용 가능`,
     'figma.guide.checkServer': '서버 실행 여부와 엔드포인트를 확인하세요.',
+    'figma.guide.remoteLogin':
+      'Auth Login으로 브라우저 인증을 진행한 뒤 여기로 돌아와 설정을 마무리하세요.',
     'figma.success.dataLoaded': '데이터를 불러왔습니다.',
     'figma.success.screenshotLoaded': '스크린샷을 가져왔습니다.',
     'figma.title.fetchDisabled': 'Figma URL 또는 JSON을 입력하면 사용할 수 있습니다.',
@@ -148,6 +174,10 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       `MCP 연결 중 문제가 발생했습니다. 설정과 서버 상태를 확인하세요. (${endpoint})`,
     'host.figma.connectCancelled': ({ endpoint }) =>
       `로컬이 아닌 MCP 엔드포인트 연결이 취소되었습니다. 엔드포인트를 확인한 뒤 다시 시도하세요. (${endpoint})`,
+    'host.figma.remoteAuthUrlMissing':
+      'Remote auth URL이 설정되지 않았습니다. 설정에서 figma-mcp-helper.remoteMcpAuthUrl 값을 추가하세요.',
+    'host.figma.remoteAuthUrlInvalid':
+      'Remote auth URL 형식이 올바르지 않습니다. 설정의 figma-mcp-helper.remoteMcpAuthUrl 값을 확인하세요.',
     'host.figma.fileIdMissing': 'Figma URL 또는 JSON에서 fileId를 찾을 수 없습니다.',
     'host.figma.screenshotFailed':
       '스크린샷을 가져오지 못했습니다. MCP 연결과 입력한 Figma 데이터를 다시 확인하세요.',

@@ -12,7 +12,10 @@
   "configuration.title": "Figma MCP Helper",
   "configuration.defaultAgent.description": "Default AI agent to use",
   "configuration.defaultModel.description": "Default model ID for the selected agent (synced from the Agent panel)",
+  "configuration.mcpConnectionMode.description": "Preferred Setup connection mode (local Desktop MCP or the planned remote auth-backed mode)",
   "configuration.mcpEndpoint.description": "Figma MCP server endpoint",
+  "configuration.remoteMcpEndpoint.description": "Endpoint reserved for the planned remote auth-backed mode after authentication is completed",
+  "configuration.remoteMcpAuthUrl.description": "Authentication URL opened by the Auth Login action for the planned remote mode",
   "configuration.openFetchedDataInEditor.description": "Open fetched MCP JSON in a VS Code editor automatically after a successful fetch",
   "configuration.claudeModels.description": "Claude model catalog used in the Agent panel"
 }

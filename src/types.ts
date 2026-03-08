@@ -1,5 +1,6 @@
 // Agent types
 export type AgentType = 'gemini' | 'claude';
+export type ConnectionMode = 'local' | 'remote';
 export type OutputFormat = 'html' | 'tsx' | 'scss' | 'tailwind' | 'kotlin';
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
 export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'system';
@@ -42,8 +43,8 @@ export interface ParsedMcpData {
 
 // Webview → Host messages
 export type WebviewToHostMessage =
-  | { command: 'figma.connect' }
-  | { command: 'figma.openSettings' }
+  | { command: 'figma.connect'; mode?: ConnectionMode }
+  | { command: 'figma.openSettings'; mode?: ConnectionMode }
   | { command: 'figma.fetchData'; mcpData: string }
   | { command: 'figma.screenshot'; mcpData: string }
   | { command: 'agent.getState' }
@@ -64,6 +65,7 @@ export type WebviewToHostMessage =
 // Host → Webview messages
 export type HostToWebviewMessage =
   | { event: 'figma.status'; connected: boolean; methods: string[]; error?: string }
+  | { event: 'figma.authStarted'; mode: ConnectionMode; authUrl: string }
   | { event: 'figma.connectRequested' }
   | { event: 'figma.dataResult'; data: unknown }
   | { event: 'figma.dataFetchError'; message: string; fallbackData: unknown }

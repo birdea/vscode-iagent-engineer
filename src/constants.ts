@@ -16,7 +16,10 @@ export const COMMANDS = {
 export const CONFIG_KEYS = {
   DEFAULT_AGENT: 'figma-mcp-helper.defaultAgent',
   DEFAULT_MODEL: 'figma-mcp-helper.defaultModel',
+  MCP_CONNECTION_MODE: 'figma-mcp-helper.mcpConnectionMode',
   MCP_ENDPOINT: 'figma-mcp-helper.mcpEndpoint',
+  REMOTE_MCP_ENDPOINT: 'figma-mcp-helper.remoteMcpEndpoint',
+  REMOTE_MCP_AUTH_URL: 'figma-mcp-helper.remoteMcpAuthUrl',
   OPEN_FETCH_RESULT_IN_EDITOR: 'figma-mcp-helper.openFetchedDataInEditor',
   CLAUDE_MODELS: 'figma-mcp-helper.claudeModels',
 } as const;
@@ -31,6 +34,7 @@ export function getSecretStorageKey(agent: AgentType): string {
 }
 
 export const DEFAULT_MCP_ENDPOINT = 'http://localhost:3845';
+export const DEFAULT_REMOTE_MCP_AUTH_URL = '';
 
 export const MCP_DEFAULT_PORT = 3845;
 

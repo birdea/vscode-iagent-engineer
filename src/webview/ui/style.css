@@ -108,6 +108,44 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+.mode-field {
+  width: 100%;
+}
+
+.mode-switch {
+  display: inline-flex;
+  width: 100%;
+  padding: 3px;
+  border-radius: calc(var(--figmalab-radius) + 2px);
+  background: color-mix(
+    in srgb,
+    var(--vscode-input-background) 80%,
+    var(--vscode-editorWidget-background, transparent)
+  );
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  gap: 4px;
+}
+
+.mode-option {
+  flex: 1 1 0;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: 0;
+}
+
+.mode-option.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.mode-option:not(.active):hover {
+  background: color-mix(in srgb, var(--vscode-button-background) 18%, transparent);
+  color: var(--vscode-foreground);
+}
+
 .hidden {
   display: none;
 }

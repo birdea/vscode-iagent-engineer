@@ -12,7 +12,10 @@
   "configuration.title": "Figma MCP Helper",
   "configuration.defaultAgent.description": "기본으로 사용할 AI 에이전트",
   "configuration.defaultModel.description": "선택한 에이전트의 기본 모델 ID (Agent 패널과 동기화됨)",
+  "configuration.mcpConnectionMode.description": "설정 화면에서 기본으로 사용할 연결 방식 (local Desktop MCP 또는 계획 중인 remote auth 기반 모드)",
   "configuration.mcpEndpoint.description": "Figma MCP 서버 엔드포인트",
+  "configuration.remoteMcpEndpoint.description": "인증 완료 후 계획 중인 remote auth 기반 모드에서 사용할 엔드포인트",
+  "configuration.remoteMcpAuthUrl.description": "계획 중인 remote 모드에서 Auth Login 액션이 여는 인증 URL",
   "configuration.openFetchedDataInEditor.description": "데이터를 성공적으로 가져온 뒤 MCP JSON을 VS Code 에디터에 자동으로 엽니다",
   "configuration.claudeModels.description": "Agent 패널에서 사용하는 Claude 모델 카탈로그"
 }

@@ -4,8 +4,8 @@ import { parseMcpData } from '../../figma/McpParser';
 import { ScreenshotService } from '../../figma/ScreenshotService';
 import { EditorIntegration } from '../../editor/EditorIntegration';
 import { Logger } from '../../logger/Logger';
-import { HostToWebviewMessage } from '../../types';
-import { CONFIG_KEYS, DEFAULT_MCP_ENDPOINT } from '../../constants';
+import { ConnectionMode, HostToWebviewMessage } from '../../types';
+import { CONFIG_KEYS, DEFAULT_MCP_ENDPOINT, DEFAULT_REMOTE_MCP_AUTH_URL } from '../../constants';
 import { StateManager } from '../../state/StateManager';
 import { UiLocale, t } from '../../i18n';
 import { toErrorMessage } from '../../errors';
@@ -24,7 +24,22 @@ export class FigmaCommandHandler {
     this.webview.postMessage(msg);
   }
 
-  async connect() {
+  async connect(mode: ConnectionMode = 'local') {
+    if (mode === 'remote') {
+      await this.startRemoteAuthLogin();
+      return;
+    }
+
+    await this.connectLocal();
+  }
+
+  async openSettings(mode: ConnectionMode = 'local') {
+    const targetKey =
+      mode === 'remote' ? CONFIG_KEYS.REMOTE_MCP_AUTH_URL : CONFIG_KEYS.MCP_ENDPOINT;
+    await vscode.commands.executeCommand('workbench.action.openSettings', targetKey);
+  }
+
+  private async connectLocal() {
     const config = vscode.workspace.getConfiguration();
     const endpoint = config.get<string>(CONFIG_KEYS.MCP_ENDPOINT) || DEFAULT_MCP_ENDPOINT;
     this.mcpClient.setEndpoint(endpoint);
@@ -56,8 +71,36 @@ export class FigmaCommandHandler {
     }
   }
 
-  async openSettings() {
-    await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_KEYS.MCP_ENDPOINT);
+  private async startRemoteAuthLogin() {
+    const config = vscode.workspace.getConfiguration();
+    const authUrl = (
+      config.get<string>(CONFIG_KEYS.REMOTE_MCP_AUTH_URL) || DEFAULT_REMOTE_MCP_AUTH_URL
+    ).trim();
+
+    if (!authUrl) {
+      this.post({
+        event: 'figma.status',
+        connected: false,
+        methods: [],
+        error: t(this.locale, 'host.figma.remoteAuthUrlMissing'),
+      });
+      return;
+    }
+
+    try {
+      const uri = vscode.Uri.parse(authUrl);
+      await vscode.env.openExternal(uri);
+      Logger.info('figma', `Started remote MCP auth flow: ${authUrl}`);
+      this.post({ event: 'figma.authStarted', mode: 'remote', authUrl });
+    } catch (e) {
+      Logger.error('figma', `Invalid remote MCP auth URL: ${authUrl}`, toErrorMessage(e));
+      this.post({
+        event: 'figma.status',
+        connected: false,
+        methods: [],
+        error: t(this.locale, 'host.figma.remoteAuthUrlInvalid'),
+      });
+    }
   }
 
   async fetchData(input: string) {
