@@ -101,7 +101,9 @@ export class FigmaLayer {
       if (connected) {
         text.textContent = this.msg('figma.statusConnected');
         this.setGuideMessage(
-          methods.length > 0 ? this.msg('figma.guide.availableTools', { count: methods.length }) : '',
+          methods.length > 0
+            ? this.msg('figma.guide.availableTools', { count: methods.length })
+            : '',
         );
       } else {
         text.textContent = this.msg('figma.statusDisconnected');

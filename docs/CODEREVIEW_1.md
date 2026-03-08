@@ -26,16 +26,16 @@
 
 ## Scoring (정량 평가)
 
-| 범주 | 점수 | 근거 |
-|---|---:|---|
-| 정확성 / 버그 | 6.5/10 | MCP fetch 실패 시 이중 render, generation error 이중 전송 확인 |
-| 보안 | 7.5/10 | CSP unsafe-inline, API key 포맷 미검증 |
-| 메모리 / 리소스 | 6.0/10 | 임시 파일 미정리, deactivate 미구현, O(n) Logger shift |
-| 성능 | 7.0/10 | chunk rendering O(n²), Logger entries O(n) shift |
-| 네트워크 내구성 | 7.0/10 | timeout 있음, retry 없음, stream 중단 미처리 |
-| 아키텍처 / 유지보수성 | 7.5/10 | static shared state, 12+ case switch 단일 클래스 |
-| 테스트 커버리지 | 7.5/10 | Branch 77.31%, 주요 에러 경로 미커버 |
-| **Overall (Weighted)** | **7.0/10** | 버그 수정 완료 시 8.0+ 수준으로 상승 가능 |
+| 범주                   |       점수 | 근거                                                           |
+| ---------------------- | ---------: | -------------------------------------------------------------- |
+| 정확성 / 버그          |     6.5/10 | MCP fetch 실패 시 이중 render, generation error 이중 전송 확인 |
+| 보안                   |     7.5/10 | CSP unsafe-inline, API key 포맷 미검증                         |
+| 메모리 / 리소스        |     6.0/10 | 임시 파일 미정리, deactivate 미구현, O(n) Logger shift         |
+| 성능                   |     7.0/10 | chunk rendering O(n²), Logger entries O(n) shift               |
+| 네트워크 내구성        |     7.0/10 | timeout 있음, retry 없음, stream 중단 미처리                   |
+| 아키텍처 / 유지보수성  |     7.5/10 | static shared state, 12+ case switch 단일 클래스               |
+| 테스트 커버리지        |     7.5/10 | Branch 77.31%, 주요 에러 경로 미커버                           |
+| **Overall (Weighted)** | **7.0/10** | 버그 수정 완료 시 8.0+ 수준으로 상승 가능                      |
 
 ---
 
@@ -69,6 +69,7 @@
 - **심각도**: High
 - **위치**: `src/webview/WebviewMessageHandler.ts:366-370`, `WebviewMessageHandler.ts:102-106`
 - **현상**:
+
   ```ts
   // handleGenerate 내부
   } catch (e) {
@@ -81,6 +82,7 @@
     this.post({ event: 'error', source, message: err.message }); // 2차 전송
   }
   ```
+
 - **영향**: PromptLayer는 `prompt.error`와 `error` (source='prompt') 두 이벤트를 순차 수신하여 `onError` → `onHostError`가 연속 호출됨. UI 상태 불일치 가능성.
 - **수정**: `handleGenerate`의 `throw e` 제거. 에러는 `prompt.error`로만 전달하고, outer `handle()` catch에서 중복 전송을 막기 위해 inner에서 처리된 에러는 re-throw하지 않음.
 
@@ -243,7 +245,7 @@
 - **위치**: `src/webview/SidebarProvider.ts:85`
 - **현상**:
   ```ts
-  `style-src ${webview.cspSource} 'unsafe-inline'`
+  `style-src ${webview.cspSource} 'unsafe-inline'`;
   ```
 - **영향**: webview 내 모든 `style=` inline 속성 허용. 외부 콘텐츠(Figma MCP 응답)가 직접 DOM에 삽입되지 않는 한 실제 위험도는 낮음. 하지만 defense-in-depth 원칙에 위배.
 - **수정**: style nonce를 script nonce와 동일하게 적용하거나, 인라인 스타일을 CSS 클래스로 전환하여 `unsafe-inline` 제거.
@@ -294,30 +296,30 @@
 
 ### P0 — 배포 전 필수 (버그 / 정확성)
 
-| # | 항목 | 완료 기준 |
-|---|---|---|
+| #    | 항목                                       | 완료 기준                                                        |
+| ---- | ------------------------------------------ | ---------------------------------------------------------------- |
 | P0-1 | [BUG-1] MCP fetch 실패 시 이중 render 수정 | MCP 오류 시 에러 노티스가 덮어써지지 않음, onDataResult 1회 호출 |
-| P0-2 | [BUG-2] generation error 이중 전송 제거 | 실패 시 PromptLayer가 단일 에러 상태 진입 |
-| P0-3 | [RESOURCE-1] 임시 스크린샷 파일 정리 | deactivate 또는 dispose 시 임시 PNG 0건 잔존 |
+| P0-2 | [BUG-2] generation error 이중 전송 제거    | 실패 시 PromptLayer가 단일 에러 상태 진입                        |
+| P0-3 | [RESOURCE-1] 임시 스크린샷 파일 정리       | deactivate 또는 dispose 시 임시 PNG 0건 잔존                     |
 
 ### P1 — 배포 후 1주 내 (안정성 / 보안)
 
-| # | 항목 | 완료 기준 |
-|---|---|---|
-| P1-1 | [RESOURCE-2] deactivate 정리 구현 | AgentFactory.clear(), Logger.clear() deactivate 호출 |
-| P1-2 | [NETWORK-2] McpClient.listTools shape 검증 | 잘못된 응답 시 TypeError 대신 빈 배열 반환 |
-| P1-3 | [PERF-1] chunk 렌더링 O(n²) 개선 | 5000자 이상 생성 시 UI lag 없음 |
-| P1-4 | [TEST-1] Branch coverage ≥ 85% 달성 | `npm run test:coverage` branch ≥ 85% |
+| #    | 항목                                       | 완료 기준                                            |
+| ---- | ------------------------------------------ | ---------------------------------------------------- |
+| P1-1 | [RESOURCE-2] deactivate 정리 구현          | AgentFactory.clear(), Logger.clear() deactivate 호출 |
+| P1-2 | [NETWORK-2] McpClient.listTools shape 검증 | 잘못된 응답 시 TypeError 대신 빈 배열 반환           |
+| P1-3 | [PERF-1] chunk 렌더링 O(n²) 개선           | 5000자 이상 생성 시 UI lag 없음                      |
+| P1-4 | [TEST-1] Branch coverage ≥ 85% 달성        | `npm run test:coverage` branch ≥ 85%                 |
 
 ### P2 — 배포 후 1개월 내 (품질 / UX)
 
-| # | 항목 | 완료 기준 |
-|---|---|---|
-| P2-1 | [PERF-2] Logger circular buffer 전환 | MAX_LOG_ENTRIES 이상에서도 O(1) append |
-| P2-2 | [ARCH-1] static state → StateManager 분리 | 상태 source-of-truth 단일화 |
-| P2-3 | [SECURITY-1] CSP unsafe-inline 제거 | style nonce 적용 또는 인라인 스타일 제거 |
-| P2-4 | [UX-1] fetch 시 자동 에디터 오픈 opt-in 전환 | 설정 또는 제거 |
-| P2-5 | [NETWORK-3] MCP clientInfo version 동기화 | package.json version 자동 반영 |
+| #    | 항목                                         | 완료 기준                                                      |
+| ---- | -------------------------------------------- | -------------------------------------------------------------- |
+| P2-1 | [PERF-2] Logger circular buffer 전환         | MAX_LOG_ENTRIES 이상에서도 O(1) append                         |
+| P2-2 | [ARCH-1] static state → StateManager 분리    | 상태 source-of-truth 단일화                                    |
+| P2-3 | [SECURITY-1] CSP unsafe-inline 제거          | style nonce 적용 또는 인라인 스타일 제거                       |
+| P2-4 | [UX-1] fetch 시 자동 에디터 오픈 opt-in 전환 | 설정 또는 제거                                                 |
+| P2-5 | [NETWORK-3] MCP clientInfo version 동기화    | package.json version 자동 반영                                 |
 | P2-6 | [ARCH-2] WebviewMessageHandler 도메인별 분리 | FigmaCommandHandler, AgentCommandHandler, PromptCommandHandler |
 
 ---
@@ -336,16 +338,16 @@
 
 ## Production Scorecard (Updated)
 
-| Metric | Score | Notes |
-|---|---:|---|
-| 정확성 / 버그 | 6.5/10 | BUG-1, BUG-2 해소 후 9.0+ 가능 |
-| 보안 | 7.5/10 | CSP unsafe-inline, key 포맷 미검증 |
-| 메모리 / 리소스 | 6.0/10 | 임시 파일 누수, deactivate 미구현 |
-| 성능 | 7.0/10 | chunk O(n²), Logger shift O(n) |
-| 네트워크 내구성 | 7.0/10 | timeout OK, retry/stream중단 미처리 |
-| 아키텍처 / 유지보수성 | 7.5/10 | static state 문서화됨, 단일 클래스 과부하 |
-| 테스트 커버리지 | 7.5/10 | Branch 77.31%, 에러 경로 미커버 |
-| **Overall** | **7.0/10** | P0 완료 시 8.0+, P1 완료 시 8.5+ 예상 |
+| Metric                |      Score | Notes                                     |
+| --------------------- | ---------: | ----------------------------------------- |
+| 정확성 / 버그         |     6.5/10 | BUG-1, BUG-2 해소 후 9.0+ 가능            |
+| 보안                  |     7.5/10 | CSP unsafe-inline, key 포맷 미검증        |
+| 메모리 / 리소스       |     6.0/10 | 임시 파일 누수, deactivate 미구현         |
+| 성능                  |     7.0/10 | chunk O(n²), Logger shift O(n)            |
+| 네트워크 내구성       |     7.0/10 | timeout OK, retry/stream중단 미처리       |
+| 아키텍처 / 유지보수성 |     7.5/10 | static state 문서화됨, 단일 클래스 과부하 |
+| 테스트 커버리지       |     7.5/10 | Branch 77.31%, 에러 경로 미커버           |
+| **Overall**           | **7.0/10** | P0 완료 시 8.0+, P1 완료 시 8.5+ 예상     |
 
 ---
 

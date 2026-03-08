@@ -28,7 +28,13 @@ suite('PromptCommandHandler', () => {
     stateManager.setAgent('claude');
     stateManager.setModel('claude-model');
     stateManager.setLastMcpData({ fileId: 'F1' });
-    handler = new PromptCommandHandler(webview as any, context, editorIntegration, stateManager, 'ko');
+    handler = new PromptCommandHandler(
+      webview as any,
+      context,
+      editorIntegration,
+      stateManager,
+      'ko',
+    );
   });
 
   teardown(() => {
@@ -176,7 +182,13 @@ suite('PromptCommandHandler', () => {
 
     await handler.generate({ outputFormat: 'html' });
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'prompt.error', code: 'failed', message: 'agent failed' }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'prompt.error',
+        code: 'failed',
+        message: 'agent failed',
+      }),
+    );
   });
 
   test('cancel aborts active request', async () => {
@@ -254,7 +266,12 @@ suite('PromptCommandHandler', () => {
 
   test('estimate uses state MCP data by default', () => {
     handler.estimate({ outputFormat: 'html' });
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'prompt.estimateResult', tokens: sinon.match.number }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'prompt.estimateResult',
+        tokens: sinon.match.number,
+      }),
+    );
   });
 
   test('estimate keeps payload MCP data override', () => {

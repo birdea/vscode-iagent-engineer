@@ -30,7 +30,7 @@ suite('SidebarProvider', () => {
       extensionUri: mockUri,
       globalState: { get: sandbox.stub().returns('gemini') },
       secrets: { get: sandbox.stub().resolves('key') },
-      extension: { packageJSON: { version: '1.0.0' } }
+      extension: { packageJSON: { version: '1.0.0' } },
     };
     stateManager = new StateManager();
     provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext, stateManager);
@@ -45,7 +45,7 @@ suite('SidebarProvider', () => {
     const onLog = sandbox.stub();
     provider = new SidebarProvider('viewId', 'figma', mockUri, mockContext, stateManager, onLog);
     provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
-    
+
     assert.ok(mockWebviewView.webview.options.enableScripts);
     assert.ok(mockWebviewView.webview.html.includes('data-section="figma"'));
     assert.ok(mockWebviewView.webview.html.includes('csp'));
@@ -64,29 +64,29 @@ suite('SidebarProvider', () => {
   });
 
   test('onDidReceiveMessage listener works', async () => {
-      provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
-      const listener = mockWebviewView.webview.onDidReceiveMessage.args[0][0];
+    provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
+    const listener = mockWebviewView.webview.onDidReceiveMessage.args[0][0];
 
-      // Call with msg
-      await listener({ command: 'state.setAgent', agent: 'gemini' });
+    // Call with msg
+    await listener({ command: 'state.setAgent', agent: 'gemini' });
   });
 
   test('onDidDispose callback disposes subscriptions', () => {
-      const onLog = sandbox.stub();
-      provider = new SidebarProvider('viewId', 'log', mockUri, mockContext, stateManager, onLog);
-      provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
+    const onLog = sandbox.stub();
+    provider = new SidebarProvider('viewId', 'log', mockUri, mockContext, stateManager, onLog);
+    provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
 
-      // Trigger the dispose callback
-      const disposeCallback = mockWebviewView.onDidDispose.args[0][0];
-      assert.doesNotThrow(() => disposeCallback());
+    // Trigger the dispose callback
+    const disposeCallback = mockWebviewView.onDidDispose.args[0][0];
+    assert.doesNotThrow(() => disposeCallback());
   });
 
   test('onDidReceiveMessage with null handler logs error', async () => {
-      provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
-      // Null out handler to test the guard
-      (provider as any).handler = null;
-      const listener = mockWebviewView.webview.onDidReceiveMessage.args[0][0];
-      await listener({ command: 'figma.connect' });
-      // Should not throw; Logger.error would have been called
+    provider.resolveWebviewView(mockWebviewView, {} as any, {} as any);
+    // Null out handler to test the guard
+    (provider as any).handler = null;
+    const listener = mockWebviewView.webview.onDidReceiveMessage.args[0][0];
+    await listener({ command: 'figma.connect' });
+    // Should not throw; Logger.error would have been called
   });
 });

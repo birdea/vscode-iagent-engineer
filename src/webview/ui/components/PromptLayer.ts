@@ -80,8 +80,12 @@ export class PromptLayer {
     });
     useMcpDataEl?.addEventListener('change', () => this.updateEstimate());
     outputFormatEl?.addEventListener('change', () => this.updateEstimate());
-    document.getElementById('btn-generate')?.addEventListener('click', () => this.onGenerateRequested());
-    document.getElementById('btn-cancel-generate')?.addEventListener('click', () => this.onCancelRequested());
+    document
+      .getElementById('btn-generate')
+      ?.addEventListener('click', () => this.onGenerateRequested());
+    document
+      .getElementById('btn-cancel-generate')
+      ?.addEventListener('click', () => this.onCancelRequested());
 
     document.getElementById('btn-open-editor')?.addEventListener('click', () => {
       if (this.generatedCode) {
@@ -174,7 +178,8 @@ export class PromptLayer {
       const outputFormatEl = document.getElementById('output-format') as HTMLSelectElement | null;
       const estimateEl = document.getElementById('token-estimate');
 
-      if (!useUserPromptEl || !useMcpDataEl || !userPromptEl || !outputFormatEl || !estimateEl) return;
+      if (!useUserPromptEl || !useMcpDataEl || !userPromptEl || !outputFormatEl || !estimateEl)
+        return;
 
       estimateEl.textContent = this.msg('prompt.notice.calculating');
 
@@ -252,7 +257,8 @@ export class PromptLayer {
     this.setGeneratingState(false);
     this.setNotice(
       complete ? 'success' : 'warn',
-      message ?? (complete ? this.msg('prompt.notice.completed') : this.msg('prompt.notice.incomplete')),
+      message ??
+        (complete ? this.msg('prompt.notice.completed') : this.msg('prompt.notice.incomplete')),
     );
   }
 

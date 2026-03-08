@@ -10,19 +10,19 @@
 
 ## 1. 종합 평가
 
-| 항목 | 이전 리뷰 | 현재 | 변화 |
-|------|----------|------|------|
-| 아키텍처 | 9.0 | 9.0 | — |
-| 타입 안전성 | 9.0 | 9.0 | — |
-| 에러 처리 | 8.5 | 9.0 | ↑ |
-| 보안 | 8.0 | 8.5 | ↑ |
-| 테스트 커버리지 | 8.5 | 8.5 | — |
-| 코드 품질 | 8.5 | 9.0 | ↑ |
-| 리소스 관리 | 9.5 | 9.5 | — |
-| 국제화(i18n) | 8.5 | 9.0 | ↑ |
-| CI/CD | 8.5 | 9.5 | ↑↑ |
-| 문서화 | 7.5 | 8.0 | ↑ |
-| **종합** | **8.5** | **9.0** | **↑** |
+| 항목            | 이전 리뷰 | 현재    | 변화  |
+| --------------- | --------- | ------- | ----- |
+| 아키텍처        | 9.0       | 9.0     | —     |
+| 타입 안전성     | 9.0       | 9.0     | —     |
+| 에러 처리       | 8.5       | 9.0     | ↑     |
+| 보안            | 8.0       | 8.5     | ↑     |
+| 테스트 커버리지 | 8.5       | 8.5     | —     |
+| 코드 품질       | 8.5       | 9.0     | ↑     |
+| 리소스 관리     | 9.5       | 9.5     | —     |
+| 국제화(i18n)    | 8.5       | 9.0     | ↑     |
+| CI/CD           | 8.5       | 9.5     | ↑↑    |
+| 문서화          | 7.5       | 8.0     | ↑     |
+| **종합**        | **8.5**   | **9.0** | **↑** |
 
 **판정:** 출시 가능(GA 후보) 수준에서 **프로덕션 품질(GA)** 수준으로 향상. 이전 리뷰의 P0/P1/P2 항목이 모두 해결됨. 잔존 이슈는 전부 낮음(Low) 심각도이며 출시 후 패치로 처리 가능.
 
@@ -41,8 +41,7 @@
 ```typescript
 // 이전: /^sk-[A-Za-z0-9_-]{10,}$/ (Stripe sk-live-... 등도 통과)
 // 현재:
-const pattern =
-  agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-ant-[A-Za-z0-9_-]{10,}$/;
+const pattern = agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-ant-[A-Za-z0-9_-]{10,}$/;
 ```
 
 `sk-ant-` 접두사 강제로 다른 서비스의 `sk-` 접두사 키를 차단한다.
@@ -132,7 +131,7 @@ const stream = this.client.messages.stream(
     system: `...`,
     messages: [{ role: 'user', content: prompt }],
   },
-  { signal },  // ← 공식 AbortSignal 파라미터
+  { signal }, // ← 공식 AbortSignal 파라미터
 );
 ```
 
@@ -379,9 +378,9 @@ const errMessage = toErrorMessage(e);
 
 ```typescript
 export function estimateTokens(text: string): TokenEstimate {
-  const bytes = new TextEncoder().encode(text).length;  // 바이트 수 계산
+  const bytes = new TextEncoder().encode(text).length; // 바이트 수 계산
   const kb = bytes / 1024;
-  const tokens = Math.ceil(text.length / TOKEN_ESTIMATE_DIVISOR);  // 문자 수로 계산 (불일치)
+  const tokens = Math.ceil(text.length / TOKEN_ESTIMATE_DIVISOR); // 문자 수로 계산 (불일치)
   return { tokens, kb };
 }
 ```
@@ -454,25 +453,25 @@ on:
 
 ## 4. 유지되는 강점 (변경 없음)
 
-| 항목 | 구현 위치 | 비고 |
-|------|----------|------|
-| **Discriminated Union 메시지 타입** | `src/types.ts` | Extension Host ↔ Webview 완전한 타입 안전성 |
-| **Logger 추상화** | `src/logger/Logger.ts` | 모든 소스 파일에서 `console.log` 미사용 |
-| **Secrets Store** | `AgentCommandHandler.ts` | API 키를 OS 암호화 VS Code Secrets에 저장 |
-| **CSP 정책** | `SidebarProvider.ts` | `script-src 'nonce-*'`, `default-src 'none'` |
-| **입력 검증** | `McpParser.ts` | fileId/nodeId 정규식 정제 |
-| **순환 버퍼 로거** | `Logger.ts` | 고정 메모리(500 엔트리), O(1) append |
-| **rAF 청크 배치** | `PromptLayer.ts` | `insertAdjacentText` 패턴, DOM O(n²) 제거 |
-| **Gemini 모델 캐시** | `GeminiAgent.ts` | 5분 TTL로 반복 API 호출 방지 |
-| **단일 IPC 스트리밍** | `PromptCommandHandler.ts` | `prompt.streaming` 이벤트 통합 |
-| **MCP 재시도 로직** | `McpClient.ts` | 지수 백오프 3회, ValidationError 제외 |
-| **브랜치 커버리지 게이트** | `package.json`, `ci.yml` | 85% 미만 PR 차단 |
-| **취약점 감사** | `ci.yml` | `npm audit --audit-level=high` |
-| **CodeQL SAST** | `codeql.yml` | main push + 주간 스케줄 |
-| **GitHub Release 자동화** | `release.yml` | VSIX 아티팩트 첨부 및 마켓플레이스 배포 |
-| **경로 순회 방지** | `ScreenshotService.ts` | `sanitizePathSegment()` + os.tmpdir() |
-| **SSRF 완화** | `McpClient.ts` | 외부 엔드포인트 modal 확인 |
-| **스트림 취소 처리** | `GeminiAgent.ts`, `ClaudeAgent.ts` | AbortSignal 공식 연동 |
+| 항목                                | 구현 위치                          | 비고                                         |
+| ----------------------------------- | ---------------------------------- | -------------------------------------------- |
+| **Discriminated Union 메시지 타입** | `src/types.ts`                     | Extension Host ↔ Webview 완전한 타입 안전성  |
+| **Logger 추상화**                   | `src/logger/Logger.ts`             | 모든 소스 파일에서 `console.log` 미사용      |
+| **Secrets Store**                   | `AgentCommandHandler.ts`           | API 키를 OS 암호화 VS Code Secrets에 저장    |
+| **CSP 정책**                        | `SidebarProvider.ts`               | `script-src 'nonce-*'`, `default-src 'none'` |
+| **입력 검증**                       | `McpParser.ts`                     | fileId/nodeId 정규식 정제                    |
+| **순환 버퍼 로거**                  | `Logger.ts`                        | 고정 메모리(500 엔트리), O(1) append         |
+| **rAF 청크 배치**                   | `PromptLayer.ts`                   | `insertAdjacentText` 패턴, DOM O(n²) 제거    |
+| **Gemini 모델 캐시**                | `GeminiAgent.ts`                   | 5분 TTL로 반복 API 호출 방지                 |
+| **단일 IPC 스트리밍**               | `PromptCommandHandler.ts`          | `prompt.streaming` 이벤트 통합               |
+| **MCP 재시도 로직**                 | `McpClient.ts`                     | 지수 백오프 3회, ValidationError 제외        |
+| **브랜치 커버리지 게이트**          | `package.json`, `ci.yml`           | 85% 미만 PR 차단                             |
+| **취약점 감사**                     | `ci.yml`                           | `npm audit --audit-level=high`               |
+| **CodeQL SAST**                     | `codeql.yml`                       | main push + 주간 스케줄                      |
+| **GitHub Release 자동화**           | `release.yml`                      | VSIX 아티팩트 첨부 및 마켓플레이스 배포      |
+| **경로 순회 방지**                  | `ScreenshotService.ts`             | `sanitizePathSegment()` + os.tmpdir()        |
+| **SSRF 완화**                       | `McpClient.ts`                     | 외부 엔드포인트 modal 확인                   |
+| **스트림 취소 처리**                | `GeminiAgent.ts`, `ClaudeAgent.ts` | AbortSignal 공식 연동                        |
 
 ---
 
@@ -525,21 +524,21 @@ Webview (브라우저 환경):
 
 ### Priority 1 — 출시 후 우선 개선
 
-| # | 파일 | 항목 | 작업 |
-|---|------|------|------|
-| P1-1 | `.github/workflows/ci.yml` | CI-NEW-1 | `push: branches: [main]` 트리거 추가 |
-| P1-2 | `McpClient.ts:275-278` | SEC-NEW-1 | `setEndpoint()` 시 이전 엔드포인트 승인 제거 |
+| #    | 파일                       | 항목      | 작업                                         |
+| ---- | -------------------------- | --------- | -------------------------------------------- |
+| P1-1 | `.github/workflows/ci.yml` | CI-NEW-1  | `push: branches: [main]` 트리거 추가         |
+| P1-2 | `McpClient.ts:275-278`     | SEC-NEW-1 | `setEndpoint()` 시 이전 엔드포인트 승인 제거 |
 
 ### Priority 2 — 출시 후 개선
 
-| # | 항목 | 작업 |
-|---|------|------|
-| P2-1 | NF-NEW-2 | `TokenEstimator`를 `bytes / TOKEN_ESTIMATE_DIVISOR` 기반으로 수정 |
-| P2-2 | NF-NEW-1 | Gemini 모델 정렬을 버전 숫자 파싱 기반으로 교체 |
-| P2-3 | ERR-NEW-1 | `GeminiAgent` catch 블록 로깅 제거 또는 warn 수준으로 낮추기 |
-| P2-4 | SEC-NEW-2 | `ClaudeAgent` 사용자 설정 모델 ID 정규식 검증 추가 |
-| P2-5 | CI-NEW-2 | CI Lint 단계에 `npm run format:check` 추가 |
-| P2-6 | QA-NEW-1 | ESLint `no-explicit-any: error` 강화 |
+| #    | 항목      | 작업                                                              |
+| ---- | --------- | ----------------------------------------------------------------- |
+| P2-1 | NF-NEW-2  | `TokenEstimator`를 `bytes / TOKEN_ESTIMATE_DIVISOR` 기반으로 수정 |
+| P2-2 | NF-NEW-1  | Gemini 모델 정렬을 버전 숫자 파싱 기반으로 교체                   |
+| P2-3 | ERR-NEW-1 | `GeminiAgent` catch 블록 로깅 제거 또는 warn 수준으로 낮추기      |
+| P2-4 | SEC-NEW-2 | `ClaudeAgent` 사용자 설정 모델 ID 정규식 검증 추가                |
+| P2-5 | CI-NEW-2  | CI Lint 단계에 `npm run format:check` 추가                        |
+| P2-6 | QA-NEW-1  | ESLint `no-explicit-any: error` 강화                              |
 
 ---
 
@@ -548,6 +547,7 @@ Webview (브라우저 환경):
 버전 0.1.4(현재)는 이전 리뷰에서 지적된 **모든 P0, P1, P2 항목(13건)**을 해결하여 코드베이스 품질이 종합 **9.0 / 10**으로 향상되었다.
 
 특히:
+
 - **Claude API 키 정규식**이 `sk-ant-` 접두사로 강화되어 유일한 P0 차단 이슈가 해결되었다.
 - **MCP 재시도 로직**이 지수 백오프(250ms → 500ms → 1000ms) 3회로 구현되어 일시적 네트워크 오류에 탄력성이 생겼다.
 - **ClaudeAgent 스트림 중단**이 불안전한 타입 캐스팅 대신 SDK 공식 `signal` 파라미터로 안전하게 처리된다.
@@ -557,4 +557,4 @@ Webview (브라우저 환경):
 
 ---
 
-*이 리뷰는 소스 코드 직접 검증 방법론(Source Code Inspection)과 OWASP Top 10 체크리스트를 기반으로 작성되었습니다.*
+_이 리뷰는 소스 코드 직접 검증 방법론(Source Code Inspection)과 OWASP Top 10 체크리스트를 기반으로 작성되었습니다._

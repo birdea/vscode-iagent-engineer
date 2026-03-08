@@ -32,13 +32,13 @@ suite('McpParser Final', () => {
   });
 
   test('JSON without valid keys but with URL', () => {
-      const res = parseMcpData('{"other": "https://figma.com/design/D1"}');
-      assert.strictEqual(res.fileId, 'D1');
+    const res = parseMcpData('{"other": "https://figma.com/design/D1"}');
+    assert.strictEqual(res.fileId, 'D1');
   });
 
   test('Invalid JSON fallback', () => {
-      const res = parseMcpData('not json but has https://figma.com/file/F7');
-      assert.strictEqual(res.fileId, 'F7');
+    const res = parseMcpData('not json but has https://figma.com/file/F7');
+    assert.strictEqual(res.fileId, 'F7');
   });
 
   test('Empty', () => {

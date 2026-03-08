@@ -68,7 +68,10 @@ export class ClaudeAgent extends BaseAgent {
         if (typeof model.id !== 'string' || !model.id.trim()) return null;
         return {
           id: model.id.trim(),
-          name: typeof model.name === 'string' && model.name.trim() ? model.name.trim() : model.id.trim(),
+          name:
+            typeof model.name === 'string' && model.name.trim()
+              ? model.name.trim()
+              : model.id.trim(),
           description: typeof model.description === 'string' ? model.description : undefined,
           inputTokenLimit:
             typeof model.inputTokenLimit === 'number' ? model.inputTokenLimit : undefined,

@@ -15,9 +15,14 @@ suite('EditorIntegration', () => {
   test('openInEditor calls workspace.openTextDocument', async () => {
     const vscode = require('vscode');
     vscode.workspace.openTextDocument.resolves({ show: sinon.stub() });
-    
+
     await integration.openInEditor('const x = 1;', 'javascript');
-    assert.ok(vscode.workspace.openTextDocument.calledWithMatch({ language: 'javascript', content: 'const x = 1;' }));
+    assert.ok(
+      vscode.workspace.openTextDocument.calledWithMatch({
+        language: 'javascript',
+        content: 'const x = 1;',
+      }),
+    );
   });
 
   test('saveAsNewFile calls showInformationMessage', async () => {
@@ -28,7 +33,10 @@ suite('EditorIntegration', () => {
     await integration.saveAsNewFile('code', 'test.ts');
     const saveArgs = saveDialogStub.firstCall.args[0];
     if (saveArgs.defaultUri?.fsPath) {
-      assert.strictEqual(saveArgs.defaultUri.fsPath, path.join(os.homedir(), 'Documents', 'test.ts'));
+      assert.strictEqual(
+        saveArgs.defaultUri.fsPath,
+        path.join(os.homedir(), 'Documents', 'test.ts'),
+      );
     }
     assert.ok(vscode.window.showInformationMessage.called);
   });
@@ -41,5 +49,4 @@ suite('EditorIntegration', () => {
     await integration.saveAsNewFile('code', 'test.ts');
     assert.ok(!vscode.workspace.fs.writeFile.called);
   });
-
 });

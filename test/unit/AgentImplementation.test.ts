@@ -23,10 +23,10 @@ suite('Agent Implementations', () => {
     });
 
     test('PromptBuilder includes context for agent payload', () => {
-      const payload = { 
-        outputFormat: 'html' as any, 
+      const payload = {
+        outputFormat: 'html' as any,
         userPrompt: 'make it blue',
-        mcpData: { component: 'Button' }
+        mcpData: { component: 'Button' },
       };
       const prompt = new PromptBuilder().build(payload);
       assert.ok(prompt.toLowerCase().includes('html'));
@@ -58,9 +58,7 @@ suite('Agent Implementations', () => {
 
     test('listModels failure', async () => {
       await agent.setApiKey('test-key');
-      nock('https://generativelanguage.googleapis.com')
-        .get('/v1beta/models')
-        .reply(500, 'Error');
+      nock('https://generativelanguage.googleapis.com').get('/v1beta/models').reply(500, 'Error');
 
       try {
         await agent.listModels();
@@ -95,9 +93,7 @@ suite('Agent Implementations', () => {
     test('generateCode handles errors', async () => {
       await agent.setApiKey('test-key');
       // Mock the SDK internal fetch or error during streaming
-      nock('https://generativelanguage.googleapis.com')
-        .post(/.*/)
-        .reply(500, 'Error');
+      nock('https://generativelanguage.googleapis.com').post(/.*/).reply(500, 'Error');
 
       try {
         const gen = agent.generateCode({ outputFormat: 'html' as any, userPrompt: 'test' });
@@ -127,7 +123,10 @@ suite('Agent Implementations', () => {
       const abortController = new AbortController();
       abortController.abort();
 
-      const gen = agent.generateCode({ outputFormat: 'html' as any, userPrompt: 'test' }, abortController.signal);
+      const gen = agent.generateCode(
+        { outputFormat: 'html' as any, userPrompt: 'test' },
+        abortController.signal,
+      );
       await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
       assert.ok(returnStub.calledOnce);
     });
@@ -141,8 +140,8 @@ suite('Agent Implementations', () => {
     });
 
     test('PromptBuilder includes context for agent payload', () => {
-      const payload = { 
-        outputFormat: 'tsx' as any, 
+      const payload = {
+        outputFormat: 'tsx' as any,
         userPrompt: 'dark mode',
       };
       const prompt = new PromptBuilder().build(payload);
@@ -163,9 +162,9 @@ suite('Agent Implementations', () => {
     test('listModels uses configured catalog when provided', async () => {
       const vscode = require('vscode');
       const getStub = vscode.workspace.getConfiguration().get;
-      getStub.withArgs('figma-mcp-helper.claudeModels').returns([
-        { id: 'claude-custom', name: 'Claude Custom', outputTokenLimit: 4096 },
-      ]);
+      getStub
+        .withArgs('figma-mcp-helper.claudeModels')
+        .returns([{ id: 'claude-custom', name: 'Claude Custom', outputTokenLimit: 4096 }]);
 
       const models = await agent.listModels();
       assert.strictEqual(models.length, 1);
@@ -192,8 +191,8 @@ suite('Agent Implementations', () => {
       const vscode = require('vscode');
       const getStub = vscode.workspace.getConfiguration().get;
       getStub.withArgs('figma-mcp-helper.claudeModels').returns([
-        { id: '' },              // empty id — invalid
-        { not_a_model: true },   // wrong shape
+        { id: '' }, // empty id — invalid
+        { not_a_model: true }, // wrong shape
       ]);
 
       const models = await agent.listModels();

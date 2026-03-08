@@ -76,13 +76,13 @@ const mockVscode = {
   EventEmitter: class {
     event = sinon.stub();
     fire = sinon.stub();
-  }
+  },
 };
 
 // Intercept require('vscode') for tests
 const m = require('module');
 const originalRequire = m.prototype.require;
-m.prototype.require = function(path: string) {
+m.prototype.require = function (path: string) {
   if (path === 'vscode') return mockVscode;
   return originalRequire.apply(this, arguments);
 };

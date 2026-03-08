@@ -165,7 +165,9 @@ suite('AgentCommandHandler', () => {
 
     assert.ok(setApiKeyStub.calledWith('claude', 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz'));
     assert.ok(context.globalState.update.calledWith('figma-mcp-helper.defaultAgent', 'claude'));
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: true }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: true }),
+    );
   });
 
   test('setApiKey rejects invalid key format', async () => {
@@ -199,7 +201,9 @@ suite('AgentCommandHandler', () => {
     await handler.saveSettings('gemini', 'gemini-pro', '   ');
 
     assert.ok(setApiKeyStub.notCalled);
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: false }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: false }),
+    );
   });
 
   test('saveSettings updates state manager values', async () => {
@@ -220,7 +224,9 @@ suite('AgentCommandHandler', () => {
     assert.ok(context.secrets.delete.calledWith('figma-mcp-helper.claudeApiKey'));
     assert.strictEqual(stateManager.getAgent(), 'gemini');
     assert.strictEqual(stateManager.getModel(), '');
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.settingsCleared', agent: 'claude' }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({ event: 'agent.settingsCleared', agent: 'claude' }),
+    );
   });
 
   test('listModels uses runtime key when provided', async () => {
@@ -233,7 +239,9 @@ suite('AgentCommandHandler', () => {
     await handler.listModels('gemini', ' temporary ');
 
     assert.ok(agent.setApiKey.calledWith('temporary'));
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.modelsResult', models: [{ id: 'm1' }] }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({ event: 'agent.modelsResult', models: [{ id: 'm1' }] }),
+    );
   });
 
   test('listModels falls back to saved key when runtime key is missing', async () => {

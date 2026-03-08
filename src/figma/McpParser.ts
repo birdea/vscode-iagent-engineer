@@ -28,8 +28,7 @@ export function parseMcpData(input: string): ParsedMcpData {
         raw: json,
       };
     }
-  } catch {
-  }
+  } catch {}
 
   // Try direct URL match in plain text
   const textMatch = trimmed.match(FIGMA_URL_PATTERN);

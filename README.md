@@ -33,10 +33,10 @@ The sidebar has three panels:
 
 ### Setup
 
-| Section | What to do |
-|---------|------------|
+| Section   | What to do                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------- |
 | **Figma** | Connect to your MCP server, then paste a Figma URL or JSON payload to fetch design data or a screenshot |
-| **Agent** | Choose Gemini or Claude, save your API key, and load a model |
+| **Agent** | Choose Gemini or Claude, save your API key, and load a model                                            |
 
 ### Prompt
 
@@ -50,11 +50,11 @@ View extension activity and troubleshooting details.
 
 ## Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `figma-mcp-helper.mcpEndpoint` | `http://localhost:3845` | Figma MCP server URL |
-| `figma-mcp-helper.openFetchedDataInEditor` | `false` | Auto-open fetched JSON in the editor |
-| `figma-mcp-helper.claudeModels` | — | Claude model list shown in the Agent panel |
+| Setting                                    | Default                 | Description                                |
+| ------------------------------------------ | ----------------------- | ------------------------------------------ |
+| `figma-mcp-helper.mcpEndpoint`             | `http://localhost:3845` | Figma MCP server URL                       |
+| `figma-mcp-helper.openFetchedDataInEditor` | `false`                 | Auto-open fetched JSON in the editor       |
+| `figma-mcp-helper.claudeModels`            | —                       | Claude model list shown in the Agent panel |
 
 ## Language Support
 

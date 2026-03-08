@@ -39,11 +39,21 @@ suite('Agent Management', () => {
   test('BaseAgent setApiKey', async () => {
     class MockAgent extends BaseAgent {
       readonly type = 'gemini' as any;
-      async listModels() { return []; }
-      async getModelInfo() { return {} as any; }
-      async *generateCode() { yield ''; }
-      getApiKey() { return this.apiKey; }
-      check() { this.ensureApiKey(); }
+      async listModels() {
+        return [];
+      }
+      async getModelInfo() {
+        return {} as any;
+      }
+      async *generateCode() {
+        yield '';
+      }
+      getApiKey() {
+        return this.apiKey;
+      }
+      check() {
+        this.ensureApiKey();
+      }
     }
 
     const agent = new MockAgent();
@@ -73,10 +83,7 @@ suite('GeminiAgent', () => {
       .get('/v1beta/models')
       .reply(403, '{"error":"forbidden"}');
 
-    await assert.rejects(
-      () => agent.listModels(),
-      /Gemini models API returned HTTP 403/,
-    );
+    await assert.rejects(() => agent.listModels(), /Gemini models API returned HTTP 403/);
   });
 
   test('listModels rejects on unexpected response shape', async () => {
@@ -87,18 +94,12 @@ suite('GeminiAgent', () => {
       .get('/v1beta/models')
       .reply(200, '{"notModels":[]}');
 
-    await assert.rejects(
-      () => agent.listModels(),
-      /Unexpected response shape/,
-    );
+    await assert.rejects(() => agent.listModels(), /Unexpected response shape/);
   });
 
   test('listModels rejects when no API key set', async () => {
     const agent = new GeminiAgent();
-    await assert.rejects(
-      () => agent.listModels(),
-      /No API key set/,
-    );
+    await assert.rejects(() => agent.listModels(), /No API key set/);
   });
 
   test('generateCode throws when no API key set', async () => {

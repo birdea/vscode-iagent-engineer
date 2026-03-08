@@ -81,7 +81,9 @@ suite('Webview workflow E2E', function () {
         data: sinon.match({ fileId: 'FILE123', name: 'Mock Figma Design' }),
       }),
     );
-    assert.ok(postMessage.calledWithMatch({ event: 'figma.screenshotResult', base64: sinon.match.string }));
+    assert.ok(
+      postMessage.calledWithMatch({ event: 'figma.screenshotResult', base64: sinon.match.string }),
+    );
     assert.ok(postMessage.calledWithMatch({ event: 'prompt.result', code: '<div>mock</div>' }));
   });
 

@@ -26,8 +26,7 @@ export function init() {
         else if (msg.event === 'figma.dataFetchError') {
           figma.onError(msg.message);
           figma.onDataResult(msg.fallbackData);
-        }
-        else if (msg.event === 'figma.screenshotResult') figma.onScreenshotResult(msg.base64);
+        } else if (msg.event === 'figma.screenshotResult') figma.onScreenshotResult(msg.base64);
         else if (msg.event === 'error' && msg.source === 'figma') figma.onError(msg.message);
         else if (msg.event === 'agent.modelsResult') agent.onModelsResult(msg.models);
         else if (msg.event === 'agent.saveRequested') agent.onSaveRequested();

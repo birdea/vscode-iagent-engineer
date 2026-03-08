@@ -281,8 +281,9 @@ export class AgentLayer {
   }
 
   private requestModelLoad(force: boolean) {
-    const agent = (document.getElementById('agent-select') as HTMLSelectElement | null)
-      ?.value as AgentType | undefined;
+    const agent = (document.getElementById('agent-select') as HTMLSelectElement | null)?.value as
+      | AgentType
+      | undefined;
     const key =
       (document.getElementById('api-key-input') as HTMLInputElement | null)?.value.trim() ?? '';
     if (!agent) return;
@@ -306,7 +307,13 @@ export class AgentLayer {
   }
 
   private toFriendlyError(message: string): string {
-    return toFriendlyApiKeyError(this.locale, message, 'agent.error.noApiKey', 'agent.error.auth', 'agent.error.generic');
+    return toFriendlyApiKeyError(
+      this.locale,
+      message,
+      'agent.error.noApiKey',
+      'agent.error.auth',
+      'agent.error.generic',
+    );
   }
 
   private msg(key: string, params?: Record<string, string | number>) {

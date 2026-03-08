@@ -10,19 +10,19 @@
 
 ## 1. 종합 평가
 
-| 항목 | v0.1.4 (이전) | 현재 | 변화 |
-|------|--------------|------|------|
-| 아키텍처 | 9.0 | 9.0 | — |
-| 타입 안전성 | 9.0 | 9.0 | — |
-| 에러 처리 | 7.5 | 8.5 | ↑↑ |
-| 보안 | 8.0 | 8.0 | — |
-| 테스트 커버리지 | 8.0 | 8.5 | ↑ |
-| 코드 품질 | 8.5 | 8.5 | — |
-| 리소스 관리 | 9.5 | 9.5 | — |
-| 국제화(i18n) | 9.0 | 8.5 | ↓ |
-| CI/CD | 7.0 | 8.5 | ↑↑ |
-| 문서화 | 7.5 | 7.5 | — |
-| **종합** | **8.0** | **8.5** | **↑** |
+| 항목            | v0.1.4 (이전) | 현재    | 변화  |
+| --------------- | ------------- | ------- | ----- |
+| 아키텍처        | 9.0           | 9.0     | —     |
+| 타입 안전성     | 9.0           | 9.0     | —     |
+| 에러 처리       | 7.5           | 8.5     | ↑↑    |
+| 보안            | 8.0           | 8.0     | —     |
+| 테스트 커버리지 | 8.0           | 8.5     | ↑     |
+| 코드 품질       | 8.5           | 8.5     | —     |
+| 리소스 관리     | 9.5           | 9.5     | —     |
+| 국제화(i18n)    | 9.0           | 8.5     | ↓     |
+| CI/CD           | 7.0           | 8.5     | ↑↑    |
+| 문서화          | 7.5           | 7.5     | —     |
+| **종합**        | **8.0**       | **8.5** | **↑** |
 
 **판정:** 릴리스 후보(RC) 수준에서 **출시 가능(GA 후보)** 수준으로 향상. 이전 P0/P1 항목이 모두 해결됨. 잔존하는 이슈들은 대부분 낮음(Low) 심각도이며 출시 후 패치로 처리 가능.
 
@@ -52,6 +52,7 @@ if (fullCode.length > 0) {
 ```
 
 `PromptLayer.ts:249-256`에서 `complete: false` 케이스를 명확히 처리:
+
 ```typescript
 if (complete) {
   this.onGenerating(100);
@@ -179,8 +180,7 @@ this.post({ event: 'prompt.streaming', progress, text: chunk });
 **심각도:** 중간
 
 ```typescript
-const pattern =
-  agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-[A-Za-z0-9_-]{10,}$/;
+const pattern = agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-[A-Za-z0-9_-]{10,}$/;
 ```
 
 Anthropic API 키 실제 형식은 `sk-ant-api03-...`이다. 현재 패턴 `/^sk-[A-Za-z0-9_-]{10,}$/`는 다른 서비스의 `sk-` 접두사 키(예: Stripe 시크릿 키 `sk-live-...`)도 통과시켜 잘못된 키가 저장될 수 있다.
@@ -188,7 +188,7 @@ Anthropic API 키 실제 형식은 `sk-ant-api03-...`이다. 현재 패턴 `/^sk
 **권장 조치:**
 
 ```typescript
-agent === 'claude' ? /^sk-ant-[A-Za-z0-9_-]{20,}$/ : /^AIza[0-9A-Za-z_-]{20,}$/
+agent === 'claude' ? /^sk-ant-[A-Za-z0-9_-]{20,}$/ : /^AIza[0-9A-Za-z_-]{20,}$/;
 ```
 
 #### SEC-2 — MCP 엔드포인트 SSRF 미완성 (중간, 잔존)
@@ -205,7 +205,8 @@ const ALLOWED_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 if (!ALLOWED_HOSTS.has(url.hostname)) {
   const confirmed = await vscode.window.showWarningMessage(
     `MCP 엔드포인트가 외부 호스트(${url.hostname})입니다. 계속하시겠습니까?`,
-    '허용', '취소'
+    '허용',
+    '취소',
   );
   if (confirmed !== '허용') throw new ValidationError('MCP 엔드포인트 거부됨');
 }
@@ -391,11 +392,11 @@ export const TOKEN_ESTIMATE_DIVISOR = 4;
 
 ### 3.6 CI/CD 잔존 항목
 
-| 항목 | 심각도 | 현황 | 권장 조치 |
-|------|--------|------|----------|
-| GitHub Release 자동화 | 중간 | 부분 완료(VSIX 아티팩트 업로드만 됨) | `release.yml`에 `gh release create` 단계 추가 |
-| CodeQL / SAST | 중간 | 미완료 | GitHub CodeQL 액션 활성화 |
-| Lint 단계에 Prettier 포함 안 됨 | 낮음 | 미완료 | CI에 `format:check` 추가 |
+| 항목                            | 심각도 | 현황                                 | 권장 조치                                     |
+| ------------------------------- | ------ | ------------------------------------ | --------------------------------------------- |
+| GitHub Release 자동화           | 중간   | 부분 완료(VSIX 아티팩트 업로드만 됨) | `release.yml`에 `gh release create` 단계 추가 |
+| CodeQL / SAST                   | 중간   | 미완료                               | GitHub CodeQL 액션 활성화                     |
+| Lint 단계에 Prettier 포함 안 됨 | 낮음   | 미완료                               | CI에 `format:check` 추가                      |
 
 **GitHub Release 자동화 보완:**
 
@@ -418,20 +419,20 @@ export const TOKEN_ESTIMATE_DIVISOR = 4;
 
 v0.1.4에서 확인된 아래 강점들이 그대로 유지됨을 재확인.
 
-| 항목 | 구현 위치 | 비고 |
-|------|----------|------|
-| **Discriminated Union 메시지 타입** | `src/types.ts` | Extension Host ↔ Webview 간 완전한 타입 안전성 |
-| **Logger 추상화** | `src/logger/Logger.ts` | 모든 소스 파일에서 `console.log` 미사용 |
-| **Secrets Store** | `AgentCommandHandler.ts`, `extension.ts` | API 키를 OS 암호화된 VS Code Secrets에 저장 |
-| **CSP 정책** | `SidebarProvider.ts` | `script-src 'nonce-*'`, `default-src 'none'` |
-| **입력 검증** | `McpParser.ts` | fileId/nodeId 정규식 정제 |
-| **순환 버퍼 로거** | `Logger.ts` | 고정 메모리(500 엔트리), O(1) append |
-| **rAF 청크 배치** | `PromptLayer.ts` | `insertAdjacentText` 패턴, DOM O(n²) 제거 |
-| **Gemini 모델 캐시** | `GeminiAgent.ts` | 5분 TTL로 반복 API 호출 방지 |
-| **단일 IPC 스트리밍** | `PromptCommandHandler.ts` | `prompt.streaming` 이벤트 통합 |
-| **스트림 취소 처리** | `GeminiAgent.ts`, `ClaudeAgent.ts` | AbortSignal 연동 |
-| **브랜치 커버리지 게이트** | `package.json`, `ci.yml` | 85% 미만 PR 차단 |
-| **취약점 감사** | `ci.yml` | `npm audit --audit-level=high` |
+| 항목                                | 구현 위치                                | 비고                                           |
+| ----------------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| **Discriminated Union 메시지 타입** | `src/types.ts`                           | Extension Host ↔ Webview 간 완전한 타입 안전성 |
+| **Logger 추상화**                   | `src/logger/Logger.ts`                   | 모든 소스 파일에서 `console.log` 미사용        |
+| **Secrets Store**                   | `AgentCommandHandler.ts`, `extension.ts` | API 키를 OS 암호화된 VS Code Secrets에 저장    |
+| **CSP 정책**                        | `SidebarProvider.ts`                     | `script-src 'nonce-*'`, `default-src 'none'`   |
+| **입력 검증**                       | `McpParser.ts`                           | fileId/nodeId 정규식 정제                      |
+| **순환 버퍼 로거**                  | `Logger.ts`                              | 고정 메모리(500 엔트리), O(1) append           |
+| **rAF 청크 배치**                   | `PromptLayer.ts`                         | `insertAdjacentText` 패턴, DOM O(n²) 제거      |
+| **Gemini 모델 캐시**                | `GeminiAgent.ts`                         | 5분 TTL로 반복 API 호출 방지                   |
+| **단일 IPC 스트리밍**               | `PromptCommandHandler.ts`                | `prompt.streaming` 이벤트 통합                 |
+| **스트림 취소 처리**                | `GeminiAgent.ts`, `ClaudeAgent.ts`       | AbortSignal 연동                               |
+| **브랜치 커버리지 게이트**          | `package.json`, `ci.yml`                 | 85% 미만 PR 차단                               |
+| **취약점 감사**                     | `ci.yml`                                 | `npm audit --audit-level=high`                 |
 
 ---
 
@@ -484,29 +485,29 @@ Webview (브라우저 환경):
 
 ### Priority 0 — 출시 전 필수
 
-| # | 파일 | 항목 | 작업 |
-|---|------|------|------|
+| #    | 파일                         | 항목 | 작업                                           |
+| ---- | ---------------------------- | ---- | ---------------------------------------------- |
 | P0-1 | `AgentCommandHandler.ts:129` | NF-1 | Claude API 키 정규식을 `sk-ant-` 접두사로 강화 |
 
 ### Priority 1 — 출시 전 권장
 
-| # | 파일 | 항목 | 작업 |
-|---|------|------|------|
-| P1-1 | `FigmaCommandHandler.ts:121` | NF-2 | `fetchScreenshot` catch 블록에서 에러 세부정보 로깅 |
-| P1-2 | `McpClient.ts` | SEC-2 | localhost/127.0.0.1 이외 엔드포인트에 확인 다이얼로그 |
-| P1-3 | `ClaudeAgent.ts:49` | ARCH-1 | `dangerouslyAllowBrowser` 이유 설명 인라인 주석 추가 |
+| #    | 파일                         | 항목   | 작업                                                  |
+| ---- | ---------------------------- | ------ | ----------------------------------------------------- |
+| P1-1 | `FigmaCommandHandler.ts:121` | NF-2   | `fetchScreenshot` catch 블록에서 에러 세부정보 로깅   |
+| P1-2 | `McpClient.ts`               | SEC-2  | localhost/127.0.0.1 이외 엔드포인트에 확인 다이얼로그 |
+| P1-3 | `ClaudeAgent.ts:49`          | ARCH-1 | `dangerouslyAllowBrowser` 이유 설명 인라인 주석 추가  |
 
 ### Priority 2 — 출시 후 개선
 
-| # | 항목 | 작업 |
-|---|------|------|
-| P2-1 | ERR-4 | `McpClient.sendRequest` 지수 백오프 재시도(최대 3회) |
-| P2-2 | NF-3 | `ClaudeAgent` 스트림 abort 공식 SDK AbortSignal 지원으로 대체 |
-| P2-3 | NF-4 | `ScreenshotService` i18n 미적용 문자열 처리 |
-| P2-4 | SEC-3 | `AgentLayer` innerHTML 빈 상태 DOM API로 교체 |
-| P2-5 | QA-3 | `TOKEN_ESTIMATE_DIVISOR` 설명 주석 추가 |
-| P2-6 | CI/CD | GitHub Release 자동 생성 및 CodeQL 활성화 |
-| P2-7 | QA-1/2 | ESLint `no-explicit-any: error`, `no-console: error` 강화 |
+| #    | 항목   | 작업                                                          |
+| ---- | ------ | ------------------------------------------------------------- |
+| P2-1 | ERR-4  | `McpClient.sendRequest` 지수 백오프 재시도(최대 3회)          |
+| P2-2 | NF-3   | `ClaudeAgent` 스트림 abort 공식 SDK AbortSignal 지원으로 대체 |
+| P2-3 | NF-4   | `ScreenshotService` i18n 미적용 문자열 처리                   |
+| P2-4 | SEC-3  | `AgentLayer` innerHTML 빈 상태 DOM API로 교체                 |
+| P2-5 | QA-3   | `TOKEN_ESTIMATE_DIVISOR` 설명 주석 추가                       |
+| P2-6 | CI/CD  | GitHub Release 자동 생성 및 CodeQL 활성화                     |
+| P2-7 | QA-1/2 | ESLint `no-explicit-any: error`, `no-console: error` 강화     |
 
 ---
 
@@ -515,6 +516,7 @@ Webview (브라우저 환경):
 버전 0.1.4(현재)는 이전 리뷰에서 지적된 Priority 0 항목 4건과 Priority 1 항목 4건 **모두를 해결**하여 코드베이스 품질이 종합 **8.5 / 10**으로 향상되었다.
 
 특히:
+
 - 에러 처리가 `toErrorMessage(e: unknown)` 전면 적용으로 타입 안전하게 통일되었다.
 - CI/CD 파이프라인이 취약점 감사와 커버리지 게이트를 갖추며 운영 수준으로 성숙했다.
 - 스트리밍 취소 시 부분 코드 표시 및 IPC 최적화로 사용자 경험이 개선되었다.
@@ -523,4 +525,4 @@ Webview (브라우저 환경):
 
 ---
 
-*이 리뷰는 소스 코드 직접 검증 방법론(Source Code Inspection)과 OWASP Top 10 체크리스트를 기반으로 작성되었습니다.*
+_이 리뷰는 소스 코드 직접 검증 방법론(Source Code Inspection)과 OWASP Top 10 체크리스트를 기반으로 작성되었습니다._

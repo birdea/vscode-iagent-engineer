@@ -69,9 +69,7 @@ export class GeminiAgent extends BaseAgent {
                 reject(new Error('Unexpected response shape from Gemini models API'));
                 return;
               }
-              const models: ModelInfo[] = (
-                (json as { models: GeminiModelEntry[] }).models
-              )
+              const models: ModelInfo[] = (json as { models: GeminiModelEntry[] }).models
                 .filter((m) => m.name && m.name.includes('gemini'))
                 .map((m) => ({
                   id: m.name.replace('models/', ''),

@@ -74,7 +74,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.connect();
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', error: sinon.match(/MCP 서버에 연결할 수 없습니다/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.status',
+        error: sinon.match(/MCP 서버에 연결할 수 없습니다/),
+      }),
+    );
   });
 
   test('connect converts timeout to friendly message', async () => {
@@ -84,7 +89,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.connect();
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', error: sinon.match(/응답이 지연/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.status',
+        error: sinon.match(/응답이 지연/),
+      }),
+    );
   });
 
   test('connect falls back to generic message for unknown errors', async () => {
@@ -94,7 +104,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.connect();
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.status', error: sinon.match(/문제가 발생/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.status',
+        error: sinon.match(/문제가 발생/),
+      }),
+    );
   });
 
   test('connect maps cancelled non-local confirmation to a dedicated message', async () => {
@@ -114,7 +129,11 @@ suite('FigmaCommandHandler', () => {
 
   test('openSettings forwards to VS Code command', async () => {
     await handler.openSettings();
-    assert.ok((vscode.commands.executeCommand as sinon.SinonStub).calledWith('workbench.action.openSettings'));
+    assert.ok(
+      (vscode.commands.executeCommand as sinon.SinonStub).calledWith(
+        'workbench.action.openSettings',
+      ),
+    );
   });
 
   test('fetchData calls get_file when connected and fileId exists', async () => {
@@ -124,7 +143,9 @@ suite('FigmaCommandHandler', () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(mcpClient.callTool.calledWith('get_file', { fileId: 'ABCDE', nodeId: '1:2' }));
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: { name: 'Frame' } }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: { name: 'Frame' } }),
+    );
   });
 
   test('fetchData opens result in editor when configured', async () => {
@@ -151,12 +172,22 @@ suite('FigmaCommandHandler', () => {
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: sinon.match({ fileId: 'ABCDE', nodeId: '1:2' }) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: sinon.match({ fileId: 'ABCDE', nodeId: '1:2' }),
+      }),
+    );
   });
 
   test('fetchData posts parse-only result when fileId is missing', async () => {
     await handler.fetchData('not-a-figma-url');
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: sinon.match({ fileId: '' }) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: sinon.match({ fileId: '' }),
+      }),
+    );
   });
 
   test('fetchData maps ECONNREFUSED errors to friendly message', async () => {
@@ -164,7 +195,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataFetchError', message: sinon.match(/연결할 수 없어/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataFetchError',
+        message: sinon.match(/연결할 수 없어/),
+      }),
+    );
   });
 
   test('fetchData maps timeout errors to friendly message', async () => {
@@ -172,7 +208,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataFetchError', message: sinon.match(/응답 시간이 초과/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataFetchError',
+        message: sinon.match(/응답 시간이 초과/),
+      }),
+    );
   });
 
   test('fetchData maps generic errors to fallback message', async () => {
@@ -180,7 +221,12 @@ suite('FigmaCommandHandler', () => {
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.dataFetchError', message: sinon.match(/가져오지 못했습니다/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataFetchError',
+        message: sinon.match(/가져오지 못했습니다/),
+      }),
+    );
   });
 
   test('fetchScreenshot requires fileId', async () => {
@@ -193,7 +239,12 @@ suite('FigmaCommandHandler', () => {
 
     assert.ok(screenshotService.fetchScreenshot.calledWith('ABCDE', '4:5'));
     assert.ok(screenshotService.openInEditor.calledWith('base64-image', 'ABCDE', '4:5'));
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'figma.screenshotResult', base64: 'base64-image' }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.screenshotResult',
+        base64: 'base64-image',
+      }),
+    );
   });
 
   test('fetchScreenshot reports generic failure when screenshot service throws', async () => {
@@ -209,6 +260,12 @@ suite('FigmaCommandHandler', () => {
         'broken',
       ),
     );
-    assert.ok(webview.postMessage.calledWithMatch({ event: 'error', source: 'figma', message: sinon.match(/스크린샷을 가져오지 못했습니다/) }));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'error',
+        source: 'figma',
+        message: sinon.match(/스크린샷을 가져오지 못했습니다/),
+      }),
+    );
   });
 });

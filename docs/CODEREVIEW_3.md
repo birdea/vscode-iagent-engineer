@@ -10,19 +10,19 @@
 
 ## 1. 종합 평가
 
-| 항목 | v0.1.3 | v0.1.4 | 변화 |
-|------|--------|--------|------|
-| 아키텍처 | 8.5 | 9.0 | ↑ |
-| 타입 안전성 | 9.0 | 9.0 | — |
-| 에러 처리 | 7.5 | 7.5 | — |
-| 보안 | 8.0 | 8.0 | — |
-| 테스트 커버리지 | 8.0 | 8.0 | — |
-| 코드 품질 | 8.5 | 8.5 | — |
-| 리소스 관리 | 8.0 | 9.5 | ↑↑ |
-| 국제화(i18n) | 9.0 | 9.0 | — |
-| CI/CD | 7.0 | 7.0 | — |
-| 문서화 | 6.0 | 7.5 | ↑ |
-| **종합** | **7.5** | **8.0** | **↑** |
+| 항목            | v0.1.3  | v0.1.4  | 변화  |
+| --------------- | ------- | ------- | ----- |
+| 아키텍처        | 8.5     | 9.0     | ↑     |
+| 타입 안전성     | 9.0     | 9.0     | —     |
+| 에러 처리       | 7.5     | 7.5     | —     |
+| 보안            | 8.0     | 8.0     | —     |
+| 테스트 커버리지 | 8.0     | 8.0     | —     |
+| 코드 품질       | 8.5     | 8.5     | —     |
+| 리소스 관리     | 8.0     | 9.5     | ↑↑    |
+| 국제화(i18n)    | 9.0     | 9.0     | —     |
+| CI/CD           | 7.0     | 7.0     | —     |
+| 문서화          | 6.0     | 7.5     | ↑     |
+| **종합**        | **7.5** | **8.0** | **↑** |
 
 **판정:** 베타 → 릴리스 후보(RC) 수준. 잔존 과제는 관리 가능한 수준. 아래 항목을 해결하면 마켓플레이스 출시 가능.
 
@@ -36,9 +36,9 @@
 
 ```js
 // 수정 전
-target: 'node18'
+target: 'node18';
 // 수정 후
-target: 'node20'   // engines.node >= 20.0.0 및 CI 매트릭스와 일치
+target: 'node20'; // engines.node >= 20.0.0 및 CI 매트릭스와 일치
 ```
 
 ### ✅ BUG-2: `deactivate()` 리소스 누수 (`extension.ts:117-124`)
@@ -64,9 +64,9 @@ export async function deactivate(): Promise<void> {
 
 ```typescript
 // 수정 전
-max_tokens: 8192
+max_tokens: 8192;
 // 수정 후
-max_tokens: modelInfo.outputTokenLimit ?? 8192
+max_tokens: modelInfo.outputTokenLimit ?? 8192;
 ```
 
 Claude Opus 4.6(32K)가 이제 최대 출력 한도를 온전히 활용한다.
@@ -114,6 +114,7 @@ this.client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
 핸들러들은 일반적으로 내부에서 자체적으로 에러를 처리하고 재던지지 않으므로, `handle()`의 외부 catch는 미처리 예외에 대한 안전망 역할을 한다. 이중 이벤트 위험은 실제로 낮다. 다만 `FigmaCommandHandler.fetchScreenshot`은 catch 블록에서 `event: 'error'`를 직접 전송하는데, 해당 catch 블록 자체가 예외를 던지면(예: catch 경로의 버그) 외부 핸들러가 두 번째 에러 이벤트를 전송할 수 있다.
 
 **권장 조치:** 에러 보고 경로를 단일화한다. 두 가지 방법 중 하나를 선택한다.
+
 - 모든 핸들러가 실패 시 예외를 던지고, 외부 catch가 유일한 보고자가 된다.
 - 핸들러가 이미 에러를 보고했을 때 외부 catch를 억제하는 센티넬(`HandledError`)을 도입한다.
 
@@ -247,13 +248,13 @@ this.post({ event: 'prompt.chunk', text: chunk, progress });
 
 ### 3.6 CI/CD 미비 항목
 
-| 항목 | 심각도 | 권장 조치 |
-|------|--------|----------|
-| 브랜치 커버리지 게이트 없음 | 높음 | `c8` 임계값으로 브랜치 커버리지 85% 미만 PR 차단 |
-| CI에 `npm audit` 없음 | 높음 | lint 단계에 `npm audit --audit-level=high` 추가 |
-| GitHub Release 자동화 없음 | 중간 | 태그 푸시 시 VSIX 아티팩트 포함 릴리스 자동 생성 |
-| CodeQL / SAST 없음 | 중간 | GitHub CodeQL 액션 활성화 |
-| E2E 테스트가 CI에 없음 | 낮음 | 파이프라인에 Headless VS Code 테스트 러너 추가 |
+| 항목                        | 심각도 | 권장 조치                                        |
+| --------------------------- | ------ | ------------------------------------------------ |
+| 브랜치 커버리지 게이트 없음 | 높음   | `c8` 임계값으로 브랜치 커버리지 85% 미만 PR 차단 |
+| CI에 `npm audit` 없음       | 높음   | lint 단계에 `npm audit --audit-level=high` 추가  |
+| GitHub Release 자동화 없음  | 중간   | 태그 푸시 시 VSIX 아티팩트 포함 릴리스 자동 생성 |
+| CodeQL / SAST 없음          | 중간   | GitHub CodeQL 액션 활성화                        |
+| E2E 테스트가 CI에 없음      | 낮음   | 파이프라인에 Headless VS Code 테스트 러너 추가   |
 
 ---
 
@@ -294,31 +295,31 @@ v0.1.3에서 확인된 아래 강점들이 그대로 유지됨을 재확인.
 
 ### Priority 0 — 출시 차단 항목
 
-| # | 파일 | 작업 |
-|---|------|------|
-| P0-1 | `PromptCommandHandler.ts` | 스트림 중단 시 부분 코드 초기화 또는 불완전 표시 (POT-1) |
-| P0-2 | `McpClient.ts` | `getImage`에서 빈 문자열 반환 대신 예외 던지기 (POT-2) |
-| P0-3 | CI workflow | 알려진 취약점 배포 방지를 위해 `npm audit --audit-level=high` 추가 |
-| P0-4 | CI workflow | 브랜치 커버리지 게이트 추가 (최소 85%) |
+| #    | 파일                      | 작업                                                               |
+| ---- | ------------------------- | ------------------------------------------------------------------ |
+| P0-1 | `PromptCommandHandler.ts` | 스트림 중단 시 부분 코드 초기화 또는 불완전 표시 (POT-1)           |
+| P0-2 | `McpClient.ts`            | `getImage`에서 빈 문자열 반환 대신 예외 던지기 (POT-2)             |
+| P0-3 | CI workflow               | 알려진 취약점 배포 방지를 위해 `npm audit --audit-level=high` 추가 |
+| P0-4 | CI workflow               | 브랜치 커버리지 게이트 추가 (최소 85%)                             |
 
 ### Priority 1 — 출시 전 권장
 
-| # | 파일 | 작업 |
-|---|------|------|
-| P1-1 | `errors.ts` | `toErrorMessage(e: unknown)` 추가 및 모든 `(e as Error).message` 교체 |
-| P1-2 | `AgentCommandHandler.ts` | 저장 전 API 키 형식 검증 |
-| P1-3 | `GeminiAgent.ts` | AbortSignal 전달 또는 취소 시 스트림 이터레이터 종료 |
-| P1-4 | `PromptCommandHandler.ts` | `prompt.generating` + `prompt.chunk`를 단일 메시지로 통합 |
+| #    | 파일                      | 작업                                                                  |
+| ---- | ------------------------- | --------------------------------------------------------------------- |
+| P1-1 | `errors.ts`               | `toErrorMessage(e: unknown)` 추가 및 모든 `(e as Error).message` 교체 |
+| P1-2 | `AgentCommandHandler.ts`  | 저장 전 API 키 형식 검증                                              |
+| P1-3 | `GeminiAgent.ts`          | AbortSignal 전달 또는 취소 시 스트림 이터레이터 종료                  |
+| P1-4 | `PromptCommandHandler.ts` | `prompt.generating` + `prompt.chunk`를 단일 메시지로 통합             |
 
 ### Priority 2 — 출시 후 개선
 
-| # | 작업 |
-|---|------|
+| #    | 작업                                                          |
+| ---- | ------------------------------------------------------------- |
 | P2-1 | McpClient 및 에이전트 요청에 지수 백오프 네트워크 재시도 구현 |
-| P2-2 | MCP 엔드포인트 허용 목록 / 외부 호스트 확인 다이얼로그 |
-| P2-3 | VSIX 아티팩트 포함 GitHub Release 자동화 |
-| P2-4 | render 템플릿의 `innerHTML`을 안전한 DOM API로 교체 |
-| P2-5 | `dangerouslyAllowBrowser` 이유 설명 인라인 주석 추가 |
+| P2-2 | MCP 엔드포인트 허용 목록 / 외부 호스트 확인 다이얼로그        |
+| P2-3 | VSIX 아티팩트 포함 GitHub Release 자동화                      |
+| P2-4 | render 템플릿의 `innerHTML`을 안전한 DOM API로 교체           |
+| P2-5 | `dangerouslyAllowBrowser` 이유 설명 인라인 주석 추가          |
 
 ---
 

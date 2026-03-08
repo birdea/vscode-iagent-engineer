@@ -10,7 +10,9 @@ import { ValidationError, TimeoutError, NetworkError, toErrorMessage } from '../
 function resolveDefaultClientVersion(): string {
   try {
     const packageJsonPath = path.resolve(__dirname, '../../package.json');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as { version?: unknown };
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as {
+      version?: unknown;
+    };
     return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0';
   } catch {
     return '0.0.0';
@@ -132,16 +134,26 @@ export class McpClient {
           try {
             const parsed: unknown = JSON.parse(data);
             if (!isJsonRpcResponse(parsed)) {
-              reject(new ValidationError(`Invalid MCP JSON-RPC response shape: ${data.slice(0, 200)}`));
+              reject(
+                new ValidationError(`Invalid MCP JSON-RPC response shape: ${data.slice(0, 200)}`),
+              );
               return;
             }
             const response = parsed;
-            if (response.id !== null && response.id !== undefined && String(response.id) !== String(id)) {
-              reject(new ValidationError(`MCP response id mismatch: expected ${id}, got ${response.id}`));
+            if (
+              response.id !== null &&
+              response.id !== undefined &&
+              String(response.id) !== String(id)
+            ) {
+              reject(
+                new ValidationError(`MCP response id mismatch: expected ${id}, got ${response.id}`),
+              );
               return;
             }
             if (response.error) {
-              reject(new NetworkError(`MCP Error ${response.error.code}: ${response.error.message}`));
+              reject(
+                new NetworkError(`MCP Error ${response.error.code}: ${response.error.message}`),
+              );
             } else {
               resolve(response.result);
             }
@@ -190,11 +202,7 @@ export class McpClient {
       return;
     }
 
-    if (
-      url.hostname === 'localhost' ||
-      url.hostname === '127.0.0.1' ||
-      url.hostname === '::1'
-    ) {
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1') {
       return;
     }
 
@@ -209,7 +217,9 @@ export class McpClient {
     );
 
     if (choice !== 'Connect') {
-      throw new ValidationError(`MCP connection cancelled for non-local endpoint: ${this.endpoint}`);
+      throw new ValidationError(
+        `MCP connection cancelled for non-local endpoint: ${this.endpoint}`,
+      );
     }
 
     this.approvedExternalEndpoints.add(this.endpoint);

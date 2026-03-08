@@ -57,10 +57,7 @@ export class FigmaCommandHandler {
   }
 
   async openSettings() {
-    await vscode.commands.executeCommand(
-      'workbench.action.openSettings',
-      CONFIG_KEYS.MCP_ENDPOINT,
-    );
+    await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_KEYS.MCP_ENDPOINT);
   }
 
   async fetchData(input: string) {

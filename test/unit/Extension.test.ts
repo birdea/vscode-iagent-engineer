@@ -14,17 +14,22 @@ suite('Extension Comprehensive', () => {
     mockContext = {
       subscriptions: [],
       extensionUri: { path: '/test', fsPath: '/test' },
-      secrets: { 
-          get: sandbox.stub().resolves('test-key'),
-          store: sandbox.stub().resolves(),
-          delete: sandbox.stub().resolves()
+      secrets: {
+        get: sandbox.stub().resolves('test-key'),
+        store: sandbox.stub().resolves(),
+        delete: sandbox.stub().resolves(),
       },
       globalState: { get: sandbox.stub().returns('gemini'), update: sandbox.stub().resolves() },
-      extension: { packageJSON: { version: '1.0.0' } }
+      extension: { packageJSON: { version: '1.0.0' } },
     };
-    
+
     const vscode = require('vscode');
-    outputChannel = { appendLine: () => {}, clear: () => {}, show: () => {}, dispose: sandbox.stub() };
+    outputChannel = {
+      appendLine: () => {},
+      clear: () => {},
+      show: () => {},
+      dispose: sandbox.stub(),
+    };
     vscode.window.createOutputChannel.returns(outputChannel);
     vscode.commands.registerCommand = sandbox.stub();
     vscode.window.registerWebviewViewProvider = sandbox.stub();
@@ -47,13 +52,17 @@ suite('Extension Comprehensive', () => {
     const connect = commands.find((c: any) => c[0] === 'figma-mcp-helper.connect')?.[1];
     assert.ok(connect);
     await connect();
-    assert.ok(vscode.commands.executeCommand.calledWith('workbench.view.extension.figma-mcp-helper'));
+    assert.ok(
+      vscode.commands.executeCommand.calledWith('workbench.view.extension.figma-mcp-helper'),
+    );
 
     const generate = commands.find((c: any) => c[0] === 'figma-mcp-helper.generate')?.[1];
     assert.ok(generate);
     generate();
 
-    const promptGenerate = commands.find((c: any) => c[0] === 'figma-mcp-helper.prompt.generate')?.[1];
+    const promptGenerate = commands.find(
+      (c: any) => c[0] === 'figma-mcp-helper.prompt.generate',
+    )?.[1];
     assert.ok(promptGenerate);
     promptGenerate();
 

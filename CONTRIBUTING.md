@@ -79,12 +79,12 @@ Thank you for your interest in contributing! This document covers how to set up 
 
 ## Building
 
-| Command | Description |
-|---------|-------------|
-| `npm run build` | Production build (minified, output to `dist/`) |
-| `npm run watch` | Incremental watch build for development |
-| `npm run compile` | Alias for `npm run build` (used by CI) |
-| `npm run package` | Package as `.vsix` for manual installation |
+| Command           | Description                                    |
+| ----------------- | ---------------------------------------------- |
+| `npm run build`   | Production build (minified, output to `dist/`) |
+| `npm run watch`   | Incremental watch build for development        |
+| `npm run compile` | Alias for `npm run build` (used by CI)         |
+| `npm run package` | Package as `.vsix` for manual installation     |
 
 The build uses **esbuild** to bundle `src/extension.ts` (Node host) and `src/webview/ui/main.ts` (webview browser bundle) separately.
 
@@ -149,13 +149,14 @@ npm run format        # Apply formatting (Prettier)
    - `npm run build`
 
 5. **Commit messages**: Use the conventional commit format:
+
    ```
    feat: add screenshot caching
    fix: handle MCP timeout correctly
    chore: update dependencies
    ```
 
-6. **PR description**: Explain *why* the change is needed and summarise *what* was changed. Include screenshots for UI changes.
+6. **PR description**: Explain _why_ the change is needed and summarise _what_ was changed. Include screenshots for UI changes.
 
 ---
 

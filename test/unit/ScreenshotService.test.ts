@@ -21,7 +21,6 @@ suite('ScreenshotService', () => {
     vscode.commands.executeCommand.resetHistory();
   });
 
-
   test('fetchScreenshot calls mcpClient', async () => {
     const res = await service.fetchScreenshot('file-id', 'node-id');
     assert.strictEqual(res, 'base64data');
@@ -39,11 +38,11 @@ suite('ScreenshotService', () => {
   });
 
   test('openInEditor shows information message', async () => {
-     const vscode = require('vscode');
-     await service.openInEditor('base64', 'file');
-     // writeFile and executeCommand should have been called
-     assert.ok(vscode.workspace.fs.writeFile.called);
-     assert.ok(vscode.commands.executeCommand.calledWith('vscode.open'));
+    const vscode = require('vscode');
+    await service.openInEditor('base64', 'file');
+    // writeFile and executeCommand should have been called
+    assert.ok(vscode.workspace.fs.writeFile.called);
+    assert.ok(vscode.commands.executeCommand.calledWith('vscode.open'));
   });
 
   test('openInEditor sanitizes file and node identifiers for temp path', async () => {
@@ -57,9 +56,9 @@ suite('ScreenshotService', () => {
   test('saveToWorkspace success', async () => {
     const vscode = require('vscode');
     vscode.window.showSaveDialog.resolves({ fsPath: '/path/to/save.png' });
-    
+
     await service.saveToWorkspace('base64', 'test.png');
-    
+
     assert.ok(vscode.window.showSaveDialog.called);
     assert.ok(vscode.workspace.fs.writeFile.called);
     assert.ok(vscode.window.showInformationMessage.called);

@@ -25,7 +25,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.info.generatingScreenshot': 'Generating screenshot...',
     'figma.info.connecting': 'Attempting to connect.',
     'figma.guide.availableTools': ({ count }) => `${count} tools available`,
-    'figma.guide.checkServer': 'Check whether the server is running and whether the endpoint is correct.',
+    'figma.guide.checkServer':
+      'Check whether the server is running and whether the endpoint is correct.',
     'figma.success.dataLoaded': 'Data loaded.',
     'figma.success.screenshotLoaded': 'Screenshot loaded.',
     'figma.title.fetchDisabled': 'Available after entering a Figma URL or JSON payload.',
@@ -226,11 +227,7 @@ export function resolveLocale(language?: string): UiLocale {
   return language?.toLowerCase().startsWith('ko') ? 'ko' : 'en';
 }
 
-export function t(
-  locale: UiLocale,
-  key: string,
-  params: MessageParams = {},
-): string {
+export function t(locale: UiLocale, key: string, params: MessageParams = {}): string {
   const value = messages[locale][key] ?? messages.en[key] ?? key;
   return typeof value === 'function' ? value(params) : value;
 }

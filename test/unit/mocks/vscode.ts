@@ -15,7 +15,7 @@ export const window = {
   registerWebviewViewProvider: sinon.stub(),
   clipboard: {
     writeText: sinon.stub().resolves(),
-  }
+  },
 };
 
 export const workspace = {
@@ -37,9 +37,9 @@ export const commands = {
 export const Uri = {
   parse: (val: string) => ({ path: val }),
   file: (val: string) => ({ fsPath: val, path: val }),
-  joinPath: (uri: any, ...paths: string[]) => ({ 
+  joinPath: (uri: any, ...paths: string[]) => ({
     path: (uri.path || '') + '/' + paths.join('/'),
-    fsPath: (uri.fsPath || '') + '/' + paths.join('/')
+    fsPath: (uri.fsPath || '') + '/' + paths.join('/'),
   }),
 };
 
@@ -47,7 +47,7 @@ export const env = {
   openExternal: sinon.stub(),
   clipboard: {
     writeText: sinon.stub().resolves(),
-  }
+  },
 };
 
 export const ViewColumn = {

@@ -4,8 +4,8 @@ This directory contains marketplace screenshots for the Figma MCP Helper extensi
 
 ## Required Screenshots
 
-| File | Dimensions | Description |
-|------|------------|-------------|
+| File               | Dimensions  | Description                                                                   |
+| ------------------ | ----------- | ----------------------------------------------------------------------------- |
 | `screenshot-1.png` | 1280×800 px | Main view — Setup panel showing Figma connection and code generation workflow |
 
 ## Guidelines

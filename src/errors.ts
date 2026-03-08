@@ -1,6 +1,9 @@
 export class NetworkError extends Error {
   readonly code = 'NETWORK_ERROR';
-  constructor(message: string, public readonly cause?: unknown) {
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
     super(message);
     this.name = 'NetworkError';
   }

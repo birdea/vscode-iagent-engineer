@@ -66,13 +66,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this.getHtml(webviewView.webview);
 
     this.messageSubscription?.dispose();
-    this.messageSubscription = webviewView.webview.onDidReceiveMessage(async (msg: WebviewToHostMessage) => {
-      if (!this.handler) {
-        Logger.error('system', `Handler not initialized for ${this.viewId}`);
-        return;
-      }
-      await this.handler.handle(msg);
-    });
+    this.messageSubscription = webviewView.webview.onDidReceiveMessage(
+      async (msg: WebviewToHostMessage) => {
+        if (!this.handler) {
+          Logger.error('system', `Handler not initialized for ${this.viewId}`);
+          return;
+        }
+        await this.handler.handle(msg);
+      },
+    );
 
     Logger.info('system', `Figma MCP Helper [${this.section}] view initialized`);
   }

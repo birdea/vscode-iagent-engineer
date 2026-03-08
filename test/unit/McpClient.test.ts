@@ -48,36 +48,17 @@ suite('McpClient', () => {
   test('listTools', async () => {
     nock('http://localhost:3845')
       .post('/')
-      .reply(200, { 
-        jsonrpc: '2.0', 
-        id: 1, 
-        result: { tools: [{ name: 'get_file' }] } 
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 1,
+        result: { tools: [{ name: 'get_file' }] },
       });
     const tools = await client.listTools();
     assert.deepStrictEqual(tools, ['get_file']);
   });
 
   test('callTool success', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
-    await client.initialize();
-
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { 
-        jsonrpc: '2.0', 
-        id: 2, 
-        result: { data: 'ok' } 
-      });
-    const result = await client.callTool('get_file', { fileId: '123' });
-    assert.deepStrictEqual(result, { data: 'ok' });
-  });
-
-  test('getImage', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://localhost:3845')
@@ -85,25 +66,36 @@ suite('McpClient', () => {
       .reply(200, {
         jsonrpc: '2.0',
         id: 2,
-        result: { base64: 'imgdata' }
+        result: { data: 'ok' },
+      });
+    const result = await client.callTool('get_file', { fileId: '123' });
+    assert.deepStrictEqual(result, { data: 'ok' });
+  });
+
+  test('getImage', async () => {
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    await client.initialize();
+
+    nock('http://localhost:3845')
+      .post('/')
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 2,
+        result: { base64: 'imgdata' },
       });
     const img = await client.getImage('file', 'node');
     assert.strictEqual(img, 'imgdata');
   });
 
   test('request error handling', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .replyWithError('Network error');
+    nock('http://localhost:3845').post('/').replyWithError('Network error');
 
     const success = await client.initialize();
     assert.strictEqual(success, false);
   });
 
   test('initialize failure on non-2xx HTTP status', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(500, { error: 'server failure' });
+    nock('http://localhost:3845').post('/').reply(500, { error: 'server failure' });
 
     const success = await client.initialize();
     assert.strictEqual(success, false);
@@ -111,9 +103,7 @@ suite('McpClient', () => {
   });
 
   test('parse error handling', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, 'invalid json');
+    nock('http://localhost:3845').post('/').reply(200, 'invalid json');
 
     const success = await client.initialize();
     assert.strictEqual(success, false);
@@ -121,18 +111,18 @@ suite('McpClient', () => {
   });
 
   test('callTool throws if not initialized', async () => {
-      const uninitClient = new McpClient('http://localhost:3845');
-      try {
-          await uninitClient.callTool('any');
-          assert.fail('Should throw');
-      } catch (e: any) {
-          assert.strictEqual(e.message, 'MCP client not initialized');
-      }
+    const uninitClient = new McpClient('http://localhost:3845');
+    try {
+      await uninitClient.callTool('any');
+      assert.fail('Should throw');
+    } catch (e: any) {
+      assert.strictEqual(e.message, 'MCP client not initialized');
+    }
   });
 
   test('setEndpoint resets initialization', () => {
-      client.setEndpoint('http://new:3000');
-      assert.strictEqual(client.isConnected(), false);
+    client.setEndpoint('http://new:3000');
+    assert.strictEqual(client.isConnected(), false);
   });
 
   test('initialize requests confirmation for non-local endpoints', async () => {
@@ -180,9 +170,7 @@ suite('McpClient', () => {
   });
 
   test('callTool rejects JSON-RPC id mismatch', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://localhost:3845')
@@ -190,7 +178,7 @@ suite('McpClient', () => {
       .reply(200, {
         jsonrpc: '2.0',
         id: 999,
-        result: { data: 'bad-id' }
+        result: { data: 'bad-id' },
       });
 
     await assert.rejects(
@@ -225,9 +213,7 @@ suite('McpClient', () => {
   });
 
   test('listTools returns empty array when tools is missing from response', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
 
     const tools = await client.listTools();
     assert.deepStrictEqual(tools, []);
@@ -243,9 +229,7 @@ suite('McpClient', () => {
   });
 
   test('callTool accepts string JSON-RPC id', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://localhost:3845')
@@ -257,33 +241,26 @@ suite('McpClient', () => {
   });
 
   test('getImage falls back to data field when base64 absent', async () => {
-    nock('http://localhost:3845')
-      .post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://localhost:3845')
-      .post('/').reply(200, { jsonrpc: '2.0', id: 2, result: { data: 'fallback' } });
+      .post('/')
+      .reply(200, { jsonrpc: '2.0', id: 2, result: { data: 'fallback' } });
     const img = await client.getImage('file', 'node');
     assert.strictEqual(img, 'fallback');
   });
 
   test('getImage throws when neither base64 nor data is present', async () => {
-    nock('http://localhost:3845')
-      .post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
-    nock('http://localhost:3845')
-      .post('/').reply(200, { jsonrpc: '2.0', id: 2, result: {} });
-    await assert.rejects(
-      () => client.getImage('file', 'node'),
-      /returned no image data/,
-    );
+    nock('http://localhost:3845').post('/').reply(200, { jsonrpc: '2.0', id: 2, result: {} });
+    await assert.rejects(() => client.getImage('file', 'node'), /returned no image data/);
   });
 
   test('sendRequest does not retry validation failures', async () => {
-    nock('http://localhost:3845')
-      .post('/')
-      .reply(200, 'not-json');
+    nock('http://localhost:3845').post('/').reply(200, 'not-json');
 
     const success = await client.initialize();
 

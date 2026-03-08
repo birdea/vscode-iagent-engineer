@@ -35,105 +35,122 @@ suite('UI Components Consolidated', () => {
 
     test('onModelsResult and status updates', () => {
       layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
-      assert.strictEqual((document.getElementById('model-select') as HTMLSelectElement).value, 'm1');
+      assert.strictEqual(
+        (document.getElementById('model-select') as HTMLSelectElement).value,
+        'm1',
+      );
       assert.ok(document.getElementById('agent-status')?.textContent?.includes('m1'));
     });
 
     test('onState logic', () => {
-        layer.onState('claude', 'opus', true);
-        assert.strictEqual((document.getElementById('agent-select') as HTMLSelectElement).value, 'claude');
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels', agent: 'claude' }));
+      layer.onState('claude', 'opus', true);
+      assert.strictEqual(
+        (document.getElementById('agent-select') as HTMLSelectElement).value,
+        'claude',
+      );
+      assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels', agent: 'claude' }));
     });
 
     test('onSettingsCleared logic', () => {
-        layer.onSettingsCleared('claude');
-        assert.strictEqual((document.getElementById('agent-select') as HTMLSelectElement).value, 'gemini');
+      layer.onSettingsCleared('claude');
+      assert.strictEqual(
+        (document.getElementById('agent-select') as HTMLSelectElement).value,
+        'gemini',
+      );
     });
 
     test('click handlers and explicit model load', () => {
-        document.getElementById('link-get-api-key')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.getApiKeyHelp' }));
+      document.getElementById('link-get-api-key')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'agent.getApiKeyHelp' }));
 
-        const input = document.getElementById('api-key-input') as HTMLInputElement;
-        input.value = '1234567890123456';
-        document.getElementById('btn-load-models')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels', key: '1234567890123456' }));
+      const input = document.getElementById('api-key-input') as HTMLInputElement;
+      input.value = '1234567890123456';
+      document.getElementById('btn-load-models')?.click();
+      assert.ok(
+        postMessageStub.calledWithMatch({ command: 'agent.listModels', key: '1234567890123456' }),
+      );
     });
 
     test('onSaveRequested and onClearRequested', () => {
-        layer.onSaveRequested(); // Should show notice if no model
-        assert.ok(document.getElementById('agent-notice')?.textContent?.includes('선택'));
+      layer.onSaveRequested(); // Should show notice if no model
+      assert.ok(document.getElementById('agent-notice')?.textContent?.includes('선택'));
 
-        layer.onClearRequested();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.clearSettings' }));
+      layer.onClearRequested();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'agent.clearSettings' }));
     });
 
     test('internal save button triggers save flow', () => {
-        layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
-        document.getElementById('btn-save-settings')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.saveSettings', model: 'm1' }));
+      layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
+      document.getElementById('btn-save-settings')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'agent.saveSettings', model: 'm1' }));
     });
 
     test('onState with hasApiKey=false shows prompt notice', () => {
-        layer.onState('gemini', '', false);
-        const notice = document.getElementById('agent-notice');
-        assert.ok(notice?.textContent?.includes('API 키'));
+      layer.onState('gemini', '', false);
+      const notice = document.getElementById('agent-notice');
+      assert.ok(notice?.textContent?.includes('API 키'));
     });
 
     test('agent-select change event fires state.setAgent', () => {
-        const select = document.getElementById('agent-select') as HTMLSelectElement;
-        select.value = 'claude';
-        select.dispatchEvent(new (global as any).window.Event('change'));
-        assert.ok(postMessageStub.calledWithMatch({ command: 'state.setAgent', agent: 'claude' }));
+      const select = document.getElementById('agent-select') as HTMLSelectElement;
+      select.value = 'claude';
+      select.dispatchEvent(new (global as any).window.Event('change'));
+      assert.ok(postMessageStub.calledWithMatch({ command: 'state.setAgent', agent: 'claude' }));
     });
 
     test('model-select change event fires state.setModel', () => {
-        layer.onModelsResult([{ id: 'm1', name: 'M1' }, { id: 'm2', name: 'M2' }]);
-        const select = document.getElementById('model-select') as HTMLSelectElement;
-        select.value = 'm2';
-        select.dispatchEvent(new (global as any).window.Event('change'));
-        assert.ok(postMessageStub.calledWithMatch({ command: 'state.setModel', model: 'm2' }));
+      layer.onModelsResult([
+        { id: 'm1', name: 'M1' },
+        { id: 'm2', name: 'M2' },
+      ]);
+      const select = document.getElementById('model-select') as HTMLSelectElement;
+      select.value = 'm2';
+      select.dispatchEvent(new (global as any).window.Event('change'));
+      assert.ok(postMessageStub.calledWithMatch({ command: 'state.setModel', model: 'm2' }));
     });
 
     test('link-get-model-info click without model selected shows warn', () => {
-        const link = document.getElementById('link-get-model-info') as HTMLAnchorElement;
-        link.click();
-        const notice = document.getElementById('agent-notice');
-        assert.ok(notice?.textContent?.includes('선택'));
+      const link = document.getElementById('link-get-model-info') as HTMLAnchorElement;
+      link.click();
+      const notice = document.getElementById('agent-notice');
+      assert.ok(notice?.textContent?.includes('선택'));
     });
 
     test('btn-load-models with empty key uses saved key path', () => {
-        const input = document.getElementById('api-key-input') as HTMLInputElement;
-        input.value = ''; // empty key
-        document.getElementById('btn-load-models')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels' }));
+      const input = document.getElementById('api-key-input') as HTMLInputElement;
+      input.value = ''; // empty key
+      document.getElementById('btn-load-models')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels' }));
     });
 
     test('onModelsResult with empty models shows warn notice', () => {
-        layer.onModelsResult([]);
-        const notice = document.getElementById('agent-notice');
-        assert.ok(notice?.textContent?.includes('없'));
+      layer.onModelsResult([]);
+      const notice = document.getElementById('agent-notice');
+      assert.ok(notice?.textContent?.includes('없'));
     });
 
     test('updateModelList with preferred model that matches', () => {
-        // Set preferred model via onState with model
-        layer.onState('gemini', 'm2', true);
-        // Now resolve models including m2
-        layer.onModelsResult([{ id: 'm1', name: 'M1' }, { id: 'm2', name: 'M2' }]);
-        const select = document.getElementById('model-select') as HTMLSelectElement;
-        assert.strictEqual(select.value, 'm2');
+      // Set preferred model via onState with model
+      layer.onState('gemini', 'm2', true);
+      // Now resolve models including m2
+      layer.onModelsResult([
+        { id: 'm1', name: 'M1' },
+        { id: 'm2', name: 'M2' },
+      ]);
+      const select = document.getElementById('model-select') as HTMLSelectElement;
+      assert.strictEqual(select.value, 'm2');
     });
 
     test('onError with No API key uses friendly message', () => {
-        layer.onError('No API key set');
-        const notice = document.getElementById('agent-notice');
-        assert.ok(notice?.textContent?.includes('API 키'));
+      layer.onError('No API key set');
+      const notice = document.getElementById('agent-notice');
+      assert.ok(notice?.textContent?.includes('API 키'));
     });
 
     test('onError with HTTP 401 uses friendly message', () => {
-        layer.onError('HTTP 401 Unauthorized');
-        const notice = document.getElementById('agent-notice');
-        assert.ok(notice?.textContent?.includes('인증'));
+      layer.onError('HTTP 401 Unauthorized');
+      const notice = document.getElementById('agent-notice');
+      assert.ok(notice?.textContent?.includes('인증'));
     });
   });
 
@@ -217,36 +234,36 @@ suite('UI Components Consolidated', () => {
     });
 
     test('onDataResult and onScreenshotResult', () => {
-        layer.onDataResult({ foo: 'bar' });
-        assert.ok(document.getElementById('figma-data-preview')?.textContent?.includes('bar'));
+      layer.onDataResult({ foo: 'bar' });
+      assert.ok(document.getElementById('figma-data-preview')?.textContent?.includes('bar'));
 
-        layer.onScreenshotResult('base64');
-        const img = document.getElementById('figma-screenshot-preview') as HTMLImageElement;
-        assert.ok(img.src.includes('base64'));
+      layer.onScreenshotResult('base64');
+      const img = document.getElementById('figma-screenshot-preview') as HTMLImageElement;
+      assert.ok(img.src.includes('base64'));
     });
 
     test('onError calls setNotice', () => {
-        layer.onError('some error');
-        const notice = document.getElementById('figma-notice');
-        assert.strictEqual(notice?.textContent, 'some error');
+      layer.onError('some error');
+      const notice = document.getElementById('figma-notice');
+      assert.strictEqual(notice?.textContent, 'some error');
     });
 
     test('fetch button click with data posts figma.fetchData', () => {
-        const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
-        mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
-        const fetchBtn = document.getElementById('btn-fetch') as HTMLButtonElement;
-        fetchBtn.disabled = false;
-        fetchBtn.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchData' }));
+      const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
+      mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
+      const fetchBtn = document.getElementById('btn-fetch') as HTMLButtonElement;
+      fetchBtn.disabled = false;
+      fetchBtn.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchData' }));
     });
 
     test('updateActionState sets disconnected title when data present but not connected', () => {
-        const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
-        mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
-        mcpInput.dispatchEvent(new (global as any).window.Event('input'));
-        layer.onStatus(false, [], undefined); // connected=false, hasData=true triggers line 160
-        const screenshotBtn = document.getElementById('btn-screenshot') as HTMLButtonElement;
-        assert.ok(screenshotBtn.title.length > 0);
+      const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
+      mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
+      mcpInput.dispatchEvent(new (global as any).window.Event('input'));
+      layer.onStatus(false, [], undefined); // connected=false, hasData=true triggers line 160
+      const screenshotBtn = document.getElementById('btn-screenshot') as HTMLButtonElement;
+      assert.ok(screenshotBtn.title.length > 0);
     });
   });
 
@@ -264,7 +281,7 @@ suite('UI Components Consolidated', () => {
         timestamp: '12:00',
         level: 'info',
         layer: 'system',
-        message: 'hello'
+        message: 'hello',
       });
       const area = document.getElementById('log-area');
       assert.ok(area?.textContent?.includes('hello'));
@@ -277,15 +294,27 @@ suite('UI Components Consolidated', () => {
         level: 'error',
         layer: 'figma',
         message: 'failed',
-        detail: 'stack trace'
+        detail: 'stack trace',
       });
       const area = document.getElementById('log-area');
       assert.ok(area?.textContent?.includes('stack trace'));
     });
 
     test('appendEntry second entry adds newline separator', () => {
-      layer.appendEntry({ id: '1', timestamp: '', level: 'info', layer: 'system', message: 'first' });
-      layer.appendEntry({ id: '2', timestamp: '', level: 'info', layer: 'system', message: 'second' });
+      layer.appendEntry({
+        id: '1',
+        timestamp: '',
+        level: 'info',
+        layer: 'system',
+        message: 'first',
+      });
+      layer.appendEntry({
+        id: '2',
+        timestamp: '',
+        level: 'info',
+        layer: 'system',
+        message: 'second',
+      });
       const area = document.getElementById('log-area');
       assert.ok(area?.textContent?.includes('\n'));
     });
@@ -328,161 +357,170 @@ suite('UI Components Consolidated', () => {
     });
 
     test('onError updates notice without polluting code output', () => {
-        layer.onError('bad things');
-        const area = document.getElementById('code-output');
-        assert.strictEqual(area?.textContent, '');
-        const notice = document.getElementById('prompt-notice');
-        assert.strictEqual(notice?.textContent, 'bad things');
+      layer.onError('bad things');
+      const area = document.getElementById('code-output');
+      assert.strictEqual(area?.textContent, '');
+      const notice = document.getElementById('prompt-notice');
+      assert.strictEqual(notice?.textContent, 'bad things');
     });
 
     test('onChunk appends text', () => {
-        layer.onChunk('hello ');
-        layer.onChunk('world');
-        const area = document.getElementById('code-output');
-        assert.strictEqual(area?.textContent, 'hello world');
+      layer.onChunk('hello ');
+      layer.onChunk('world');
+      const area = document.getElementById('code-output');
+      assert.strictEqual(area?.textContent, 'hello world');
     });
 
     test('buttons: open and save', () => {
-        layer.onResult('code');
-        document.getElementById('btn-open-editor')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open' }));
+      layer.onResult('code');
+      document.getElementById('btn-open-editor')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open' }));
 
-        document.getElementById('btn-save-file')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.saveFile' }));
+      document.getElementById('btn-save-file')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.saveFile' }));
     });
 
     test('onGenerateRequested validation', () => {
-        (document.getElementById('use-user-prompt') as HTMLInputElement).checked = false;
-        (document.getElementById('use-user-prompt') as HTMLInputElement).dispatchEvent(new window.Event('change'));
-        assert.strictEqual((document.getElementById('user-prompt') as HTMLTextAreaElement).disabled, true);
-        (document.getElementById('use-mcp-data') as HTMLInputElement).checked = false;
-        layer.onGenerateRequested();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
+      (document.getElementById('use-user-prompt') as HTMLInputElement).checked = false;
+      (document.getElementById('use-user-prompt') as HTMLInputElement).dispatchEvent(
+        new window.Event('change'),
+      );
+      assert.strictEqual(
+        (document.getElementById('user-prompt') as HTMLTextAreaElement).disabled,
+        true,
+      );
+      (document.getElementById('use-mcp-data') as HTMLInputElement).checked = false;
+      layer.onGenerateRequested();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
     });
 
     test('cancel button posts cancel command while generating', () => {
-        layer.onGenerateRequested();
-        document.getElementById('btn-cancel-generate')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.cancel' }));
+      layer.onGenerateRequested();
+      document.getElementById('btn-cancel-generate')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.cancel' }));
     });
 
     test('onGenerateRequested while already generating shows warn', () => {
-        layer.onGenerateRequested(); // starts generating
-        postMessageStub.reset();
-        layer.onGenerateRequested(); // should show warn
-        assert.ok(!postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
+      layer.onGenerateRequested(); // starts generating
+      postMessageStub.reset();
+      layer.onGenerateRequested(); // should show warn
+      assert.ok(!postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
     });
 
     test('onHostError when not generating shows notice only', () => {
-        layer.onHostError('host error');
-        const notice = document.getElementById('prompt-notice');
-        assert.ok(notice?.textContent?.includes('host error'));
+      layer.onHostError('host error');
+      const notice = document.getElementById('prompt-notice');
+      assert.ok(notice?.textContent?.includes('host error'));
     });
 
     test('onGenerating with 100 shows 완료됨', () => {
-        layer.onGenerating(100);
-        const text = document.getElementById('prompt-progress-text');
-        assert.ok(text?.textContent?.includes('완료'));
+      layer.onGenerating(100);
+      const text = document.getElementById('prompt-progress-text');
+      assert.ok(text?.textContent?.includes('완료'));
     });
 
     test('btn-save-file with scss format', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        formatEl.value = 'scss';
-        layer.onResult('.class { color: red; }');
-        document.getElementById('btn-save-file')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.scss' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      formatEl.value = 'scss';
+      layer.onResult('.class { color: red; }');
+      document.getElementById('btn-save-file')?.click();
+      assert.ok(
+        postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.scss' }),
+      );
     });
 
     test('btn-save-file with kotlin format', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        formatEl.value = 'kotlin';
-        layer.onResult('@Composable fun Ui() {}');
-        document.getElementById('btn-save-file')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.kt' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      formatEl.value = 'kotlin';
+      layer.onResult('@Composable fun Ui() {}');
+      document.getElementById('btn-save-file')?.click();
+      assert.ok(
+        postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.kt' }),
+      );
     });
 
     test('btn-open-editor with tailwind format', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        formatEl.value = 'tailwind';
-        layer.onResult('<div class="flex">');
-        document.getElementById('btn-open-editor')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'html' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      formatEl.value = 'tailwind';
+      layer.onResult('<div class="flex">');
+      document.getElementById('btn-open-editor')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'html' }));
     });
 
     test('btn-open-editor with scss format', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        formatEl.value = 'scss';
-        layer.onResult('.cls {}');
-        document.getElementById('btn-open-editor')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'scss' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      formatEl.value = 'scss';
+      layer.onResult('.cls {}');
+      document.getElementById('btn-open-editor')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'scss' }));
     });
 
     test('btn-open-editor with kotlin format', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        formatEl.value = 'kotlin';
-        layer.onResult('@Composable fun View() {}');
-        document.getElementById('btn-open-editor')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'kotlin' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      formatEl.value = 'kotlin';
+      layer.onResult('@Composable fun View() {}');
+      document.getElementById('btn-open-editor')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'kotlin' }));
     });
 
     test('onHostError while generating calls onError', () => {
-        layer.onGenerateRequested(); // sets isGenerating = true
-        layer.onHostError('error while generating');
-        const notice = document.getElementById('prompt-notice');
-        assert.ok(notice?.textContent?.includes('error while generating'));
+      layer.onGenerateRequested(); // sets isGenerating = true
+      layer.onHostError('error while generating');
+      const notice = document.getElementById('prompt-notice');
+      assert.ok(notice?.textContent?.includes('error while generating'));
     });
 
     test('btn-open-editor with unknown format uses plaintext', () => {
-        const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-        (formatEl as any).value = 'unknown';
-        layer.onResult('some code');
-        document.getElementById('btn-open-editor')?.click();
-        assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'plaintext' }));
+      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
+      (formatEl as any).value = 'unknown';
+      layer.onResult('some code');
+      document.getElementById('btn-open-editor')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'plaintext' }));
     });
 
     test('updateEstimate debounce callback fires', () => {
-        const clock = sandbox.useFakeTimers();
-        const newLayer = new PromptLayer();
-        document.getElementById('app')!.innerHTML = newLayer.render();
-        newLayer.mount();
-        // Trigger input to reset debounce (covers clearTimeout branch)
-        const userPrompt = document.getElementById('user-prompt') as HTMLTextAreaElement;
-        userPrompt.dispatchEvent(new (global as any).window.Event('input'));
-        clock.tick(400);
-        assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.estimate' }));
-        clock.restore();
+      const clock = sandbox.useFakeTimers();
+      const newLayer = new PromptLayer();
+      document.getElementById('app')!.innerHTML = newLayer.render();
+      newLayer.mount();
+      // Trigger input to reset debounce (covers clearTimeout branch)
+      const userPrompt = document.getElementById('user-prompt') as HTMLTextAreaElement;
+      userPrompt.dispatchEvent(new (global as any).window.Event('input'));
+      clock.tick(400);
+      assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.estimate' }));
+      clock.restore();
     });
 
     test('onGenerateRequested when elements missing does not crash', () => {
-        document.getElementById('app')!.innerHTML = '<div></div>'; // remove layer DOM
-        assert.doesNotThrow(() => layer.onGenerateRequested());
+      document.getElementById('app')!.innerHTML = '<div></div>'; // remove layer DOM
+      assert.doesNotThrow(() => layer.onGenerateRequested());
     });
 
     test('onHostError with No API key uses friendly message', () => {
-        layer.onHostError('No API key provided');
-        const notice = document.getElementById('prompt-notice');
-        assert.ok(notice?.textContent?.includes('API 키'));
+      layer.onHostError('No API key provided');
+      const notice = document.getElementById('prompt-notice');
+      assert.ok(notice?.textContent?.includes('API 키'));
     });
 
     test('onHostError with Generation already in progress uses friendly message', () => {
-        layer.onHostError('Generation already in progress');
-        const notice = document.getElementById('prompt-notice');
-        assert.ok(notice?.textContent?.includes('이미'));
+      layer.onHostError('Generation already in progress');
+      const notice = document.getElementById('prompt-notice');
+      assert.ok(notice?.textContent?.includes('이미'));
     });
   });
 });
 
 suite('UI Main Initialization', () => {
-    setup(() => {
-        document.body.innerHTML = '<div id="app"></div>';
-        document.body.dataset.section = 'setup';
-        // Clear cache for main.ts to re-run init()
-        delete require.cache[require.resolve('../../src/webview/ui/main')];
-    });
+  setup(() => {
+    document.body.innerHTML = '<div id="app"></div>';
+    document.body.dataset.section = 'setup';
+    // Clear cache for main.ts to re-run init()
+    delete require.cache[require.resolve('../../src/webview/ui/main')];
+  });
 
-    test('init runs based on section', () => {
-        require('../../src/webview/ui/main');
-        const app = document.getElementById('app');
-        assert.ok(app?.innerHTML.includes('panel'));
-    });
+  test('init runs based on section', () => {
+    require('../../src/webview/ui/main');
+    const app = document.getElementById('app');
+    assert.ok(app?.innerHTML.includes('panel'));
+  });
 });
