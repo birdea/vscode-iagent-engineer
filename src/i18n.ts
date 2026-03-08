@@ -74,6 +74,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'agent.error.noApiKey':
       'No API key is available, so models cannot be loaded. Enter a key or verify the saved key.',
     'agent.error.auth': 'API key authentication failed. Check that the key is valid.',
+    'agent.error.invalidKeyFormat':
+      'The API key format looks invalid. Check that you pasted the correct provider key.',
     'agent.error.generic':
       'Could not process the agent settings. Recheck the API key and model information.',
     'prompt.title': 'Code Generation',
@@ -175,6 +177,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'agent.error.noApiKey':
       'API 키가 없어 모델을 불러올 수 없습니다. API 키를 입력하거나 저장된 키를 확인하세요.',
     'agent.error.auth': 'API 키 인증에 실패했습니다. 올바른 키인지 확인하세요.',
+    'agent.error.invalidKeyFormat':
+      'API 키 형식이 올바르지 않습니다. 해당 공급자의 키를 정확히 붙여넣었는지 확인하세요.',
     'agent.error.generic':
       '에이전트 설정을 처리하지 못했습니다. API 키와 모델 정보를 다시 확인하세요.',
     'prompt.title': '코드 생성',

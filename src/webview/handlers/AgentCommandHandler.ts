@@ -4,7 +4,7 @@ import { Logger } from '../../logger/Logger';
 import { AgentType, HostToWebviewMessage } from '../../types';
 import { CONFIG_KEYS, SECRET_KEYS } from '../../constants';
 import { StateManager } from '../../state/StateManager';
-import { toErrorMessage } from '../../errors';
+import { ValidationError, toErrorMessage } from '../../errors';
 
 export class AgentCommandHandler {
   constructor(
@@ -65,6 +65,7 @@ export class AgentCommandHandler {
   }
 
   async setApiKey(agent: AgentType, key: string) {
+    this.validateApiKey(agent, key);
     const secretKey = SECRET_KEYS[`${agent.toUpperCase()}_API_KEY` as keyof typeof SECRET_KEYS];
     await this.context.secrets.store(secretKey, key);
     await AgentFactory.getAgent(agent).setApiKey(key);
@@ -116,5 +117,18 @@ export class AgentCommandHandler {
     }
     const models = await AgentFactory.getAgent(agent).listModels();
     this.post({ event: 'agent.modelsResult', models });
+  }
+
+  private validateApiKey(agent: AgentType, key: string) {
+    const trimmed = key.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const pattern =
+      agent === 'gemini' ? /^AIza[0-9A-Za-z_-]{20,}$/ : /^sk-[A-Za-z0-9_-]{10,}$/;
+    if (!pattern.test(trimmed)) {
+      throw new ValidationError(`Invalid API key format for ${agent}`);
+    }
   }
 }

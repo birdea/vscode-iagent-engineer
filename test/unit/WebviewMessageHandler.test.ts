@@ -78,7 +78,12 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.saveSettings', async () => {
-    await handler.handle({ command: 'agent.saveSettings', agent: 'gemini', model: 'm1', key: 'k1' });
+    await handler.handle({
+      command: 'agent.saveSettings',
+      agent: 'gemini',
+      model: 'm1',
+      key: 'AIzaSy123456789012345678901234567890123',
+    });
     assert.ok(mockContext.secrets.store.called);
     assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsSaved' }));
   });
@@ -236,8 +241,17 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.setApiKey', async () => {
-      await handler.handle({ command: 'agent.setApiKey', agent: 'gemini', key: 'new-key' });
-      assert.ok(mockContext.secrets.store.calledWith('figma-mcp-helper.geminiApiKey', 'new-key'));
+      await handler.handle({
+        command: 'agent.setApiKey',
+        agent: 'gemini',
+        key: 'AIzaSy123456789012345678901234567890123',
+      });
+      assert.ok(
+        mockContext.secrets.store.calledWith(
+          'figma-mcp-helper.geminiApiKey',
+          'AIzaSy123456789012345678901234567890123',
+        ),
+      );
   });
 
   test('handle agent.listModels with key', async () => {
@@ -258,8 +272,18 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.saveSettings', async () => {
-      await handler.handle({ command: 'agent.saveSettings', agent: 'claude', model: 'opus', key: 'key' });
-      assert.ok(mockContext.secrets.store.calledWith('figma-mcp-helper.claudeApiKey', 'key'));
+      await handler.handle({
+        command: 'agent.saveSettings',
+        agent: 'claude',
+        model: 'opus',
+        key: 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz',
+      });
+      assert.ok(
+        mockContext.secrets.store.calledWith(
+          'figma-mcp-helper.claudeApiKey',
+          'sk-ant-api03-abcdefghijklmnopqrstuvwxyz',
+        ),
+      );
       assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsSaved', model: 'opus' }));
   });
 

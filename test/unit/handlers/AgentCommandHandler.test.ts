@@ -142,21 +142,38 @@ suite('AgentCommandHandler', () => {
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
 
-    await handler.setApiKey('gemini', 'new-key');
+    await handler.setApiKey('gemini', 'AIzaSy123456789012345678901234567890123');
 
-    assert.ok(context.secrets.store.calledWith('figma-mcp-helper.geminiApiKey', 'new-key'));
-    assert.ok(agent.setApiKey.calledWith('new-key'));
+    assert.ok(
+      context.secrets.store.calledWith(
+        'figma-mcp-helper.geminiApiKey',
+        'AIzaSy123456789012345678901234567890123',
+      ),
+    );
+    assert.ok(agent.setApiKey.calledWith('AIzaSy123456789012345678901234567890123'));
   });
 
   test('saveSettings trims and persists provided API key', async () => {
     const setApiKeyStub = sandbox.stub(handler, 'setApiKey').resolves();
     context.secrets.get.resolves('persisted-key');
 
-    await handler.saveSettings('claude', 'claude-opus', '  secret  ');
+    await handler.saveSettings(
+      'claude',
+      'claude-opus',
+      '  sk-ant-api03-abcdefghijklmnopqrstuvwxyz  ',
+    );
 
-    assert.ok(setApiKeyStub.calledWith('claude', 'secret'));
+    assert.ok(setApiKeyStub.calledWith('claude', 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz'));
     assert.ok(context.globalState.update.calledWith('figma-mcp-helper.defaultAgent', 'claude'));
     assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: true }));
+  });
+
+  test('setApiKey rejects invalid key format', async () => {
+    await assert.rejects(
+      () => handler.setApiKey('gemini', 'not-a-real-key'),
+      /Invalid API key format for gemini/,
+    );
+    assert.ok(context.secrets.store.notCalled);
   });
 
   test('saveSettings skips setApiKey when key is blank', async () => {
