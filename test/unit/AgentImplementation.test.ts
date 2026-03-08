@@ -107,6 +107,30 @@ suite('Agent Implementations', () => {
         assert.ok(e);
       }
     });
+
+    test('generateCode closes Gemini stream iterator when aborted', async () => {
+      const returnStub = sinon.stub().resolves({ done: true });
+      const iterator = {
+        next: sinon.stub().resolves({ done: true, value: undefined }),
+        return: returnStub,
+      };
+      (agent as any).apiKey = 'test-key';
+      (agent as any).client = {
+        getGenerativeModel: () => ({
+          generateContentStream: async () => ({
+            stream: {
+              [Symbol.asyncIterator]: () => iterator,
+            },
+          }),
+        }),
+      };
+      const abortController = new AbortController();
+      abortController.abort();
+
+      const gen = agent.generateCode({ outputFormat: 'html' as any, userPrompt: 'test' }, abortController.signal);
+      await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
+      assert.ok(returnStub.calledOnce);
+    });
   });
 
   suite('ClaudeAgent', () => {

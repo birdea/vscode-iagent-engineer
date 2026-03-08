@@ -6,7 +6,7 @@ import { Logger } from '../logger/Logger';
 import * as https from 'https';
 import { USER_CANCELLED_CODE_GENERATION } from '../i18n';
 import { REQUEST_TIMEOUT_MS, GEMINI_MODELS_CACHE_TTL_MS } from '../constants';
-import { toErrorMessage } from '../errors';
+import { UserCancelledError, toErrorMessage } from '../errors';
 
 interface GeminiModelEntry {
   name: string;
@@ -125,14 +125,43 @@ export class GeminiAgent extends BaseAgent {
 
     try {
       const result = await model.generateContentStream(prompt);
-      for await (const chunk of result.stream) {
-        if (signal?.aborted) {
-          throw new Error(USER_CANCELLED_CODE_GENERATION);
+      const iterator = result.stream[Symbol.asyncIterator]();
+      let streamClosed = false;
+      const closeStream = async () => {
+        if (streamClosed) return;
+        streamClosed = true;
+        const returnFn = iterator.return;
+        if (typeof returnFn === 'function') {
+          await returnFn.call(iterator, undefined);
         }
-        const text = chunk.text();
-        if (text) {
-          yield text;
+      };
+      const onAbort = () => {
+        void closeStream();
+      };
+
+      signal?.addEventListener('abort', onAbort, { once: true });
+      try {
+        while (true) {
+          if (signal?.aborted) {
+            await closeStream();
+            throw new UserCancelledError(USER_CANCELLED_CODE_GENERATION);
+          }
+          const { value: chunk, done } = await iterator.next();
+          if (done) {
+            break;
+          }
+          if (signal?.aborted) {
+            await closeStream();
+            throw new UserCancelledError(USER_CANCELLED_CODE_GENERATION);
+          }
+          const text = chunk.text();
+          if (text) {
+            yield text;
+          }
         }
+      } finally {
+        signal?.removeEventListener('abort', onAbort);
+        await closeStream();
       }
       Logger.success('agent', 'Gemini code generation complete');
     } catch (e) {
