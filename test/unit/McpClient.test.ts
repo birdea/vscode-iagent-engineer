@@ -219,14 +219,16 @@ suite('McpClient', () => {
     assert.strictEqual(img, 'fallback');
   });
 
-  test('getImage returns empty string when neither base64 nor data', async () => {
+  test('getImage throws when neither base64 nor data is present', async () => {
     nock('http://localhost:3845')
       .post('/').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://localhost:3845')
       .post('/').reply(200, { jsonrpc: '2.0', id: 2, result: {} });
-    const img = await client.getImage('file', 'node');
-    assert.strictEqual(img, '');
+    await assert.rejects(
+      () => client.getImage('file', 'node'),
+      /returned no image data/,
+    );
   });
 });

@@ -183,7 +183,11 @@ export class McpClient {
       base64?: string;
       data?: string;
     };
-    return result.base64 || result.data || '';
+    const imageData = result.base64 || result.data;
+    if (!imageData) {
+      throw new ValidationError('MCP get_image returned no image data');
+    }
+    return imageData;
   }
 
   isConnected(): boolean {
