@@ -182,7 +182,7 @@ suite('AgentCommandHandler', () => {
   test('setApiKey rejects invalid key format', async () => {
     await assert.rejects(
       () => handler.setApiKey('gemini', 'not-a-real-key'),
-      /Invalid API key format for gemini/,
+      /Invalid API key format for Gemini/,
     );
     assert.ok(context.secrets.store.notCalled);
   });
@@ -190,7 +190,7 @@ suite('AgentCommandHandler', () => {
   test('setApiKey rejects Claude keys without sk-ant- prefix', async () => {
     await assert.rejects(
       () => handler.setApiKey('claude', 'sk-test-abcdefghijklmnopqrstuvwxyz'),
-      /Invalid API key format for claude/,
+      /Invalid API key format for Claude/,
     );
     assert.ok(context.secrets.store.notCalled);
   });
@@ -198,7 +198,7 @@ suite('AgentCommandHandler', () => {
   test('setApiKey rejects too-short Claude keys even with sk-ant- prefix', async () => {
     await assert.rejects(
       () => handler.setApiKey('claude', 'sk-ant-short'),
-      /Invalid API key format for claude/,
+      /Invalid API key format for Claude/,
     );
     assert.ok(context.secrets.store.notCalled);
   });

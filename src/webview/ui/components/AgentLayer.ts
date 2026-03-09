@@ -25,7 +25,10 @@ export class AgentLayer {
     <label for="agent-select">AI Agent</label>
     <select id="agent-select">
       <option value="gemini">Gemini</option>
+      <option value="openrouter">OpenRouter</option>
+      <option value="deepseek">DeepSeek</option>
       <option value="claude">Claude</option>
+      <option value="qwen">Qwen</option>
     </select>
   </div>
   <div class="field-group stack-gap-sm">

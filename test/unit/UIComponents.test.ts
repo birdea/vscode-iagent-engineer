@@ -33,6 +33,16 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'agent.getState' }));
     });
 
+    test('dropdown contains all supported agents', () => {
+      const select = document.getElementById('agent-select') as HTMLSelectElement;
+      const options = Array.from(select.options).map((o) => o.value);
+      assert.ok(options.includes('gemini'));
+      assert.ok(options.includes('claude'));
+      assert.ok(options.includes('deepseek'));
+      assert.ok(options.includes('qwen'));
+      assert.ok(options.includes('openrouter'));
+    });
+
     test('onModelsResult and status updates', () => {
       layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
       assert.strictEqual(
