@@ -218,4 +218,21 @@ suite('EditorIntegration', () => {
     assert.ok(previewPanel.webview.html.includes('runtime-error'));
     assert.ok(previewPanel.webview.html.includes('preview'));
   });
+
+  test('openPreviewPanel enables Tailwind CDN for tailwind-style previews', async () => {
+    const vscode = require('vscode');
+    const previewPanel = {
+      webview: { cspSource: 'csp', html: '' },
+      title: '',
+      reveal: sandbox.stub(),
+      onDidDispose: sandbox.stub(),
+    };
+    vscode.window.createWebviewPanel.returns(previewPanel);
+
+    await integration.openPreviewPanel('<div class="bg-slate-900 text-white px-4">preview</div>', 'tailwind');
+
+    assert.ok(previewPanel.title.includes('Tailwind Preview'));
+    assert.ok(previewPanel.webview.html.includes('cdn.tailwindcss.com'));
+    assert.ok(previewPanel.webview.html.includes('allow-scripts'));
+  });
 });

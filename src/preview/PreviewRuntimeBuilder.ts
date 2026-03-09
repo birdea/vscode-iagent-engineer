@@ -12,23 +12,37 @@ export async function buildPreviewPanelContent(
   cspSource: string,
   preferredFormat?: OutputFormat,
 ): Promise<PreviewPanelContent> {
+  const tailwindEnabled = shouldEnableTailwindPreview(code, preferredFormat);
+  const tailwindWarning = tailwindEnabled
+    ? ['Tailwind Play CDN is enabled for this preview. It requires network access in the webview.']
+    : [];
+
   if (shouldUseRuntimePreview(code, preferredFormat)) {
     try {
-      return await buildRuntimePreviewContent(code, cspSource);
+      return await buildRuntimePreviewContent(code, cspSource, tailwindEnabled, tailwindWarning);
     } catch (error) {
       const preview = buildPreviewDocument(code, preferredFormat);
       preview.warnings = [
         `Runtime preview failed and fell back to static rendering: ${toMessage(error)}`,
+        ...tailwindWarning,
         ...preview.warnings,
       ];
       return {
         title: preview.title,
-        html: buildStaticPanelHtml(preview.title, preview.description, preview.warnings, preview.html, cspSource),
+        html: buildStaticPanelHtml(
+          preview.title,
+          preview.description,
+          preview.warnings,
+          preview.html,
+          cspSource,
+          tailwindEnabled,
+        ),
       };
     }
   }
 
   const preview = buildPreviewDocument(code, preferredFormat);
+  preview.warnings = [...tailwindWarning, ...preview.warnings];
   return {
     title: preview.title,
     html: buildStaticPanelHtml(
@@ -37,6 +51,7 @@ export async function buildPreviewPanelContent(
       preview.warnings,
       preview.html,
       cspSource,
+      tailwindEnabled,
     ),
   };
 }
@@ -52,6 +67,8 @@ function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): 
 async function buildRuntimePreviewContent(
   code: string,
   cspSource: string,
+  tailwindEnabled: boolean,
+  tailwindWarning: string[],
 ): Promise<PreviewPanelContent> {
   const bundle = await buildReactPreviewBundle(code);
   return {
@@ -59,9 +76,13 @@ async function buildRuntimePreviewContent(
     html: buildRuntimePanelHtml(
       'React / TSX Preview',
       'Rendered with a lightweight React runtime preview.',
-      ['Single-file React output is executed directly inside the preview panel.'],
+      [
+        'Single-file React output is executed directly inside the preview panel.',
+        ...tailwindWarning,
+      ],
       bundle,
       cspSource,
+      tailwindEnabled,
     ),
   };
 }
@@ -151,15 +172,19 @@ function buildRuntimePanelHtml(
   warnings: string[],
   bundle: string,
   cspSource: string,
+  tailwindEnabled: boolean,
 ): string {
   const warningItems = warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
+  const tailwindScript = tailwindEnabled
+    ? '<script src="https://cdn.tailwindcss.com"></script>'
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'unsafe-inline'; img-src ${cspSource} data: blob: http://localhost:3845 https:; font-src ${cspSource}; connect-src http://localhost:3845 https:;"
+    content="default-src 'none'; style-src ${cspSource} 'unsafe-inline' https://cdn.tailwindcss.com; script-src 'unsafe-inline' https://cdn.tailwindcss.com; img-src ${cspSource} data: blob: http://localhost:3845 https:; font-src ${cspSource}; connect-src http://localhost:3845 https:;"
   />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(title)}</title>
@@ -206,6 +231,7 @@ function buildRuntimePanelHtml(
       background: white;
     }
   </style>
+  ${tailwindScript}
 </head>
 <body>
   <div class="meta">
@@ -226,9 +252,11 @@ function buildStaticPanelHtml(
   warnings: string[],
   previewHtml: string,
   cspSource: string,
+  tailwindEnabled: boolean,
 ): string {
   const warningItems = warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
   const warningBlock = warningItems ? `<ul class="warnings">${warningItems}</ul>` : '';
+  const preparedPreviewHtml = prepareStaticPreviewHtml(previewHtml, tailwindEnabled);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -290,10 +318,46 @@ function buildStaticPanelHtml(
       <p>${escapeHtml(description)}</p>
       ${warningBlock}
     </div>
-    <iframe sandbox="allow-same-origin" srcdoc="${escapeAttribute(previewHtml)}"></iframe>
+    <iframe sandbox="allow-same-origin allow-scripts" srcdoc="${escapeAttribute(preparedPreviewHtml)}"></iframe>
   </div>
 </body>
 </html>`;
+}
+
+function prepareStaticPreviewHtml(previewHtml: string, tailwindEnabled: boolean): string {
+  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://cdn.tailwindcss.com; script-src 'unsafe-inline' https://cdn.tailwindcss.com; img-src data: blob: http://localhost:3845 https:; font-src https:; connect-src http://localhost:3845 https:;">`;
+  const tailwindScript = tailwindEnabled
+    ? '<script src="https://cdn.tailwindcss.com"></script>'
+    : '';
+
+  if (/<head[\s>]/i.test(previewHtml)) {
+    return previewHtml.replace(/<head[^>]*>/i, (match) => `${match}${csp}${tailwindScript}`);
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${csp}
+  ${tailwindScript}
+</head>
+<body>
+${previewHtml}
+</body>
+</html>`;
+}
+
+function shouldEnableTailwindPreview(code: string, preferredFormat?: OutputFormat): boolean {
+  if (preferredFormat === 'tailwind') {
+    return true;
+  }
+
+  return (
+    /\bclass(Name)?="[^"]*(bg-|text-|flex|grid|px-|py-|mx-|my-|rounded-|w-\[|h-\[)/.test(code) ||
+    /\bclassName=\{[`'"][\s\S]*?(bg-|text-|flex|grid|px-|py-|mx-|my-|rounded-)/.test(code) ||
+    /\bline-clamp-\d+\b/.test(code)
+  );
 }
 
 function toMessage(error: unknown): string {
