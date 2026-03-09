@@ -69,6 +69,8 @@ suite('Webview workflow E2E', function () {
       '1.0.0',
       'en',
     );
+    sandbox.stub((handler as any).editorIntegration, 'openInEditor').resolves();
+    sandbox.stub((handler as any).screenshotService, 'openInEditor').resolves();
 
     await handler.handle({ command: 'figma.connect' });
     await handler.handle({
@@ -94,7 +96,13 @@ suite('Webview workflow E2E', function () {
     assert.ok(
       postMessage.calledWithMatch({ event: 'figma.screenshotResult', base64: sinon.match.string }),
     );
-    assert.ok(postMessage.calledWithMatch({ event: 'prompt.result', code: '<div>mock</div>' }));
+    assert.ok(
+      postMessage.calledWithMatch({
+        event: 'prompt.result',
+        code: '<div>mock</div>',
+        complete: true,
+      }),
+    );
   });
 
   test('falls back to local parse result when MCP is not connected', async () => {
@@ -116,6 +124,7 @@ suite('Webview workflow E2E', function () {
       '1.0.0',
       'en',
     );
+    sandbox.stub((handler as any).editorIntegration, 'openInEditor').resolves();
 
     await handler.handle({
       command: 'figma.fetchData',
