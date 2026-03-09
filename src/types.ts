@@ -1,7 +1,7 @@
 // Agent types
 export type AgentType = 'gemini' | 'claude';
 export type ConnectionMode = 'local' | 'remote';
-export type OutputFormat = 'html' | 'tsx' | 'scss' | 'tailwind' | 'kotlin';
+export type OutputFormat = 'html' | 'tsx' | 'vue' | 'scss' | 'tailwind';
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
 export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'system';
 

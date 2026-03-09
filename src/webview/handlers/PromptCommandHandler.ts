@@ -202,10 +202,10 @@ export class PromptCommandHandler {
       case 'html':
       case 'tailwind':
         return 'html';
+      case 'vue':
+        return 'vue';
       case 'scss':
         return 'scss';
-      case 'kotlin':
-        return 'kotlin';
       default:
         return 'plaintext';
     }
@@ -218,10 +218,10 @@ export class PromptCommandHandler {
       case 'html':
       case 'tailwind':
         return 'generated-ui.html';
+      case 'vue':
+        return 'GeneratedUi.vue';
       case 'scss':
         return 'generated-ui.scss';
-      case 'kotlin':
-        return 'GeneratedUi.kt';
       default:
         return 'generated-ui.txt';
     }

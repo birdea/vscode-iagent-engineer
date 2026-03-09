@@ -38,9 +38,9 @@ export class PromptLayer {
       <select id="output-format">
         <option value="tsx">TSX (React)</option>
         <option value="html">HTML</option>
+        <option value="vue">Vue 3 (SFC)</option>
         <option value="scss">SCSS</option>
         <option value="tailwind">Tailwind CSS</option>
-        <option value="kotlin">Kotlin (Compose)</option>
       </select>
     </div>
   </details>
