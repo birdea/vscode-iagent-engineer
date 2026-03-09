@@ -52,7 +52,6 @@ export class FigmaCommandHandler {
     parsed?: ReturnType<typeof parseMcpData>,
   ) {
     const message = t(this.locale, 'host.figma.remoteComingSoon');
-    await vscode.window.showInformationMessage(message);
     Logger.info('figma', `Remote MCP ${kind} requested while the feature is disabled`);
 
     if (kind === 'connect') {

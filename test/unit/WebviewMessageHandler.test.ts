@@ -74,7 +74,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
 
     await handler.handle({ command: 'figma.connect', mode: 'remote' });
 
-    assert.ok(vscode.window.showInformationMessage.calledOnce);
+    assert.ok(vscode.window.showInformationMessage.notCalled);
     assert.ok(vscode.env.openExternal.notCalled);
     assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.status', connected: false }));
   });

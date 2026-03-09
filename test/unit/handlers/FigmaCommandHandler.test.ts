@@ -85,7 +85,7 @@ suite('FigmaCommandHandler', () => {
   test('connect in remote mode shows coming soon popup and keeps disconnected state', async () => {
     await handler.connect('remote');
 
-    assert.ok((vscode.window.showInformationMessage as sinon.SinonStub).calledOnce);
+    assert.ok((vscode.window.showInformationMessage as sinon.SinonStub).notCalled);
     assert.ok((vscode.env.openExternal as sinon.SinonStub).notCalled);
     assert.ok(remoteApiClient.checkStatus.notCalled);
     assert.ok(
@@ -236,7 +236,7 @@ suite('FigmaCommandHandler', () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(remoteApiClient.fetchDesignContext.notCalled);
-    assert.ok((vscode.window.showInformationMessage as sinon.SinonStub).calledTwice);
+    assert.ok((vscode.window.showInformationMessage as sinon.SinonStub).notCalled);
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'figma.dataFetchError',
@@ -320,6 +320,7 @@ suite('FigmaCommandHandler', () => {
 
     assert.ok(remoteApiClient.fetchScreenshot.notCalled);
     assert.ok(screenshotService.openInEditor.notCalled);
+    assert.ok((vscode.window.showInformationMessage as sinon.SinonStub).notCalled);
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'error',
