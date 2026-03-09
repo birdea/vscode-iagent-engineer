@@ -454,6 +454,27 @@ suite('UI Components Consolidated', () => {
       assert.ok(true);
     });
 
+    test('action buttons render below the generate row', () => {
+      const actionGroup = document.querySelector('.prompt-action-group');
+      const actionRows = actionGroup?.querySelectorAll('.btn-row');
+
+      assert.ok(actionGroup);
+      assert.strictEqual(actionRows?.length, 2);
+      assert.strictEqual(actionRows?.[0].querySelector('#btn-generate')?.id, 'btn-generate');
+      assert.strictEqual(
+        actionRows?.[1].querySelector('#btn-open-generated-editor')?.id,
+        'btn-open-generated-editor',
+      );
+      assert.strictEqual(
+        actionRows?.[1].querySelector('#btn-preview-open-panel')?.id,
+        'btn-preview-open-panel',
+      );
+      assert.strictEqual(
+        actionRows?.[1].querySelector('#btn-preview-open-browser')?.id,
+        'btn-preview-open-browser',
+      );
+    });
+
     test('open preview button enables after result', () => {
       const openEditorButton = document.getElementById(
         'btn-open-generated-editor',
