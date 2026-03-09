@@ -48,7 +48,7 @@ export class FigmaLayer {
   </div>
   <div class="btn-row">
     <button class="primary" id="btn-fetch"><i class="codicon codicon-cloud-download"></i>${this.msg('figma.fetchData')}</button>
-    <button class="secondary" id="btn-screenshot"><i class="codicon codicon-device-camera"></i>${this.msg('figma.screenshot')}</button>
+    <button class="primary" id="btn-screenshot"><i class="codicon codicon-device-camera"></i>${this.msg('figma.screenshot')}</button>
   </div>
   <div class="notice hidden" id="figma-data-notice"></div>
 </section>
