@@ -24,10 +24,12 @@ suite('McpClient', () => {
 
   test('initialize success', async () => {
     nock('http://127.0.0.1:3845')
-      .matchHeader('accept', (value) =>
-        typeof value === 'string' &&
-        value.includes('application/json') &&
-        value.includes('text/event-stream'),
+      .matchHeader(
+        'accept',
+        (value) =>
+          typeof value === 'string' &&
+          value.includes('application/json') &&
+          value.includes('text/event-stream'),
       )
       .post('/mcp', (body) => {
         const initializeBody = body as { params?: { clientInfo?: { version?: string } } };
@@ -222,9 +224,7 @@ suite('McpClient', () => {
   });
 
   test('callTool rejects JSON-RPC id mismatch', async () => {
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://127.0.0.1:3845')
@@ -267,9 +267,7 @@ suite('McpClient', () => {
   });
 
   test('listTools returns empty array when tools is missing from response', async () => {
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
 
     const tools = await client.listTools();
     assert.deepStrictEqual(tools, []);
@@ -285,9 +283,7 @@ suite('McpClient', () => {
   });
 
   test('callTool accepts string JSON-RPC id', async () => {
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://127.0.0.1:3845')
@@ -299,9 +295,7 @@ suite('McpClient', () => {
   });
 
   test('getImage falls back to data field when base64 absent', async () => {
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
     nock('http://127.0.0.1:3845')
@@ -371,14 +365,10 @@ suite('McpClient', () => {
   });
 
   test('getImage throws when neither base64 nor data is present', async () => {
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 1, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 1, result: {} });
     await client.initialize();
 
-    nock('http://127.0.0.1:3845')
-      .post('/mcp')
-      .reply(200, { jsonrpc: '2.0', id: 2, result: {} });
+    nock('http://127.0.0.1:3845').post('/mcp').reply(200, { jsonrpc: '2.0', id: 2, result: {} });
     await assert.rejects(() => client.getImage('file', 'node'), /returned no image data/);
   });
 

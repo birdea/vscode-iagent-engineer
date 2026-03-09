@@ -15,7 +15,7 @@ suite('Webview workflow E2E', function () {
   let server: ChildProcess | null = null;
   let sandbox: sinon.SinonSandbox;
 
-  setup(async () => {
+  setup(async function () {
     sandbox = sinon.createSandbox();
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({
       get: sandbox.stub().callsFake((key: string, defaultValue?: unknown) => {
@@ -25,7 +25,15 @@ suite('Webview workflow E2E', function () {
         return defaultValue;
       }),
     });
-    server = await startMockServer(port);
+    try {
+      server = await startMockServer(port);
+    } catch (error) {
+      if (isPortBindingPermissionError(error)) {
+        this.skip();
+        return;
+      }
+      throw error;
+    }
   });
 
   teardown(async () => {
@@ -179,4 +187,12 @@ async function stopMockServer(server: ChildProcess | null): Promise<void> {
     server.once('exit', () => resolve());
     server.kill();
   });
+}
+
+function isPortBindingPermissionError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /\bEPERM\b|\bEACCES\b/.test(error.message);
 }

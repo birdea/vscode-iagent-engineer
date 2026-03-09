@@ -7,10 +7,7 @@ import { ScreenshotService } from '../../figma/ScreenshotService';
 import { EditorIntegration } from '../../editor/EditorIntegration';
 import { Logger } from '../../logger/Logger';
 import { ConnectionMode, HostToWebviewMessage } from '../../types';
-import {
-  CONFIG_KEYS,
-  DEFAULT_MCP_ENDPOINT,
-} from '../../constants';
+import { CONFIG_KEYS, DEFAULT_MCP_ENDPOINT } from '../../constants';
 import { StateManager } from '../../state/StateManager';
 import { UiLocale, t } from '../../i18n';
 import { toErrorMessage } from '../../errors';

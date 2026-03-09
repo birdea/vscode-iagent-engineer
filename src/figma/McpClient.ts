@@ -180,14 +180,16 @@ export class McpClient {
         },
         (res) => {
           const chunks: Buffer[] = [];
-          res.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+          res.on('data', (chunk) =>
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+          );
           res.on('end', () => {
             if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
               reject(
                 new NetworkError(
-                  `Image HTTP ${res.statusCode ?? 0}: ${Buffer.concat(chunks)
-                    .toString('utf8')
-                    .slice(0, 200) || 'No response body'}`,
+                  `Image HTTP ${res.statusCode ?? 0}: ${
+                    Buffer.concat(chunks).toString('utf8').slice(0, 200) || 'No response body'
+                  }`,
                 ),
               );
               return;
@@ -242,7 +244,11 @@ export class McpClient {
         return await this.callTool(attempt.name, attempt.args);
       } catch (error) {
         lastError = error;
-        if (!(error instanceof Error) || !this.isToolUnavailable(error) || index === attempts.length - 1) {
+        if (
+          !(error instanceof Error) ||
+          !this.isToolUnavailable(error) ||
+          index === attempts.length - 1
+        ) {
           throw error;
         }
       }
@@ -358,7 +364,9 @@ export class McpClient {
           Accept: 'application/json, text/event-stream',
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(bodyStr),
-          ...(method !== 'initialize' && this.sessionId ? { 'Mcp-Session-Id': this.sessionId } : {}),
+          ...(method !== 'initialize' && this.sessionId
+            ? { 'Mcp-Session-Id': this.sessionId }
+            : {}),
         },
       };
 
@@ -402,9 +410,11 @@ export class McpClient {
               );
             } else {
               if (method === 'initialize') {
-                const sessionHeader = res.headers['mcp-session-id'] ?? res.headers['Mcp-Session-Id'];
+                const sessionHeader =
+                  res.headers['mcp-session-id'] ?? res.headers['Mcp-Session-Id'];
                 const sessionId = Array.isArray(sessionHeader) ? sessionHeader[0] : sessionHeader;
-                this.sessionId = typeof sessionId === 'string' && sessionId.trim() ? sessionId : undefined;
+                this.sessionId =
+                  typeof sessionId === 'string' && sessionId.trim() ? sessionId : undefined;
               }
               resolve(response.result);
             }

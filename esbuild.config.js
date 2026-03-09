@@ -47,7 +47,9 @@ function copyStyle() {
 
   // Allow the extension bundle to build even if codicon assets are unavailable locally.
   fs.writeFileSync('dist/codicon.css', '');
-  console.warn('Codicon assets not found in node_modules; building without bundled codicon styles.');
+  console.warn(
+    'Codicon assets not found in node_modules; building without bundled codicon styles.',
+  );
 }
 
 function cleanupProductionArtifacts() {
