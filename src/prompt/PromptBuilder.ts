@@ -5,7 +5,6 @@ const FORMAT_INSTRUCTIONS: Record<OutputFormat, string> = {
   html: 'Generate semantic HTML5 with inline CSS. Use modern HTML elements. Do not use React, TSX, JSX, Vue, or template syntax.',
   tsx: 'Generate a React functional component in TypeScript (TSX). Use proper typing and hooks where needed.',
   vue: 'Generate a Vue 3 Single File Component (SFC) using Composition API and <script setup> syntax. Include <template>, <script setup>, and <style scoped> sections.',
-  scss: 'Generate SCSS stylesheet with BEM naming convention and CSS custom properties. Do not emit HTML, TSX, JSX, or JavaScript.',
   tailwind:
     'Generate HTML with Tailwind CSS utility classes. Use responsive design principles. Do not use React, TSX, JSX, Vue, or separate CSS files.',
 };
@@ -14,7 +13,6 @@ const FORMAT_FORBIDDEN: Record<OutputFormat, string> = {
   html: 'Forbidden: TSX, JSX, React components, Vue templates, markdown fences, explanations.',
   tsx: 'Forbidden: plain HTML-only output, Vue SFC syntax, markdown fences, explanations.',
   vue: 'Forbidden: React/TSX, plain HTML without Vue directives, Options API, markdown fences, explanations.',
-  scss: 'Forbidden: HTML markup, TSX/JSX, JavaScript, markdown fences, explanations.',
   tailwind:
     'Forbidden: React/TSX unless explicitly requested via TSX format, separate CSS files, markdown fences, explanations.',
 };

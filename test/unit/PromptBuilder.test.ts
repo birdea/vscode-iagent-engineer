@@ -40,12 +40,6 @@ suite('PromptBuilder', () => {
     assert.ok(prompt.includes('"name": "Button"'));
   });
 
-  test('build prompt with multiple formats', () => {
-    const scssPrompt = builder.build({ outputFormat: 'scss' });
-    assert.ok(scssPrompt.includes('SCSS stylesheet'));
-    assert.ok(scssPrompt.includes('Forbidden: HTML markup'));
-  });
-
   test('places user instruction after MCP context and repeats final format rule', () => {
     const prompt = builder.build({
       outputFormat: 'html',

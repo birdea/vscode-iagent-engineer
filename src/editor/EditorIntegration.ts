@@ -55,7 +55,6 @@ export class EditorIntegration {
         'All Files': ['*'],
         TypeScript: ['ts', 'tsx'],
         HTML: ['html'],
-        SCSS: ['scss'],
         Kotlin: ['kt'],
       },
       saveLabel: 'Save Generated Code',

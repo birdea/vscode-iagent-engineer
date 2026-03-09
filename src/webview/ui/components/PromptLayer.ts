@@ -42,7 +42,6 @@ export class PromptLayer {
         <option value="tsx">TSX (React)</option>
         <option value="html">HTML</option>
         <option value="vue">Vue 3 (SFC)</option>
-        <option value="scss">SCSS</option>
         <option value="tailwind">Tailwind CSS</option>
       </select>
     </div>

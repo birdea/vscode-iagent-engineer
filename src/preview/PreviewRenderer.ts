@@ -4,7 +4,6 @@ export type DetectedPreviewFormat =
   | 'html'
   | 'react'
   | 'vue'
-  | 'scss'
   | 'unknown';
 
 export interface PreviewDocument {
@@ -77,18 +76,6 @@ export function buildPreviewDocument(code: string, preferredFormat?: OutputForma
             ),
       };
     }
-    case 'scss':
-      return {
-        detectedFormat,
-        renderable: false,
-        title: 'SCSS Preview Unavailable',
-        description: 'Stylesheet-only output cannot be rendered by itself without companion markup.',
-        warnings: [],
-        html: buildUnsupportedHtml(
-          'SCSS output needs HTML markup to produce a visual preview.',
-          source,
-        ),
-      };
     default:
       return {
         detectedFormat,
@@ -205,10 +192,6 @@ function detectPreviewFormat(code: string, preferredFormat?: OutputFormat): Dete
     return 'react';
   }
 
-  if (looksLikeScss(trimmed)) {
-    return 'scss';
-  }
-
   if (
     /^<!doctype html>/i.test(trimmed) ||
     /<(html|body|main|section|div|article|header|footer)[\s>]/i.test(trimmed)
@@ -218,7 +201,6 @@ function detectPreviewFormat(code: string, preferredFormat?: OutputFormat): Dete
 
   if (preferredFormat === 'vue') return 'vue';
   if (preferredFormat === 'tsx') return 'react';
-  if (preferredFormat === 'scss') return 'scss';
   if (preferredFormat === 'html' || preferredFormat === 'tailwind') return 'html';
 
   return 'unknown';
@@ -228,15 +210,6 @@ function normalizeSource(code: string): string {
   const trimmed = code.trim();
   const fenced = trimmed.match(/^```[a-zA-Z0-9_-]*\n([\s\S]*?)\n```$/);
   return (fenced ? fenced[1] : trimmed).trim();
-}
-
-function looksLikeScss(code: string): boolean {
-  return (
-    /\$[a-zA-Z_-][\w-]*\s*:/.test(code) ||
-    /&:[\w-]+/.test(code) ||
-    /@mixin\s+/.test(code) ||
-    /@include\s+/.test(code)
-  );
 }
 
 function extractVueTemplate(code: string): string {

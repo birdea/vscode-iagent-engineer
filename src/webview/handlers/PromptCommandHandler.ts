@@ -208,8 +208,6 @@ export class PromptCommandHandler {
         return 'html';
       case 'vue':
         return 'vue';
-      case 'scss':
-        return 'scss';
       default:
         return 'plaintext';
     }
@@ -224,8 +222,6 @@ export class PromptCommandHandler {
         return 'generated-ui.html';
       case 'vue':
         return 'GeneratedUi.vue';
-      case 'scss':
-        return 'generated-ui.scss';
       default:
         return 'generated-ui.txt';
     }
