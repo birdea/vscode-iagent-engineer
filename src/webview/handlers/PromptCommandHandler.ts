@@ -114,6 +114,7 @@ export class PromptCommandHandler {
       }
 
       this.post({ event: 'prompt.streaming', progress: 100 });
+      fullCode = this.stripMarkdownFences(fullCode);
       this.editorIntegration.setGeneratedOutputFormat(resolvedPayload.outputFormat);
       await this.editorIntegration.openInEditor(
         fullCode,
@@ -145,6 +146,7 @@ export class PromptCommandHandler {
         errMessage === USER_CANCELLED_CODE_GENERATION;
       const errorMessage = isCancelled ? t(this.locale, 'host.prompt.cancelled') : errMessage;
       if (fullCode.length > 0) {
+        fullCode = this.stripMarkdownFences(fullCode);
         this.editorIntegration.setGeneratedOutputFormat(resolvedPayload.outputFormat);
         await this.editorIntegration.openInEditor(
           fullCode,
@@ -261,6 +263,12 @@ export class PromptCommandHandler {
       default:
         return 'generated-ui.txt';
     }
+  }
+
+  private stripMarkdownFences(code: string): string {
+    let result = code.replace(/^```[\w]*\r?\n/, '');
+    result = result.replace(/\n?```\s*$/, '');
+    return result;
   }
 
   private summarizeChunk(chunk: string): string {
