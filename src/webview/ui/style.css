@@ -217,7 +217,6 @@ textarea:disabled {
   justify-content: space-between;
 }
 
-
 button {
   cursor: pointer;
   font-family: var(--vscode-font-family);

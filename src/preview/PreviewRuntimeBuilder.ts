@@ -549,7 +549,9 @@ function toIssues(
   level: PreviewIssueLevel,
   defaultLabel: string,
 ): PreviewIssue[] {
-  return messages.map((message, index) => createIssue(level, `${defaultLabel} ${index + 1}`, message));
+  return messages.map((message, index) =>
+    createIssue(level, `${defaultLabel} ${index + 1}`, message),
+  );
 }
 
 function renderIssues(issues: PreviewIssue[]): string {
@@ -597,7 +599,10 @@ function createPreviewResolver(workspaceRoot: string) {
 
       if (specifier.startsWith('@/')) {
         const relative = specifier.slice(2);
-        candidates.push(path.resolve(baseUrl, relative), path.resolve(workspaceRoot, 'src', relative));
+        candidates.push(
+          path.resolve(baseUrl, relative),
+          path.resolve(workspaceRoot, 'src', relative),
+        );
       }
 
       for (const candidate of candidates) {

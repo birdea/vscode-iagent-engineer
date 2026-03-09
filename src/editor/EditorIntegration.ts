@@ -27,7 +27,7 @@ export class EditorIntegration {
       doc.languageId === language
         ? doc
         : await vscode.languages.setTextDocumentLanguage(doc, language);
-    const editor = await vscode.window.showTextDocument(typedDoc, { preview: false });
+    await vscode.window.showTextDocument(typedDoc, { preview: false });
     this.generatedDocumentUri = uri;
     this.generatedLanguage = language;
 
@@ -120,9 +120,9 @@ export class EditorIntegration {
         ? 'json'
         : language === 'typescriptreact'
           ? 'tsx'
-        : language === 'html'
-          ? 'html'
-          : language === 'scss'
+          : language === 'html'
+            ? 'html'
+            : language === 'scss'
               ? 'scss'
               : 'txt';
 

@@ -139,9 +139,12 @@ export class AgentCommandHandler {
 
   private toModelInfoDocument(agent: AgentType, modelId: string, modelInfo: ModelInfo) {
     let defaultDocUrl = 'https://ai.google.dev/api/models';
-    if (agent === 'claude') defaultDocUrl = 'https://docs.anthropic.com/en/docs/about-claude/models/overview';
+    if (agent === 'claude')
+      defaultDocUrl = 'https://docs.anthropic.com/en/docs/about-claude/models/overview';
     else if (agent === 'deepseek') defaultDocUrl = 'https://api-docs.deepseek.com/';
-    else if (agent === 'qwen') defaultDocUrl = 'https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope';
+    else if (agent === 'qwen')
+      defaultDocUrl =
+        'https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope';
     else if (agent === 'openrouter') defaultDocUrl = 'https://openrouter.ai/docs';
 
     return {

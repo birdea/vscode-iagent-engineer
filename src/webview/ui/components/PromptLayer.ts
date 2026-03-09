@@ -251,7 +251,13 @@ export class PromptLayer {
     }
   }
 
-  onResult(code: string, format?: OutputFormat, complete = true, message?: string, progress?: number) {
+  onResult(
+    code: string,
+    format?: OutputFormat,
+    complete = true,
+    message?: string,
+    progress?: number,
+  ) {
     this.lastCode = code;
     this.lastFormat = format;
     if (complete) {

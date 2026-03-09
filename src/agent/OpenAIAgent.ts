@@ -27,7 +27,10 @@ interface ModelConfig {
   documentationUrl?: unknown;
 }
 
-const PROVIDER_CONFIGS: Record<string, { baseUrl: string; defaultModel: string; documentationUrl: string; configKey: string }> = {
+const PROVIDER_CONFIGS: Record<
+  string,
+  { baseUrl: string; defaultModel: string; documentationUrl: string; configKey: string }
+> = {
   deepseek: {
     baseUrl: 'https://api.deepseek.com/v1',
     defaultModel: 'deepseek-coder',
@@ -37,7 +40,8 @@ const PROVIDER_CONFIGS: Record<string, { baseUrl: string; defaultModel: string; 
   qwen: {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     defaultModel: 'qwen-plus',
-    documentationUrl: 'https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope',
+    documentationUrl:
+      'https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope',
     configKey: CONFIG_KEYS.QWEN_MODELS,
   },
   openrouter: {
@@ -70,12 +74,20 @@ export class OpenAIAgent extends BaseAgent {
           if (typeof model.id !== 'string' || !model.id.trim()) return null;
           return {
             id: model.id.trim(),
-            name: typeof model.name === 'string' && model.name.trim() ? model.name.trim() : model.id.trim(),
+            name:
+              typeof model.name === 'string' && model.name.trim()
+                ? model.name.trim()
+                : model.id.trim(),
             provider: this.type,
             description: typeof model.description === 'string' ? model.description : undefined,
-            inputTokenLimit: typeof model.inputTokenLimit === 'number' ? model.inputTokenLimit : undefined,
-            outputTokenLimit: typeof model.outputTokenLimit === 'number' ? model.outputTokenLimit : undefined,
-            documentationUrl: typeof model.documentationUrl === 'string' ? model.documentationUrl : this.config.documentationUrl,
+            inputTokenLimit:
+              typeof model.inputTokenLimit === 'number' ? model.inputTokenLimit : undefined,
+            outputTokenLimit:
+              typeof model.outputTokenLimit === 'number' ? model.outputTokenLimit : undefined,
+            documentationUrl:
+              typeof model.documentationUrl === 'string'
+                ? model.documentationUrl
+                : this.config.documentationUrl,
             metadataSource: [`${this.type}-config`],
           };
         })
@@ -101,7 +113,7 @@ export class OpenAIAgent extends BaseAgent {
     try {
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
         },
       });
 
@@ -133,13 +145,15 @@ export class OpenAIAgent extends BaseAgent {
 
   async getModelInfo(modelId: string): Promise<ModelInfo> {
     const models = await this.listModels();
-    return models.find((m) => m.id === modelId) || {
-      id: modelId,
-      name: modelId,
-      provider: this.type,
-      documentationUrl: this.config.documentationUrl,
-      metadataSource: [`${this.type}-fallback`],
-    };
+    return (
+      models.find((m) => m.id === modelId) || {
+        id: modelId,
+        name: modelId,
+        provider: this.type,
+        documentationUrl: this.config.documentationUrl,
+        metadataSource: [`${this.type}-fallback`],
+      }
+    );
   }
 
   async *generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string> {
@@ -154,7 +168,7 @@ export class OpenAIAgent extends BaseAgent {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         model: modelId,
@@ -206,7 +220,7 @@ export class OpenAIAgent extends BaseAgent {
               if (content) {
                 yield content;
               }
-            } catch (e) {
+            } catch {
               Logger.warn('agent', `Failed to parse SSE chunk: ${trimmedLine}`);
             }
           }

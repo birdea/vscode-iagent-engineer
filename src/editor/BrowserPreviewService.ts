@@ -93,7 +93,11 @@ export class BrowserPreviewService {
         this.getViteConfig(),
         'utf8',
       );
-      await fs.writeFile(path.join(this.previewDir, 'src', 'main.tsx'), this.getMainEntry(), 'utf8');
+      await fs.writeFile(
+        path.join(this.previewDir, 'src', 'main.tsx'),
+        this.getMainEntry(),
+        'utf8',
+      );
       await fs.writeFile(path.join(this.previewDir, 'src', 'base.css'), this.getBaseCss(), 'utf8');
     }
 
@@ -101,11 +105,7 @@ export class BrowserPreviewService {
 
     const preview = this.buildPreviewArtifacts(code, format);
     const srcDir = path.join(this.previewDir, 'src');
-    await fs.writeFile(
-      path.join(srcDir, 'generated-react.tsx'),
-      preview.reactCode,
-      'utf8',
-    );
+    await fs.writeFile(path.join(srcDir, 'generated-react.tsx'), preview.reactCode, 'utf8');
     await fs.writeFile(
       path.join(srcDir, 'generated-html.ts'),
       this.getGeneratedHtmlModule(preview),
@@ -215,7 +215,9 @@ export class BrowserPreviewService {
       server.listen(0, PREVIEW_HOST, () => {
         const address = server.address();
         if (!address || typeof address === 'string') {
-          server.close(() => reject(new Error('Could not determine an open port for browser preview.')));
+          server.close(() =>
+            reject(new Error('Could not determine an open port for browser preview.')),
+          );
           return;
         }
         server.close((error) => {

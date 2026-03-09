@@ -38,9 +38,7 @@ suite('EditorIntegration', () => {
     vscode.window.showTextDocument.resolves({});
 
     await integration.openInEditor('const x = 1;', 'javascript', 'generated.ts');
-    assert.ok(
-      vscode.workspace.openTextDocument.calledWith(uri),
-    );
+    assert.ok(vscode.workspace.openTextDocument.calledWith(uri));
     assert.ok(vscode.workspace.fs.writeFile.calledOnce);
     assert.ok(vscode.languages.setTextDocumentLanguage.calledOnce);
     assert.ok(vscode.window.showTextDocument.calledOnce);
@@ -212,7 +210,7 @@ suite('EditorIntegration', () => {
     vscode.window.createWebviewPanel.returns(previewPanel);
 
     await integration.openPreviewPanel(
-      "import React from 'react'; export default function App(){ return <div className=\"bg-white\">preview</div>; }",
+      'import React from \'react\'; export default function App(){ return <div className="bg-white">preview</div>; }',
       'tsx',
     );
 
@@ -231,7 +229,10 @@ suite('EditorIntegration', () => {
     };
     vscode.window.createWebviewPanel.returns(previewPanel);
 
-    await integration.openPreviewPanel('<div class="bg-slate-900 text-white px-4">preview</div>', 'tailwind');
+    await integration.openPreviewPanel(
+      '<div class="bg-slate-900 text-white px-4">preview</div>',
+      'tailwind',
+    );
 
     assert.ok(previewPanel.title.includes('Tailwind Preview'));
     assert.ok(previewPanel.webview.html.includes('https://cdn.tailwindcss.com'));

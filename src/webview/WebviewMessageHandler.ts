@@ -147,7 +147,11 @@ export class WebviewMessageHandler {
   private getSourceFromCommand(command: WebviewToHostMessage['command']): LayerType {
     if (command.startsWith('figma.')) return 'figma';
     if (command.startsWith('agent.') || command.startsWith('state.')) return 'agent';
-    if (command.startsWith('prompt.') || command.startsWith('preview.') || command.startsWith('editor.'))
+    if (
+      command.startsWith('prompt.') ||
+      command.startsWith('preview.') ||
+      command.startsWith('editor.')
+    )
       return 'prompt';
     return 'system';
   }

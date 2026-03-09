@@ -28,7 +28,11 @@ export class PreviewPanelService {
       this.panel.reveal(column, true);
     }
 
-    const preview = await buildPreviewPanelContent(code, this.panel.webview.cspSource, preferredFormat);
+    const preview = await buildPreviewPanelContent(
+      code,
+      this.panel.webview.cspSource,
+      preferredFormat,
+    );
     this.panel.webview.html = preview.html;
     this.panel.title = `Generated UI Preview · ${preview.title}`;
   }

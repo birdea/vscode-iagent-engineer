@@ -1,10 +1,6 @@
 import { OutputFormat } from '../types';
 
-export type DetectedPreviewFormat =
-  | 'html'
-  | 'react'
-  | 'vue'
-  | 'unknown';
+export type DetectedPreviewFormat = 'html' | 'react' | 'vue' | 'unknown';
 
 export interface PreviewDocument {
   detectedFormat: DetectedPreviewFormat;
@@ -15,7 +11,10 @@ export interface PreviewDocument {
   html: string;
 }
 
-export function buildPreviewDocument(code: string, preferredFormat?: OutputFormat): PreviewDocument {
+export function buildPreviewDocument(
+  code: string,
+  preferredFormat?: OutputFormat,
+): PreviewDocument {
   const source = inlineConstStringReferences(normalizeSource(code));
   const detectedFormat = detectPreviewFormat(source, preferredFormat);
 
@@ -31,7 +30,9 @@ export function buildPreviewDocument(code: string, preferredFormat?: OutputForma
             : 'Rendered directly from the generated markup.',
         warnings:
           preferredFormat === 'tailwind'
-            ? ['Tailwind runtime is not bundled, so utility classes require generated CSS to appear.']
+            ? [
+                'Tailwind runtime is not bundled, so utility classes require generated CSS to appear.',
+              ]
             : [],
         html: wrapHtmlDocument(source),
       };
@@ -248,7 +249,8 @@ function extractPrimaryReactMarkup(code: string): string {
   const exportIdentifierMatch = code.match(/export\s+default\s+([A-Za-z0-9_]+)\s*;?/);
   if (exportIdentifierMatch?.[1]) {
     const identifier = exportIdentifierMatch[1];
-    const body = extractNamedFunctionBody(code, identifier) || extractConstArrowBody(code, identifier);
+    const body =
+      extractNamedFunctionBody(code, identifier) || extractConstArrowBody(code, identifier);
     const jsx = extractReturnBlock(body);
     if (jsx) {
       return jsx;
@@ -402,9 +404,7 @@ function sanitizeJsxToHtml(jsx: string): string {
 
 function inlineConstStringReferences(code: string): string {
   const stringConsts = new Map<string, string>();
-  for (const match of code.matchAll(
-    /const\s+([A-Za-z_$][\w$]*)\s*=\s*(["'`])([\s\S]*?)\2\s*;/g,
-  )) {
+  for (const match of code.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*(["'`])([\s\S]*?)\2\s*;/g)) {
     stringConsts.set(match[1], match[3]);
   }
 
@@ -422,28 +422,31 @@ function inlineConstStringReferences(code: string): string {
 }
 
 function inlineUtilityStyles(markup: string): string {
-  return markup.replace(/<([a-z][\w-]*)([^>]*?)\sclass="([^"]*)"([^>]*)>/gi, (_match, tag, before, classValue, after) => {
-    const generatedStyle = classValue
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter(Boolean)
-      .map(toInlineStyle)
-      .filter(Boolean)
-      .join('; ');
+  return markup.replace(
+    /<([a-z][\w-]*)([^>]*?)\sclass="([^"]*)"([^>]*)>/gi,
+    (_match, tag, before, classValue, after) => {
+      const generatedStyle = classValue
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(Boolean)
+        .map(toInlineStyle)
+        .filter(Boolean)
+        .join('; ');
 
-    if (!generatedStyle) {
-      return `<${tag}${before} class="${classValue}"${after}>`;
-    }
+      if (!generatedStyle) {
+        return `<${tag}${before} class="${classValue}"${after}>`;
+      }
 
-    const attrs = `${before}${after}`;
-    const styleMatch = attrs.match(/\sstyle="([^"]*)"/i);
-    if (styleMatch) {
-      const mergedStyle = [styleMatch[1], generatedStyle].filter(Boolean).join('; ');
-      return `<${tag}${attrs.replace(/\sstyle="([^"]*)"/i, ` style="${escapeAttribute(mergedStyle)}"`)} class="${classValue}">`;
-    }
+      const attrs = `${before}${after}`;
+      const styleMatch = attrs.match(/\sstyle="([^"]*)"/i);
+      if (styleMatch) {
+        const mergedStyle = [styleMatch[1], generatedStyle].filter(Boolean).join('; ');
+        return `<${tag}${attrs.replace(/\sstyle="([^"]*)"/i, ` style="${escapeAttribute(mergedStyle)}"`)} class="${classValue}">`;
+      }
 
-    return `<${tag}${before} class="${classValue}" style="${escapeAttribute(generatedStyle)}"${after}>`;
-  });
+      return `<${tag}${before} class="${classValue}" style="${escapeAttribute(generatedStyle)}"${after}>`;
+    },
+  );
 }
 
 function toInlineStyle(token: string): string {
