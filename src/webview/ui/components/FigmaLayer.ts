@@ -41,6 +41,7 @@ export class FigmaLayer {
 <section class="panel panel-compact">
   <div class="section-heading">
     <div class="panel-title">${this.msg('figma.designDataTitle')}</div>
+    <button class="text-btn" id="btn-open-figma-app">${this.msg('figma.get')}</button>
   </div>
   <div class="field-group">
     <textarea id="mcp-data" placeholder="${this.msg('figma.mcpPlaceholder')}"></textarea>
@@ -87,6 +88,10 @@ export class FigmaLayer {
       vscode.postMessage({ command: 'figma.openSettings', mode: this.connectionMode });
     });
 
+    document.getElementById('btn-open-figma-app')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'figma.openDesktopApp' });
+    });
+
     document.getElementById('btn-screenshot')?.addEventListener('click', () => {
       const mcpData = dataInput?.value.trim() ?? '';
       if (!mcpData) {
@@ -128,11 +133,6 @@ export class FigmaLayer {
       text.classList.toggle('status-text-error', !connected);
       if (connected) {
         text.textContent = this.msg('figma.statusConnected');
-        this.setGuideMessage(
-          methods.length > 0
-            ? this.msg('figma.guide.availableTools', { count: methods.length })
-            : '',
-        );
       } else {
         text.textContent = this.msg('figma.statusDisconnected');
         if (error) {
@@ -297,7 +297,12 @@ export class FigmaLayer {
   private renderToolList(methods: string[], connected: boolean) {
     const hasExtraTools = connected && methods.length > 0;
     this.setGuideMessage(
-      hasExtraTools ? this.msg('figma.guide.availableTools', { count: methods.length }) : '',
+      hasExtraTools
+        ? this.msg('figma.guide.availableTools', {
+            count: methods.length,
+            tools: methods.join(', '),
+          })
+        : '',
     );
   }
 

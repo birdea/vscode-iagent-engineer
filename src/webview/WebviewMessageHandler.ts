@@ -73,6 +73,9 @@ export class WebviewMessageHandler {
         case 'figma.openSettings':
           await this.figmaHandler.openSettings(msg.mode);
           break;
+        case 'figma.openDesktopApp':
+          await this.figmaHandler.openDesktopApp();
+          break;
         case 'figma.fetchData':
           await this.figmaHandler.fetchData(msg.mcpData);
           break;

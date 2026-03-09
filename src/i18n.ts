@@ -21,6 +21,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.connecting': 'Connecting...',
     'figma.authStarting': 'Opening remote login...',
     'figma.designDataTitle': 'Design Data',
+    'figma.get': 'Get',
     'figma.mcpPlaceholder': 'https://figma.com/file/... or JSON',
     'figma.fetchData': 'Fetch Data',
     'figma.screenshot': 'Screenshot',
@@ -33,7 +34,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.info.connecting': 'Attempting to connect.',
     'figma.info.remoteAuthStarted':
       'Remote login opened in your browser. Finish authentication, then retry the MCP connection once the remote endpoint is ready.',
-    'figma.guide.availableTools': ({ count }) => `${count} tools available`,
+    'figma.guide.availableTools': ({ count, tools }) => `${count} tools available: ${tools}`,
     'figma.guide.checkServer':
       'Check whether the server is running and whether the endpoint is correct.',
     'figma.guide.remoteLogin':
@@ -75,6 +76,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.fileIdMissing': 'Could not find a fileId in the Figma URL or JSON payload.',
     'host.figma.screenshotFailed':
       'Could not fetch the screenshot. Recheck the MCP connection and the Figma input.',
+    'host.figma.desktopAppOpenFailed':
+      'Could not launch Figma Desktop. Check that the desktop app is installed and available on this machine.',
     'host.figma.fetchRefused':
       'Could not fetch data because the MCP server is unreachable. Check that the server is running.',
     'host.figma.fetchTimeout': 'The MCP server timed out. Try again shortly.',
@@ -82,11 +85,12 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       'Could not fetch Figma data. Recheck the URL/JSON input and MCP server status.',
     'agent.settingsTitle': 'Agent Settings',
     'agent.status.noSavedKey': 'Enter an API key first if none has been saved yet.',
-    'agent.apiKeyHelp': 'Help',
+    'agent.apiKeyHelp': 'Get',
     'agent.apiKeyPlaceholder': 'Enter API key...',
     'agent.apiKeyPlaceholderSaved': 'Saved API key available ✓',
     'agent.modelSelect': 'Select Model',
     'agent.modelInfo': 'Info',
+    'agent.refresh': 'Refresh',
     'agent.modelLoadPrompt': 'Load models',
     'agent.refreshModels': 'Refresh model list',
     'agent.save': 'Save',
@@ -160,6 +164,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.connecting': '연결 중...',
     'figma.authStarting': '원격 로그인 창을 여는 중...',
     'figma.designDataTitle': '디자인 데이터',
+    'figma.get': 'Get',
     'figma.mcpPlaceholder': 'https://figma.com/file/... 또는 JSON',
     'figma.fetchData': '데이터 가져오기',
     'figma.screenshot': '스크린샷',
@@ -172,7 +177,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.info.connecting': '연결을 시도하는 중입니다.',
     'figma.info.remoteAuthStarted':
       '브라우저에서 원격 로그인을 시작했습니다. 인증을 마친 뒤 Remote MCP 엔드포인트가 준비되면 다시 연결을 시도하세요.',
-    'figma.guide.availableTools': ({ count }) => `도구 ${count}개 사용 가능`,
+    'figma.guide.availableTools': ({ count, tools }) => `도구 ${count}개 사용 가능: ${tools}`,
     'figma.guide.checkServer': '서버 실행 여부와 엔드포인트를 확인하세요.',
     'figma.guide.remoteLogin':
       'Auth Login으로 브라우저 인증을 진행한 뒤 여기로 돌아와 설정을 마무리하세요.',
@@ -213,6 +218,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.fileIdMissing': 'Figma URL 또는 JSON에서 fileId를 찾을 수 없습니다.',
     'host.figma.screenshotFailed':
       '스크린샷을 가져오지 못했습니다. MCP 연결과 입력한 Figma 데이터를 다시 확인하세요.',
+    'host.figma.desktopAppOpenFailed':
+      'Figma Desktop 앱을 실행하지 못했습니다. 이 PC에 앱이 설치되어 있고 실행 가능한지 확인하세요.',
     'host.figma.fetchRefused':
       'MCP 서버에 연결할 수 없어 데이터를 가져오지 못했습니다. 서버 실행 상태를 확인하세요.',
     'host.figma.fetchTimeout': 'MCP 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도하세요.',
@@ -220,11 +227,12 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
       'Figma 데이터를 가져오지 못했습니다. 입력한 URL/JSON과 MCP 서버 상태를 확인하세요.',
     'agent.settingsTitle': '에이전트 설정',
     'agent.status.noSavedKey': '저장된 API 키가 없으면 먼저 입력하세요.',
-    'agent.apiKeyHelp': '안내',
+    'agent.apiKeyHelp': 'Get',
     'agent.apiKeyPlaceholder': 'API Key 입력...',
     'agent.apiKeyPlaceholderSaved': '저장된 API Key 있음 ✓',
     'agent.modelSelect': '모델 선택',
     'agent.modelInfo': '정보',
+    'agent.refresh': '새로고침',
     'agent.modelLoadPrompt': '모델을 불러오세요',
     'agent.refreshModels': '모델 목록 새로고침',
     'agent.save': '저장',

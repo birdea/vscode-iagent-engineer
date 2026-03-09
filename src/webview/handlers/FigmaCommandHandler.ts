@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import * as vscode from 'vscode';
 import { McpClient } from '../../figma/McpClient';
 import { RemoteFigmaApiClient } from '../../figma/RemoteFigmaApiClient';
@@ -12,6 +13,53 @@ import { StateManager } from '../../state/StateManager';
 import { UiLocale, t } from '../../i18n';
 import { toErrorMessage } from '../../errors';
 
+type DesktopLaunchAttempt = { command: string; args: string[] };
+type DesktopAppLauncher = () => Promise<void>;
+
+function spawnDetached(command: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: 'ignore',
+    });
+
+    child.once('error', reject);
+    child.once('spawn', () => {
+      child.unref();
+      resolve();
+    });
+  });
+}
+
+export async function launchFigmaDesktopApp(
+  platform: NodeJS.Platform = process.platform,
+): Promise<void> {
+  const attempts: DesktopLaunchAttempt[] =
+    platform === 'darwin'
+      ? [{ command: 'open', args: ['-a', 'Figma'] }]
+      : platform === 'win32'
+        ? [{ command: 'cmd', args: ['/c', 'start', '', 'figma:'] }]
+        : [
+            { command: 'xdg-open', args: ['figma:'] },
+            { command: 'figma', args: [] },
+          ];
+
+  let lastError: unknown;
+  for (const attempt of attempts) {
+    try {
+      await spawnDetached(attempt.command, attempt.args);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!(error instanceof Error) || !/ENOENT/i.test(error.message)) {
+        break;
+      }
+    }
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error('Failed to launch Figma Desktop'));
+}
+
 export class FigmaCommandHandler {
   private activeMode: ConnectionMode = 'local';
 
@@ -25,6 +73,7 @@ export class FigmaCommandHandler {
     private editorIntegration: EditorIntegration,
     private stateManager: StateManager,
     private locale: UiLocale,
+    private readonly desktopAppLauncher: DesktopAppLauncher = () => launchFigmaDesktopApp(),
   ) {}
 
   private post(msg: HostToWebviewMessage) {
@@ -45,6 +94,21 @@ export class FigmaCommandHandler {
     const targetKey =
       mode === 'remote' ? CONFIG_KEYS.REMOTE_MCP_AUTH_URL : CONFIG_KEYS.MCP_ENDPOINT;
     await vscode.commands.executeCommand('workbench.action.openSettings', targetKey);
+  }
+
+  async openDesktopApp() {
+    try {
+      await this.desktopAppLauncher();
+      Logger.info('figma', 'Requested launch of Figma Desktop');
+    } catch (e) {
+      const errMessage = toErrorMessage(e);
+      Logger.error('figma', `Failed to launch Figma Desktop: ${errMessage}`);
+      this.post({
+        event: 'error',
+        source: 'figma',
+        message: t(this.locale, 'host.figma.desktopAppOpenFailed'),
+      });
+    }
   }
 
   private async notifyRemoteComingSoon(

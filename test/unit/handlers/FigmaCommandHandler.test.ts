@@ -17,6 +17,7 @@ suite('FigmaCommandHandler', () => {
   let editorIntegration: any;
   let stateManager: StateManager;
   let handler: FigmaCommandHandler;
+  let desktopAppLauncher: sinon.SinonStub;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -50,6 +51,7 @@ suite('FigmaCommandHandler', () => {
     editorIntegration = {
       openInEditor: sandbox.stub().resolves(),
     };
+    desktopAppLauncher = sandbox.stub().resolves();
     stateManager = new StateManager();
     handler = new FigmaCommandHandler(
       webview as any,
@@ -61,6 +63,7 @@ suite('FigmaCommandHandler', () => {
       editorIntegration,
       stateManager,
       'ko',
+      desktopAppLauncher,
     );
     (vscode.window.showInformationMessage as sinon.SinonStub).resetHistory();
     (vscode.env.openExternal as sinon.SinonStub).resetHistory();
@@ -183,6 +186,27 @@ suite('FigmaCommandHandler', () => {
         'workbench.action.openSettings',
         'figma-mcp-helper.remoteMcpAuthUrl',
       ),
+    );
+  });
+
+  test('openDesktopApp launches Figma Desktop', async () => {
+    await handler.openDesktopApp();
+
+    assert.ok(desktopAppLauncher.calledOnce);
+    assert.ok(webview.postMessage.notCalled);
+  });
+
+  test('openDesktopApp posts friendly error when launch fails', async () => {
+    desktopAppLauncher.rejects(new Error('ENOENT'));
+
+    await handler.openDesktopApp();
+
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'error',
+        source: 'figma',
+        message: sinon.match(/Figma Desktop 앱을 실행하지 못했습니다/),
+      }),
     );
   });
 

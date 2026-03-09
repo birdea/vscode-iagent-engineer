@@ -15,7 +15,10 @@ export class AgentLayer {
   <div class="section-heading">
       <div>
       <div class="panel-title">${this.msg('agent.settingsTitle')}</div>
-      <div class="section-status" id="agent-status">${this.msg('agent.status.noSavedKey')}</div>
+      <div class="status-row section-status" id="agent-status-row">
+        <span class="status-dot" id="agent-status-dot"></span>
+        <span id="agent-status" class="status-text">${this.msg('agent.status.noSavedKey')}</span>
+      </div>
     </div>
   </div>
   <div class="field-group">
@@ -37,13 +40,13 @@ export class AgentLayer {
   <div class="field-group stack-gap-sm">
     <div class="row row-space-between">
       <label for="model-select">${this.msg('agent.modelSelect')}</label>
-      <a href="#" id="link-get-model-info" class="link-meta">${this.msg('agent.modelInfo')}</a>
+      <a href="#" id="link-get-model-info" class="link-meta">${this.msg('agent.refresh')}</a>
     </div>
     <div class="row">
       <select id="model-select">
         <option value="">${this.msg('agent.modelLoadPrompt')}</option>
       </select>
-      <button class="secondary icon-btn" id="btn-load-models" title="${this.msg('agent.refreshModels')}"><i class="codicon codicon-refresh"></i></button>
+      <button class="secondary icon-btn" id="btn-load-models" title="${this.msg('agent.modelInfo')}"><i class="codicon codicon-info"></i></button>
     </div>
   </div>
   <div class="btn-row stack-gap-sm">
@@ -74,12 +77,12 @@ export class AgentLayer {
       vscode.postMessage({ command: 'agent.getApiKeyHelp', agent });
     });
 
-    document.getElementById('btn-load-models')?.addEventListener('click', () => {
+    document.getElementById('link-get-model-info')?.addEventListener('click', (e) => {
+      e.preventDefault();
       this.requestModelLoad(true);
     });
 
-    document.getElementById('link-get-model-info')?.addEventListener('click', (e) => {
-      e.preventDefault();
+    document.getElementById('btn-load-models')?.addEventListener('click', () => {
       const agent = (document.getElementById('agent-select') as HTMLSelectElement)
         .value as AgentType;
       const modelId = (document.getElementById('model-select') as HTMLSelectElement).value;
@@ -253,7 +256,12 @@ export class AgentLayer {
     const apiKey =
       (document.getElementById('api-key-input') as HTMLInputElement | null)?.value.trim() ?? '';
     const status = document.getElementById('agent-status');
+    const statusDot = document.getElementById('agent-status-dot');
     if (!status || !agent) return;
+
+    if (statusDot) {
+      statusDot.className = `status-dot${model ? ' connected' : ''}`;
+    }
 
     if (apiKey) {
       status.textContent = this.msg('agent.status.apiKeyEntered');

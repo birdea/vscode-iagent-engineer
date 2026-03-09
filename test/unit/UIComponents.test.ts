@@ -65,7 +65,7 @@ suite('UI Components Consolidated', () => {
 
       const input = document.getElementById('api-key-input') as HTMLInputElement;
       input.value = '1234567890123456';
-      document.getElementById('btn-load-models')?.click();
+      document.getElementById('link-get-model-info')?.click();
       assert.ok(
         postMessageStub.calledWithMatch({ command: 'agent.listModels', key: '1234567890123456' }),
       );
@@ -109,9 +109,9 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'state.setModel', model: 'm2' }));
     });
 
-    test('link-get-model-info click without model selected shows warn', () => {
-      const link = document.getElementById('link-get-model-info') as HTMLAnchorElement;
-      link.click();
+    test('btn-load-models click without model selected shows warn', () => {
+      const button = document.getElementById('btn-load-models') as HTMLButtonElement;
+      button.click();
       const notice = document.getElementById('agent-notice');
       assert.ok(notice?.textContent?.includes('선택'));
     });
@@ -119,7 +119,7 @@ suite('UI Components Consolidated', () => {
     test('btn-load-models with empty key uses saved key path', () => {
       const input = document.getElementById('api-key-input') as HTMLInputElement;
       input.value = ''; // empty key
-      document.getElementById('btn-load-models')?.click();
+      document.getElementById('link-get-model-info')?.click();
       assert.ok(postMessageStub.calledWithMatch({ command: 'agent.listModels' }));
     });
 
@@ -139,6 +139,15 @@ suite('UI Components Consolidated', () => {
       ]);
       const select = document.getElementById('model-select') as HTMLSelectElement;
       assert.strictEqual(select.value, 'm2');
+    });
+
+    test('agent status dot reflects whether a model is selected', () => {
+      layer.onState('gemini', '', false);
+      const dot = document.getElementById('agent-status-dot');
+      assert.ok(!dot?.classList.contains('connected'));
+
+      layer.onModelsResult([{ id: 'm1', name: 'Model 1' }]);
+      assert.ok(dot?.classList.contains('connected'));
     });
 
     test('onError with No API key uses friendly message', () => {
@@ -182,6 +191,11 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.openSettings' }));
     });
 
+    test('get button click requests opening Figma Desktop', () => {
+      document.getElementById('btn-open-figma-app')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.openDesktopApp' }));
+    });
+
     test('remote mode forwards mode when opening settings', () => {
       document.getElementById('btn-mode-remote')?.click();
       document.getElementById('btn-open-settings')?.click();
@@ -204,6 +218,8 @@ suite('UI Components Consolidated', () => {
       const guide = document.getElementById('figma-guide');
       assert.ok(text?.textContent?.includes('연결'));
       assert.ok(guide?.textContent?.includes('2개'));
+      assert.ok(guide?.textContent?.includes('tool1'));
+      assert.ok(guide?.textContent?.includes('tool2'));
 
       layer.onStatus(false, [], 'Connect error');
       const notice = document.getElementById('figma-connection-notice');

@@ -51,6 +51,7 @@ export interface RemoteAuthSession {
 export type WebviewToHostMessage =
   | { command: 'figma.connect'; mode?: ConnectionMode }
   | { command: 'figma.openSettings'; mode?: ConnectionMode }
+  | { command: 'figma.openDesktopApp' }
   | { command: 'figma.fetchData'; mcpData: string }
   | { command: 'figma.screenshot'; mcpData: string }
   | { command: 'agent.getState' }

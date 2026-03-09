@@ -85,6 +85,12 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(vscode.commands.executeCommand.calledWith('workbench.action.openSettings'));
   });
 
+  test('handle figma.openDesktopApp', async () => {
+    const openDesktopStub = sandbox.stub((handler as any).figmaHandler, 'openDesktopApp').resolves();
+    await handler.handle({ command: 'figma.openDesktopApp' });
+    assert.ok(openDesktopStub.calledOnce);
+  });
+
   test('handle figma.openSettings in remote mode', async () => {
     const vscode = require('vscode');
     await handler.handle({ command: 'figma.openSettings', mode: 'remote' });
