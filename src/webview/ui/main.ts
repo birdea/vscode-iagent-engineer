@@ -95,7 +95,7 @@ export function init() {
             layer.onStreaming(msg.progress, msg.text);
             break;
           case 'prompt.result':
-            layer.onResult(msg.code, msg.complete, msg.message, msg.progress);
+            layer.onResult(msg.code, msg.format, msg.complete, msg.message, msg.progress);
             break;
           case 'prompt.estimateResult':
             layer.onEstimateResult(msg.tokens, msg.kb);

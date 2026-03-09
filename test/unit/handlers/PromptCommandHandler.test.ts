@@ -22,6 +22,7 @@ suite('PromptCommandHandler', () => {
     };
     editorIntegration = {
       openInEditor: sandbox.stub().resolves(),
+      openPreviewPanel: sandbox.stub(),
       saveAsNewFile: sandbox.stub().resolves(),
     };
     stateManager = new StateManager();
@@ -359,6 +360,11 @@ suite('PromptCommandHandler', () => {
   test('saveFile delegates to editor integration', async () => {
     await handler.saveFile('body', 'demo.ts');
     assert.ok(editorIntegration.saveAsNewFile.calledWith('body', 'demo.ts'));
+  });
+
+  test('openPreviewPanel delegates to editor integration', () => {
+    handler.openPreviewPanel('<div>preview</div>', 'html');
+    assert.ok(editorIntegration.openPreviewPanel.calledWith('<div>preview</div>', 'html'));
   });
 
   test('getGeneratingState reflects lifecycle changes', async () => {

@@ -195,6 +195,10 @@ export class PromptCommandHandler {
     await this.editorIntegration.saveAsNewFile(code, filename);
   }
 
+  openPreviewPanel(code: string, format?: PromptPayload['outputFormat']) {
+    this.editorIntegration.openPreviewPanel(code, format);
+  }
+
   private toVsCodeLanguage(format: PromptPayload['outputFormat']): string {
     switch (format) {
       case 'tsx':

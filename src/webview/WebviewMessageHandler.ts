@@ -118,6 +118,9 @@ export class WebviewMessageHandler {
         case 'prompt.estimate':
           this.promptHandler.estimate(msg.payload);
           break;
+        case 'preview.openPanel':
+          this.promptHandler.openPreviewPanel(msg.code, msg.format);
+          break;
         case 'editor.open':
           await this.promptHandler.openEditor(msg.code, msg.language);
           break;
@@ -135,7 +138,8 @@ export class WebviewMessageHandler {
   private getSourceFromCommand(command: WebviewToHostMessage['command']): LayerType {
     if (command.startsWith('figma.')) return 'figma';
     if (command.startsWith('agent.') || command.startsWith('state.')) return 'agent';
-    if (command.startsWith('prompt.') || command.startsWith('editor.')) return 'prompt';
+    if (command.startsWith('prompt.') || command.startsWith('preview.') || command.startsWith('editor.'))
+      return 'prompt';
     return 'system';
   }
 

@@ -7,6 +7,8 @@ export class PromptLayer {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isGenerating = false;
   private requestId: string | null = null;
+  private lastCode = '';
+  private lastFormat: OutputFormat | undefined;
   private readonly locale: UiLocale = getDocumentLocale();
 
   render(): string {
@@ -51,6 +53,7 @@ export class PromptLayer {
   </div>
   <div class="btn-row">
     <button class="primary" id="btn-generate"><i class="codicon codicon-play"></i>${this.msg('prompt.generate')}</button>
+    <button class="secondary" id="btn-preview-open-panel" disabled><i class="codicon codicon-go-to-file"></i>${this.msg('prompt.preview.openPanel')}</button>
     <button class="secondary hidden" id="btn-cancel-generate"><i class="codicon codicon-debug-stop"></i>${this.msg('prompt.cancel')}</button>
   </div>
   <div class="notice hidden" id="prompt-notice"></div>
@@ -81,10 +84,14 @@ export class PromptLayer {
       .getElementById('btn-generate')
       ?.addEventListener('click', () => this.onGenerateRequested());
     document
+      .getElementById('btn-preview-open-panel')
+      ?.addEventListener('click', () => this.onOpenPreviewPanelRequested());
+    document
       .getElementById('btn-cancel-generate')
       ?.addEventListener('click', () => this.onCancelRequested());
 
     this.syncPromptInputState();
+    this.updatePreviewButtonState();
     this.updateEstimate();
   }
 
@@ -110,12 +117,26 @@ export class PromptLayer {
     };
 
     this.clearLog();
+    this.lastCode = '';
+    this.lastFormat = payload.outputFormat;
     this.requestId = payload.requestId ?? null;
     this.setNotice('info', this.msg('prompt.notice.starting'));
     this.setGeneratingState(true);
     this.onGenerating(0);
+    this.updatePreviewButtonState();
 
     vscode.postMessage({ command: 'prompt.generate', payload });
+  }
+
+  onOpenPreviewPanelRequested() {
+    const code = this.lastCode.trim() ? this.lastCode : '';
+    if (!code) {
+      this.setNotice('warn', this.msg('prompt.preview.empty'));
+      return;
+    }
+
+    vscode.postMessage({ command: 'preview.openPanel', code, format: this.lastFormat });
+    this.setNotice('info', this.msg('prompt.preview.openedPanel'));
   }
 
   onCancelRequested() {
@@ -169,7 +190,10 @@ export class PromptLayer {
     );
   }
 
-  onChunk(_text: string) {}
+  onChunk(text: string) {
+    this.lastCode += text;
+    this.updatePreviewButtonState();
+  }
 
   onStreaming(progress: number, text?: string) {
     this.onGenerating(progress);
@@ -178,14 +202,16 @@ export class PromptLayer {
     }
   }
 
-  onResult(code: string, complete = true, message?: string, progress?: number) {
-    void code;
+  onResult(code: string, format?: OutputFormat, complete = true, message?: string, progress?: number) {
+    this.lastCode = code;
+    this.lastFormat = format;
     if (complete) {
       this.onGenerating(100);
     } else {
       this.setProgressState(progress ?? 0, this.msg('prompt.status.incomplete'));
     }
     this.setGeneratingState(false);
+    this.updatePreviewButtonState();
     this.setNotice(
       complete ? 'success' : 'warn',
       message ??
@@ -196,6 +222,7 @@ export class PromptLayer {
   onError(message: string, code?: 'cancelled' | 'failed') {
     this.setGeneratingState(false);
     this.onGenerating(0);
+    this.updatePreviewButtonState();
     this.setNotice(code === 'cancelled' ? 'warn' : 'error', message);
   }
 
@@ -249,6 +276,18 @@ export class PromptLayer {
     if (!generating) {
       this.requestId = null;
     }
+  }
+
+  private updatePreviewButtonState() {
+    const previewPanelBtn = document.getElementById(
+      'btn-preview-open-panel',
+    ) as HTMLButtonElement | null;
+    const disabled = !this.lastCode.trim() && !this.isGenerating;
+    if (!previewPanelBtn) {
+      return;
+    }
+
+    previewPanelBtn.disabled = disabled;
   }
 
   private setNotice(level: 'info' | 'success' | 'warn' | 'error', message: string) {

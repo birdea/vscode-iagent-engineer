@@ -3,8 +3,12 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Logger } from '../logger/Logger';
+import { OutputFormat } from '../types';
+import { PreviewPanelService } from './PreviewPanelService';
 
 export class EditorIntegration {
+  private previewPanelService = new PreviewPanelService();
+
   async openInEditor(code: string, language = 'plaintext', suggestedName?: string): Promise<void> {
     const doc = await vscode.workspace.openTextDocument(
       vscode.Uri.parse(`untitled:${this.toUntitledName(suggestedName, language)}`),
@@ -67,6 +71,11 @@ export class EditorIntegration {
     await vscode.window.showTextDocument(saveUri);
     Logger.success('editor', `Code saved: ${saveUri.fsPath}`);
     vscode.window.showInformationMessage(`Saved: ${saveUri.fsPath}`);
+  }
+
+  openPreviewPanel(code: string, preferredFormat?: OutputFormat) {
+    this.previewPanelService.open(code, preferredFormat);
+    Logger.success('editor', `Preview opened in editor area (${code.length} chars)`);
   }
 
   private toUntitledName(suggestedName: string | undefined, language: string): string {

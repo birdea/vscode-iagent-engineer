@@ -406,7 +406,7 @@ suite('UI Components Consolidated', () => {
 
     test('onResult updates notice and clears generating state', () => {
       layer.onGenerateRequested();
-      layer.onResult('const x = 1;');
+      layer.onResult('const x = 1;', 'tsx');
       const notice = document.getElementById('prompt-notice');
       const generateBtn = document.getElementById('btn-generate') as HTMLButtonElement | null;
       assert.ok(notice?.textContent);
@@ -414,7 +414,7 @@ suite('UI Components Consolidated', () => {
     });
 
     test('onResult preserves incomplete output with warning state', () => {
-      layer.onResult('partial', false, 'cancelled', 35);
+      layer.onResult('partial', 'html', false, 'cancelled', 35);
       const notice = document.getElementById('prompt-notice');
       const progressText = document.getElementById('prompt-progress-text');
       assert.strictEqual(notice?.textContent, 'cancelled');
@@ -431,6 +431,30 @@ suite('UI Components Consolidated', () => {
       layer.onChunk('hello ');
       layer.onChunk('world');
       assert.ok(true);
+    });
+
+    test('open preview button enables after result', () => {
+      const previewPanelButton = document.getElementById(
+        'btn-preview-open-panel',
+      ) as HTMLButtonElement;
+      assert.strictEqual(previewPanelButton.disabled, true);
+
+      layer.onResult('<div>preview</div>', 'html');
+
+      assert.strictEqual(previewPanelButton.disabled, false);
+    });
+
+    test('open preview panel posts host command with latest code', () => {
+      layer.onResult('<div>preview</div>', 'html');
+      document.getElementById('btn-preview-open-panel')?.click();
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'preview.openPanel',
+          code: '<div>preview</div>',
+          format: 'html',
+        }),
+      );
     });
 
     test('onGenerateRequested validation', () => {

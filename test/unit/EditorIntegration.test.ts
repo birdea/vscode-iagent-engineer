@@ -180,4 +180,21 @@ suite('EditorIntegration', () => {
     const saveArgs = vscode.window.showSaveDialog.lastCall.args[0];
     assert.strictEqual(saveArgs.defaultUri, undefined);
   });
+
+  test('openPreviewPanel creates and updates a preview webview panel', () => {
+    const vscode = require('vscode');
+    const previewPanel = {
+      webview: { cspSource: 'csp', html: '' },
+      title: '',
+      reveal: sandbox.stub(),
+      onDidDispose: sandbox.stub(),
+    };
+    vscode.window.createWebviewPanel.returns(previewPanel);
+
+    integration.openPreviewPanel('<div>preview</div>', 'html');
+
+    assert.ok(vscode.window.createWebviewPanel.calledOnce);
+    assert.ok(previewPanel.webview.html.includes('Generated UI Preview'));
+    assert.ok(previewPanel.webview.html.includes('&lt;div&gt;preview&lt;/div&gt;'));
+  });
 });
