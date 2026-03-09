@@ -3,6 +3,7 @@ import nock from 'nock';
 import * as sinon from 'sinon';
 import { GeminiAgent } from '../../src/agent/GeminiAgent';
 import { ClaudeAgent } from '../../src/agent/ClaudeAgent';
+import { OpenAIAgent } from '../../src/agent/OpenAIAgent';
 import { Logger } from '../../src/logger/Logger';
 import { PromptBuilder } from '../../src/prompt/PromptBuilder';
 
@@ -276,6 +277,59 @@ suite('Agent Implementations', () => {
 
       await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
       assert.strictEqual(streamStub.firstCall.args[1]?.signal, abortController.signal);
+    });
+  });
+
+  suite('OpenAIAgent', () => {
+    let agent: OpenAIAgent;
+
+    setup(() => {
+      agent = new OpenAIAgent('openrouter');
+    });
+
+    test('generateCode remaps deprecated OpenRouter DeepSeek Coder model ids', async () => {
+      await agent.setApiKey('test-key');
+
+      nock('https://openrouter.ai')
+        .post('/api/v1/chat/completions', (body) => {
+          assert.strictEqual(body.model, 'deepseek/deepseek-chat');
+          return true;
+        })
+        .reply(
+          200,
+          'data: {"choices":[{"delta":{"content":"const App = () => null;"}}]}\n\ndata: [DONE]\n',
+          { 'Content-Type': 'text/event-stream' },
+        );
+
+      const chunks: string[] = [];
+      for await (const chunk of agent.generateCode({
+        outputFormat: 'tsx' as any,
+        model: 'deepseek/deepseek-coder',
+      })) {
+        chunks.push(chunk);
+      }
+
+      assert.strictEqual(chunks.join(''), 'const App = () => null;');
+    });
+
+    test('generateCode includes upstream OpenRouter error details', async () => {
+      await agent.setApiKey('test-key');
+
+      nock('https://openrouter.ai').post('/api/v1/chat/completions').reply(400, {
+        error: {
+          message: 'No endpoints found for deepseek/deepseek-coder.',
+        },
+      });
+
+      const gen = agent.generateCode({
+        outputFormat: 'tsx' as any,
+        model: 'deepseek/deepseek-coder',
+      });
+
+      await assert.rejects(
+        () => gen.next(),
+        /openrouter API error: 400 - No endpoints found for deepseek\/deepseek-coder\./,
+      );
     });
   });
 });

@@ -343,8 +343,9 @@
               "outputTokenLimit": 8192
             },
             {
-              "id": "deepseek/deepseek-coder",
-              "name": "DeepSeek Coder (via OpenRouter)",
+              "id": "deepseek/deepseek-chat",
+              "name": "DeepSeek Chat (via OpenRouter)",
+              "description": "Current DeepSeek chat model on OpenRouter with strong coding performance",
               "inputTokenLimit": 64000,
               "outputTokenLimit": 4096
             }

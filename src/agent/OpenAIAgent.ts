@@ -52,6 +52,12 @@ const PROVIDER_CONFIGS: Record<
   },
 };
 
+const MODEL_ALIASES: Partial<Record<AgentType, Record<string, string>>> = {
+  openrouter: {
+    'deepseek/deepseek-coder': 'deepseek/deepseek-chat',
+  },
+};
+
 export class OpenAIAgent extends BaseAgent {
   constructor(public readonly type: AgentType) {
     super();
@@ -59,6 +65,33 @@ export class OpenAIAgent extends BaseAgent {
 
   private get config() {
     return PROVIDER_CONFIGS[this.type as string] || PROVIDER_CONFIGS.deepseek;
+  }
+
+  private resolveModelId(modelId: string): string {
+    const aliases = MODEL_ALIASES[this.type];
+    const resolved = aliases?.[modelId] ?? modelId;
+    if (resolved !== modelId) {
+      Logger.warn('agent', `Remapped deprecated ${this.type} model ${modelId} -> ${resolved}`);
+    }
+    return resolved;
+  }
+
+  private async createApiError(response: Response): Promise<Error> {
+    const errorText = await response.text();
+    let detail = errorText.trim();
+
+    try {
+      const parsed = JSON.parse(errorText) as
+        | { error?: { message?: string }; message?: string }
+        | undefined;
+      detail = parsed?.error?.message?.trim() || parsed?.message?.trim() || detail;
+    } catch {
+      // Keep the raw body when the upstream response is not JSON.
+    }
+
+    const suffix = detail ? ` - ${detail}` : '';
+    Logger.error('agent', `${this.type} generation failed: ${response.status}${suffix}`);
+    return new Error(`${this.type} API error: ${response.status}${suffix}`);
   }
 
   async listModels(): Promise<ModelInfo[]> {
@@ -144,11 +177,12 @@ export class OpenAIAgent extends BaseAgent {
   }
 
   async getModelInfo(modelId: string): Promise<ModelInfo> {
+    const resolvedModelId = this.resolveModelId(modelId);
     const models = await this.listModels();
     return (
-      models.find((m) => m.id === modelId) || {
-        id: modelId,
-        name: modelId,
+      models.find((m) => m.id === resolvedModelId) || {
+        id: resolvedModelId,
+        name: resolvedModelId,
         provider: this.type,
         documentationUrl: this.config.documentationUrl,
         metadataSource: [`${this.type}-fallback`],
@@ -159,7 +193,7 @@ export class OpenAIAgent extends BaseAgent {
   async *generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string> {
     this.ensureApiKey();
 
-    const modelId = payload.model || this.config.defaultModel;
+    const modelId = this.resolveModelId(payload.model || this.config.defaultModel);
     const prompt = new PromptBuilder().build(payload);
 
     Logger.info('agent', `Generating with ${this.type}: ${modelId}`);
@@ -188,9 +222,7 @@ export class OpenAIAgent extends BaseAgent {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      Logger.error('agent', `${this.type} generation failed: ${response.status} ${errorText}`);
-      throw new Error(`${this.type} API error: ${response.status}`);
+      throw await this.createApiError(response);
     }
 
     const reader = response.body?.getReader();
