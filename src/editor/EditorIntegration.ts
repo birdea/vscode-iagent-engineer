@@ -23,10 +23,7 @@ export class EditorIntegration {
     const uri = await this.ensureGeneratedDocumentUri(language, suggestedName);
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(code));
     const doc = await vscode.workspace.openTextDocument(uri);
-    const typedDoc =
-      doc.languageId === language
-        ? doc
-        : await vscode.languages.setTextDocumentLanguage(doc, language);
+    const typedDoc = await this.applyLanguageIfSupported(doc, language);
     await vscode.window.showTextDocument(typedDoc, { preview: false });
     this.generatedDocumentUri = uri;
     this.generatedLanguage = language;
@@ -120,9 +117,11 @@ export class EditorIntegration {
         ? 'json'
         : language === 'typescriptreact'
           ? 'tsx'
-          : language === 'html'
-            ? 'html'
-            : language === 'scss'
+        : language === 'vue'
+          ? 'vue'
+        : language === 'html'
+          ? 'html'
+          : language === 'scss'
               ? 'scss'
               : 'txt';
 
@@ -183,10 +182,7 @@ export class EditorIntegration {
       const bytes = await vscode.workspace.fs.readFile(this.generatedDocumentUri);
       const diskText = new TextDecoder().decode(bytes);
       const reopened = await vscode.workspace.openTextDocument(this.generatedDocumentUri);
-      const typedDoc =
-        reopened.languageId === this.generatedLanguage
-          ? reopened
-          : await vscode.languages.setTextDocumentLanguage(reopened, this.generatedLanguage);
+      const typedDoc = await this.applyLanguageIfSupported(reopened, this.generatedLanguage);
       return { document: typedDoc, diskText };
     } catch {
       return { document: null, diskText: '' };
@@ -195,5 +191,24 @@ export class EditorIntegration {
 
   setGeneratedOutputFormat(format: OutputFormat | undefined) {
     this.generatedOutputFormat = format;
+  }
+
+  private async applyLanguageIfSupported<T extends vscode.TextDocument>(
+    document: T,
+    language: string,
+  ): Promise<T> {
+    if (document.languageId === language) {
+      return document;
+    }
+
+    try {
+      return (await vscode.languages.setTextDocumentLanguage(document, language)) as T;
+    } catch (error) {
+      Logger.warn(
+        'editor',
+        `Language switch skipped for ${language}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return document;
+    }
   }
 }

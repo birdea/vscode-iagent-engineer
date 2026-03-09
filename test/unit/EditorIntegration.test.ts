@@ -83,6 +83,7 @@ suite('EditorIntegration', () => {
     await integration.openInEditor('html', 'html');
     await integration.openInEditor('scss', 'scss');
     await integration.openInEditor('tsx', 'typescriptreact');
+    await integration.openInEditor('<template />', 'vue');
 
     const openedUris = vscode.Uri.file
       .getCalls()
@@ -90,6 +91,7 @@ suite('EditorIntegration', () => {
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.html')));
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.scss')));
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.tsx')));
+    assert.ok(openedUris.some((uri: string) => uri.endsWith('.vue')));
   });
 
   test('openInEditor generates json extension when no suggested name is provided', async () => {
@@ -127,6 +129,30 @@ suite('EditorIntegration', () => {
     vscode.window.showTextDocument.resolves({});
 
     await assert.doesNotReject(() => integration.openInEditor('{"a":1}', 'json', 'data.json'));
+  });
+
+  test('openInEditor falls back when requested language id is unsupported', async () => {
+    const vscode = require('vscode');
+    const uri = { fsPath: '/tmp/generated.vue', toString: () => 'file:///tmp/generated.vue' };
+    vscode.Uri.file.returns(uri);
+    vscode.window.showTextDocument.resetHistory();
+    vscode.languages.setTextDocumentLanguage.resetHistory();
+    vscode.workspace.getConfiguration.returns({
+      get: sinon.stub().withArgs('wordWrap').returns('on'),
+    });
+    vscode.workspace.openTextDocument.resolves({
+      uri,
+      languageId: 'plaintext',
+      getText: () => '<template></template>',
+    });
+    vscode.languages.setTextDocumentLanguage.rejects(new Error('Unknown language id: vue'));
+    vscode.window.showTextDocument.resolves({});
+
+    await assert.doesNotReject(() =>
+      integration.openInEditor('<template></template>', 'vue', 'GeneratedUi.vue'),
+    );
+
+    assert.ok(vscode.window.showTextDocument.calledOnce);
   });
 
   test('saveAsNewFile calls showInformationMessage', async () => {
