@@ -2,6 +2,7 @@ import { vscode } from '../vscodeApi';
 import { LogEntry, OutputFormat, PromptPayload } from '../../../types';
 import { getDocumentLocale, t, UiLocale } from '../../../i18n';
 import { DEBOUNCE_MS } from '../../../constants';
+import { DEFAULT_PROMPT_TEXT, getFormatPromptPreview } from '../../../prompt/PromptBuilder';
 
 export class PromptLayer {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -22,18 +23,18 @@ export class PromptLayer {
     </div>
   </div>
   <div class="field-group">
-    <textarea id="user-prompt" placeholder="${this.msg('prompt.placeholder')}"></textarea>
+    <textarea id="user-prompt" class="prompt-template-textarea">${DEFAULT_PROMPT_TEXT}</textarea>
   </div>
   <details class="minimal-options">
     <summary>${this.msg('prompt.options')}<i class="codicon codicon-chevron-right options-toggle-icon"></i></summary>
     <div class="field-group stack-gap-sm">
       <div class="checkbox-row">
-        <input type="checkbox" id="use-user-prompt" checked />
-        <label for="use-user-prompt" class="label-inline">${this.msg('prompt.includeUserPrompt')}</label>
-      </div>
-      <div class="checkbox-row">
         <input type="checkbox" id="use-mcp-data" checked />
         <label for="use-mcp-data" class="label-inline">${this.msg('prompt.includeMcpData')}</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="use-screenshot-data" checked />
+        <label for="use-screenshot-data" class="label-inline">${this.msg('prompt.includeScreenshotData')}</label>
       </div>
     </div>
     <div class="field-group stack-gap-sm">
@@ -44,6 +45,10 @@ export class PromptLayer {
         <option value="vue">Vue 3 (SFC)</option>
         <option value="tailwind">Tailwind CSS</option>
       </select>
+    </div>
+    <div class="field-group stack-gap-sm">
+      <label for="format-prompt-preview">${this.msg('prompt.outputFormatPrompt')}</label>
+      <textarea id="format-prompt-preview" class="prompt-format-preview" readonly>${getFormatPromptPreview('tsx')}</textarea>
     </div>
   </details>
   <div class="progress-row stack-gap-sm">
@@ -75,16 +80,16 @@ export class PromptLayer {
   mount() {
     const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement;
     const outputFormatEl = document.getElementById('output-format') as HTMLSelectElement;
-    const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement;
     const useMcpDataEl = document.getElementById('use-mcp-data') as HTMLInputElement;
+    const useScreenshotDataEl = document.getElementById('use-screenshot-data') as HTMLInputElement;
 
     userPromptEl?.addEventListener('input', () => this.updateEstimate());
-    useUserPromptEl?.addEventListener('change', () => {
-      this.syncPromptInputState();
+    useMcpDataEl?.addEventListener('change', () => this.updateEstimate());
+    useScreenshotDataEl?.addEventListener('change', () => this.updateEstimate());
+    outputFormatEl?.addEventListener('change', () => {
+      this.updateFormatPromptPreview(outputFormatEl.value as OutputFormat);
       this.updateEstimate();
     });
-    useMcpDataEl?.addEventListener('change', () => this.updateEstimate());
-    outputFormatEl?.addEventListener('change', () => this.updateEstimate());
     document
       .getElementById('btn-generate')
       ?.addEventListener('click', () => this.onGenerateRequested());
@@ -101,8 +106,8 @@ export class PromptLayer {
       .getElementById('btn-cancel-generate')
       ?.addEventListener('click', () => this.onCancelRequested());
 
-    this.syncPromptInputState();
     this.updatePreviewButtonState();
+    this.updateFormatPromptPreview((outputFormatEl?.value as OutputFormat | undefined) ?? 'tsx');
     this.updateEstimate();
   }
 
@@ -114,15 +119,23 @@ export class PromptLayer {
 
     const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
     const outputFormatEl = document.getElementById('output-format') as HTMLSelectElement | null;
-    const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement | null;
     const useMcpDataEl = document.getElementById('use-mcp-data') as HTMLInputElement | null;
-    if (!userPromptEl || !outputFormatEl || !useUserPromptEl || !useMcpDataEl) {
+    const useScreenshotDataEl = document.getElementById(
+      'use-screenshot-data',
+    ) as HTMLInputElement | null;
+    if (
+      !userPromptEl ||
+      !outputFormatEl ||
+      !useMcpDataEl ||
+      !useScreenshotDataEl
+    ) {
       return;
     }
 
     const payload: PromptPayload = {
-      userPrompt: useUserPromptEl.checked ? userPromptEl.value.trim() : undefined,
+      userPrompt: userPromptEl.value.trim(),
       mcpData: useMcpDataEl.checked ? undefined : null,
+      screenshotData: useScreenshotDataEl.checked ? undefined : null,
       outputFormat: outputFormatEl.value as OutputFormat,
       requestId: this.nextRequestId(),
     };
@@ -200,20 +213,29 @@ export class PromptLayer {
   private updateEstimate() {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
-      const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement | null;
       const useMcpDataEl = document.getElementById('use-mcp-data') as HTMLInputElement | null;
+      const useScreenshotDataEl = document.getElementById(
+        'use-screenshot-data',
+      ) as HTMLInputElement | null;
       const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
       const outputFormatEl = document.getElementById('output-format') as HTMLSelectElement | null;
       const estimateEl = document.getElementById('token-estimate');
 
-      if (!useUserPromptEl || !useMcpDataEl || !userPromptEl || !outputFormatEl || !estimateEl)
+      if (
+        !useMcpDataEl ||
+        !useScreenshotDataEl ||
+        !userPromptEl ||
+        !outputFormatEl ||
+        !estimateEl
+      )
         return;
 
       estimateEl.textContent = this.msg('prompt.notice.calculating');
 
       const payload: PromptPayload = {
-        userPrompt: useUserPromptEl.checked ? userPromptEl.value.trim() : undefined,
+        userPrompt: userPromptEl.value.trim(),
         mcpData: useMcpDataEl.checked ? undefined : null,
+        screenshotData: useScreenshotDataEl.checked ? undefined : null,
         outputFormat: outputFormatEl.value as OutputFormat,
       };
 
@@ -366,15 +388,14 @@ export class PromptLayer {
     notice.textContent = message;
   }
 
-  private syncPromptInputState() {
-    const useUserPromptEl = document.getElementById('use-user-prompt') as HTMLInputElement | null;
-    const userPromptEl = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
-    if (!useUserPromptEl || !userPromptEl) return;
-    userPromptEl.disabled = !useUserPromptEl.checked;
-  }
-
   private nextRequestId(): string {
     return `prompt-${Date.now()}`;
+  }
+
+  private updateFormatPromptPreview(format: OutputFormat) {
+    const previewEl = document.getElementById('format-prompt-preview') as HTMLTextAreaElement | null;
+    if (!previewEl) return;
+    previewEl.value = getFormatPromptPreview(format);
   }
 
   private toFriendlyError(message: string): string {

@@ -1,10 +1,11 @@
-import { AgentType } from '../types';
+import { AgentType, ScreenshotAsset } from '../types';
 
 export class StateManager {
   private currentAgent: AgentType = 'gemini';
   private currentModel = '';
   private lastMcpData: unknown = null;
   private lastMcpInput = '';
+  private lastScreenshot: ScreenshotAsset | null = null;
 
   getAgent(): AgentType {
     return this.currentAgent;
@@ -45,6 +46,18 @@ export class StateManager {
 
   clearLastMcpInput() {
     this.lastMcpInput = '';
+  }
+
+  getLastScreenshot(): ScreenshotAsset | null {
+    return this.lastScreenshot;
+  }
+
+  setLastScreenshot(screenshot: ScreenshotAsset | null) {
+    this.lastScreenshot = screenshot;
+  }
+
+  clearLastScreenshot() {
+    this.lastScreenshot = null;
   }
 
   resetAgentState() {

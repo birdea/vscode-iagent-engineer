@@ -1,5 +1,9 @@
 import * as assert from 'assert';
-import { PromptBuilder } from '../../src/prompt/PromptBuilder';
+import {
+  DEFAULT_PROMPT_TEXT,
+  PromptBuilder,
+  getFormatPromptPreview,
+} from '../../src/prompt/PromptBuilder';
 import { PromptPayload } from '../../src/types';
 
 suite('PromptBuilder', () => {
@@ -11,9 +15,8 @@ suite('PromptBuilder', () => {
       userPrompt: 'Make it beautiful',
     };
     const prompt = builder.build(payload);
-    assert.ok(prompt.includes('expert UI developer'));
+    assert.ok(prompt.startsWith('Make it beautiful'));
     assert.ok(prompt.includes('HTML5 with inline CSS'));
-    assert.ok(prompt.includes('Make it beautiful'));
     assert.ok(prompt.includes('Do not use React, TSX, JSX'));
     assert.ok(prompt.includes('=== Output Format: HTML ==='));
   });
@@ -40,17 +43,15 @@ suite('PromptBuilder', () => {
     assert.ok(prompt.includes('"name": "Button"'));
   });
 
-  test('places user instruction after MCP context and repeats final format rule', () => {
-    const prompt = builder.build({
+  test('buildUserPrompt includes format rules, MCP context, and final response rules', () => {
+    const prompt = builder.buildUserPrompt({
       outputFormat: 'html',
       userPrompt: 'Use a newspaper-like serif headline',
       mcpData: { frame: 'hero' },
     });
 
-    assert.ok(
-      prompt.indexOf('=== Figma Design Data (MCP) ===') <
-        prompt.indexOf('=== User Instruction ==='),
-    );
+    assert.ok(prompt.includes('=== Output Contract ==='));
+    assert.ok(prompt.includes('=== Figma Design Data (MCP) ==='));
     assert.ok(prompt.includes('Return only HTML code.'));
   });
 
@@ -65,13 +66,13 @@ suite('PromptBuilder', () => {
     assert.ok(estimate.tokens > 0);
   });
 
-  test('trims user prompt', () => {
+  test('uses the edited prompt text as the leading system prompt', () => {
     const payload: PromptPayload = {
       outputFormat: 'html',
       userPrompt: '   excessive spacing   ',
     };
     const prompt = builder.build(payload);
-    assert.ok(prompt.includes('\n=== User Instruction ===\nexcessive spacing\n'));
+    assert.ok(prompt.startsWith('excessive spacing'));
   });
 
   test('handles null/undefined mcpData', () => {
@@ -82,5 +83,33 @@ suite('PromptBuilder', () => {
     const payload2 = { outputFormat: 'html', mcpData: undefined } as any;
     const prompt2 = builder.build(payload2);
     assert.strictEqual(prompt2.includes('Figma Design Data'), false);
+  });
+
+  test('includes edited prompt override at the top of the composed prompt', () => {
+    const prompt = builder.build({
+      outputFormat: 'html',
+      userPrompt: 'Custom prompt',
+    });
+
+    assert.ok(prompt.startsWith('Custom prompt'));
+    assert.ok(!prompt.startsWith(DEFAULT_PROMPT_TEXT));
+  });
+
+  test('includes screenshot guidance when screenshot data is attached', () => {
+    const prompt = builder.buildUserPrompt({
+      outputFormat: 'html',
+      screenshotData: { base64: 'abc', mimeType: 'image/png' },
+    });
+
+    assert.ok(prompt.includes('=== Figma Screenshot ==='));
+    assert.ok(prompt.includes('attached separately as an image input'));
+  });
+
+  test('format prompt preview exposes the effective output-format rules', () => {
+    const preview = getFormatPromptPreview('vue');
+
+    assert.ok(preview.includes('Generate VUE code'));
+    assert.ok(preview.includes('Vue 3 Single File Component'));
+    assert.ok(preview.includes('=== Final Response Rules ==='));
   });
 });

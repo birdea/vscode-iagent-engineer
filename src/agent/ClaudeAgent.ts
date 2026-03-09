@@ -28,6 +28,8 @@ interface ClaudeApiModelResponse {
   type?: string;
 }
 
+type ClaudeImageMimeType = 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+
 const DEFAULT_CLAUDE_MODELS: ModelInfo[] = [
   {
     id: 'claude-opus-4-6',
@@ -165,7 +167,11 @@ export class ClaudeAgent extends BaseAgent {
 
     const modelId = payload.model || 'claude-sonnet-4-6';
     const modelInfo = await this.getModelInfo(modelId);
-    const prompt = new PromptBuilder().build(payload);
+    const builder = new PromptBuilder();
+    const prompt = builder.buildUserPrompt(payload);
+    const screenshotMimeType = payload.screenshotData
+      ? this.normalizeImageMimeType(payload.screenshotData.mimeType)
+      : null;
     Logger.info('agent', `Generating with Claude: ${modelId}`);
 
     try {
@@ -173,15 +179,25 @@ export class ClaudeAgent extends BaseAgent {
         {
           model: modelId,
           max_tokens: modelInfo.outputTokenLimit ?? 8192,
-          system:
-            'You generate UI implementations from Figma design data. ' +
-            'Follow the requested output format exactly. ' +
-            'Never switch formats on your own. ' +
-            'If the requested format is not tsx, do not output TSX, JSX, or React code. ' +
-            'If the requested format is html, output plain HTML/CSS only. ' +
-            'Treat the user instruction block in the prompt as required. ' +
-            'Return only valid code with no markdown fences or explanations.',
-          messages: [{ role: 'user', content: prompt }],
+          system: builder.getSystemPrompt(payload),
+          messages: [
+            {
+              role: 'user',
+              content: payload.screenshotData
+                ? [
+                    { type: 'text', text: prompt },
+                    {
+                      type: 'image',
+                      source: {
+                        type: 'base64',
+                        media_type: screenshotMimeType ?? 'image/png',
+                        data: payload.screenshotData.base64,
+                      },
+                    },
+                  ]
+                : prompt,
+            },
+          ],
         },
         { signal },
       );
@@ -245,5 +261,21 @@ export class ClaudeAgent extends BaseAgent {
       documentationUrl: 'https://docs.anthropic.com/en/docs/about-claude/models/overview',
       metadataSource: ['claude-fallback'],
     };
+  }
+
+  private normalizeImageMimeType(mimeType: string | undefined): ClaudeImageMimeType {
+    switch (mimeType) {
+      case 'image/jpeg':
+      case 'image/gif':
+      case 'image/webp':
+      case 'image/png':
+        return mimeType;
+      default:
+        Logger.warn(
+          'agent',
+          `Unsupported Claude image MIME type ${mimeType ?? 'undefined'}, falling back to image/png`,
+        );
+        return 'image/png';
+    }
   }
 }

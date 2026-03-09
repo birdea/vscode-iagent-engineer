@@ -99,13 +99,28 @@ export class GeminiAgent extends BaseAgent {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.client.getGenerativeModel({ model: payload.model || 'gemini-2.0-flash' });
-    const prompt = new PromptBuilder().build(payload);
+    const builder = new PromptBuilder();
+    const model = this.client.getGenerativeModel({
+      model: payload.model || 'gemini-2.0-flash',
+      systemInstruction: builder.getSystemPrompt(payload),
+    });
+    const prompt = builder.buildUserPrompt(payload);
+    const request = payload.screenshotData
+      ? [
+          prompt,
+          {
+            inlineData: {
+              mimeType: payload.screenshotData.mimeType,
+              data: payload.screenshotData.base64,
+            },
+          },
+        ]
+      : prompt;
 
     Logger.info('agent', `Generating with Gemini: ${payload.model}`);
 
     try {
-      const result = await model.generateContentStream(prompt);
+      const result = await model.generateContentStream(request);
       const iterator = result.stream[Symbol.asyncIterator]();
       let streamClosed = false;
       const closeStream = async () => {
@@ -215,7 +230,7 @@ export class GeminiAgent extends BaseAgent {
       thinking: entry.thinking,
       documentationUrl: 'https://ai.google.dev/api/models',
       metadataSource: ['gemini-models-api'],
-      raw: entry as Record<string, unknown>,
+      raw: entry as unknown as Record<string, unknown>,
     };
   }
 }

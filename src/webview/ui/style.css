@@ -196,11 +196,26 @@ textarea:disabled {
 .prompt-action-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .prompt-secondary-actions {
   align-items: stretch;
+}
+
+.prompt-template-textarea {
+  min-height: 112px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.prompt-format-preview {
+  min-height: 132px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.9;
 }
 
 .btn-row-space-between {

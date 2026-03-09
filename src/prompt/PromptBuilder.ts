@@ -1,6 +1,14 @@
 import { PromptPayload, OutputFormat } from '../types';
 import { estimateTokens, TokenEstimate } from './TokenEstimator';
 
+export const DEFAULT_PROMPT_TEXT = [
+  'You are an expert UI developer.',
+  'Follow the requested output format exactly.',
+  'Never switch to a different UI framework or file type than the requested output format.',
+  'Treat the user instruction as required unless it conflicts with the requested output format or the provided Figma data.',
+  'Output ONLY valid code. No explanation, no markdown code fences.',
+].join('\n');
+
 const FORMAT_INSTRUCTIONS: Record<OutputFormat, string> = {
   html: 'Generate semantic HTML5 with inline CSS. Use modern HTML elements. Do not use React, TSX, JSX, Vue, or template syntax.',
   tsx: 'Generate a React functional component in TypeScript (TSX). Use proper typing and hooks where needed.',
@@ -17,26 +25,32 @@ const FORMAT_FORBIDDEN: Record<OutputFormat, string> = {
     'Forbidden: React/TSX unless explicitly requested via TSX format, separate CSS files, markdown fences, explanations.',
 };
 
-export class PromptBuilder {
-  build(payload: PromptPayload): string {
-    const lines: string[] = [
-      'You are an expert UI developer.',
-      'Follow the requested output format exactly.',
-      'Never switch to a different UI framework or file type than the requested output format.',
-      'Treat the user instruction as required unless it conflicts with the requested output format or the provided Figma data.',
-      'Output ONLY valid code. No explanation, no markdown code fences.',
-      '',
-      `Generate ${payload.outputFormat.toUpperCase()} code that faithfully reproduces the layout.`,
-      FORMAT_INSTRUCTIONS[payload.outputFormat],
-      FORMAT_FORBIDDEN[payload.outputFormat],
-      '',
-    ];
+export function getFormatPromptPreview(format: OutputFormat): string {
+  return [
+    `Generate ${format.toUpperCase()} code that faithfully reproduces the layout.`,
+    FORMAT_INSTRUCTIONS[format],
+    FORMAT_FORBIDDEN[format],
+    '',
+    '=== Output Contract ===',
+    `Target format: ${format.toUpperCase()}`,
+    `Primary rule: ${FORMAT_INSTRUCTIONS[format]}`,
+    FORMAT_FORBIDDEN[format],
+    '',
+    '=== Final Response Rules ===',
+    `Return only ${format.toUpperCase()} code.`,
+    'Do not include any explanation, prose, comments about the format choice, or markdown fences.',
+    `If the target format is not TSX, do not output TSX, JSX, or React code.`,
+    `=== Output Format: ${format.toUpperCase()} ===`,
+  ].join('\n');
+}
 
-    lines.push('=== Output Contract ===');
-    lines.push(`Target format: ${payload.outputFormat.toUpperCase()}`);
-    lines.push(`Primary rule: ${FORMAT_INSTRUCTIONS[payload.outputFormat]}`);
-    lines.push(FORMAT_FORBIDDEN[payload.outputFormat]);
-    lines.push('');
+export class PromptBuilder {
+  getSystemPrompt(payload: PromptPayload): string {
+    return payload.userPrompt?.trim() || DEFAULT_PROMPT_TEXT;
+  }
+
+  buildUserPrompt(payload: PromptPayload): string {
+    const lines: string[] = [getFormatPromptPreview(payload.outputFormat), ''];
 
     if (payload.mcpData !== undefined && payload.mcpData !== null) {
       lines.push('=== Figma Design Data (MCP) ===');
@@ -48,9 +62,11 @@ export class PromptBuilder {
       lines.push('');
     }
 
-    if (payload.userPrompt?.trim()) {
-      lines.push('=== User Instruction ===');
-      lines.push(payload.userPrompt.trim());
+    if (payload.screenshotData) {
+      lines.push('=== Figma Screenshot ===');
+      lines.push(
+        'A Figma screenshot is attached separately as an image input. Use it as the primary visual reference for spacing, styling, and layout fidelity.',
+      );
       lines.push('');
     }
 
@@ -62,6 +78,12 @@ export class PromptBuilder {
     lines.push(`If the target format is not TSX, do not output TSX, JSX, or React code.`);
     lines.push(`=== Output Format: ${payload.outputFormat.toUpperCase()} ===`);
     return lines.join('\n');
+  }
+
+  build(payload: PromptPayload): string {
+    const systemPrompt = this.getSystemPrompt(payload);
+    const userPrompt = this.buildUserPrompt(payload);
+    return [systemPrompt, userPrompt].filter(Boolean).join('\n\n');
   }
 
   estimate(payload: PromptPayload): TokenEstimate {

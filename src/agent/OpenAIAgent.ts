@@ -58,6 +58,8 @@ const MODEL_ALIASES: Partial<Record<AgentType, Record<string, string>>> = {
   },
 };
 
+const IMAGE_CAPABLE_OPENAI_AGENTS: AgentType[] = ['qwen', 'openrouter'];
+
 export class OpenAIAgent extends BaseAgent {
   constructor(public readonly type: AgentType) {
     super();
@@ -194,7 +196,21 @@ export class OpenAIAgent extends BaseAgent {
     this.ensureApiKey();
 
     const modelId = this.resolveModelId(payload.model || this.config.defaultModel);
-    const prompt = new PromptBuilder().build(payload);
+    const builder = new PromptBuilder();
+    const prompt = builder.buildUserPrompt(payload);
+    const supportsImageInput = IMAGE_CAPABLE_OPENAI_AGENTS.includes(this.type);
+    const userContent =
+      payload.screenshotData && supportsImageInput
+        ? [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${payload.screenshotData.mimeType};base64,${payload.screenshotData.base64}`,
+              },
+            },
+          ]
+        : prompt;
 
     Logger.info('agent', `Generating with ${this.type}: ${modelId}`);
 
@@ -209,11 +225,11 @@ export class OpenAIAgent extends BaseAgent {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert UI developer. Generate code based on Figma design data.',
+            content: builder.getSystemPrompt(payload),
           },
           {
             role: 'user',
-            content: prompt,
+            content: userContent,
           },
         ],
         stream: true,

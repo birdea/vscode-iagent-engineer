@@ -245,6 +245,7 @@ export class FigmaCommandHandler {
 
     try {
       const base64 = await this.screenshotService.fetchScreenshot(parsed.fileId, parsed.nodeId);
+      this.stateManager.setLastScreenshot({ base64, mimeType: 'image/png' });
       await this.screenshotService.openInEditor(base64, parsed.fileId, parsed.nodeId);
       this.post({ event: 'figma.screenshotResult', base64 });
     } catch (e) {
@@ -265,6 +266,7 @@ export class FigmaCommandHandler {
   clearData() {
     this.stateManager.clearLastMcpInput();
     this.stateManager.clearLastMcpData();
+    this.stateManager.clearLastScreenshot();
   }
 
   private async fetchRemoteData(

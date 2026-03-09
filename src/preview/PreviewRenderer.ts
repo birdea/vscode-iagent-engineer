@@ -427,7 +427,7 @@ function inlineUtilityStyles(markup: string): string {
     (_match, tag, before, classValue, after) => {
       const generatedStyle = classValue
         .split(/\s+/)
-        .map((token) => token.trim())
+        .map((token: string) => token.trim())
         .filter(Boolean)
         .map(toInlineStyle)
         .filter(Boolean)

@@ -33,6 +33,7 @@ suite('PromptCommandHandler', () => {
     stateManager.setAgent('claude');
     stateManager.setModel('claude-model');
     stateManager.setLastMcpData({ fileId: 'F1' });
+    stateManager.setLastScreenshot({ base64: 'abc123', mimeType: 'image/png' });
     handler = new PromptCommandHandler(
       webview as any,
       context,
@@ -140,6 +141,25 @@ suite('PromptCommandHandler', () => {
     assert.deepStrictEqual(capturedPayload.mcpData, { fileId: 'F1' });
   });
 
+  test('generate uses state screenshot data when payload does not include it', async () => {
+    let capturedPayload: any;
+    const agent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function* (payload: any) {
+        capturedPayload = payload;
+        yield 'chunk';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
+
+    await handler.generate({ outputFormat: 'html' });
+
+    assert.deepStrictEqual(capturedPayload.screenshotData, {
+      base64: 'abc123',
+      mimeType: 'image/png',
+    });
+  });
+
   test('generate keeps explicit MCP data from payload', async () => {
     let capturedPayload: any;
     const agent = {
@@ -154,6 +174,31 @@ suite('PromptCommandHandler', () => {
     await handler.generate({ outputFormat: 'html', mcpData: { fileId: 'override' } });
 
     assert.deepStrictEqual(capturedPayload.mcpData, { fileId: 'override' });
+  });
+
+  test('generate skips screenshot data for deepseek with a warning log', async () => {
+    stateManager.setAgent('deepseek');
+    stateManager.setModel('deepseek-chat');
+
+    let capturedPayload: any;
+    const agent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function* (payload: any) {
+        capturedPayload = payload;
+        yield 'chunk';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
+
+    await handler.generate({ outputFormat: 'html' });
+
+    assert.strictEqual(capturedPayload.screenshotData, null);
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'prompt.logAppend',
+        entry: sinon.match({ message: 'Screenshot input skipped for the current agent' }),
+      }),
+    );
   });
 
   test('generate streams chunks and final result', async () => {

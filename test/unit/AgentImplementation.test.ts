@@ -149,6 +149,41 @@ suite('Agent Implementations', () => {
       await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
       assert.ok(returnStub.calledOnce);
     });
+
+    test('generateCode sends screenshot data as Gemini inlineData parts', async () => {
+      let capturedRequest: any;
+      (agent as any).apiKey = 'test-key';
+      (agent as any).client = {
+        getGenerativeModel: (params: any) => {
+          assert.strictEqual(params.systemInstruction, 'Visible edited prompt');
+          return {
+            generateContentStream: async (request: any) => {
+              capturedRequest = request;
+              return {
+                stream: {
+                  async *[Symbol.asyncIterator]() {
+                    yield { text: () => 'ok' };
+                  },
+                },
+              };
+            },
+          };
+        },
+      };
+
+      const chunks: string[] = [];
+      for await (const chunk of agent.generateCode({
+        outputFormat: 'html' as any,
+        userPrompt: 'Visible edited prompt',
+        screenshotData: { base64: 'abc123', mimeType: 'image/png' },
+      })) {
+        chunks.push(chunk);
+      }
+
+      assert.strictEqual(chunks.join(''), 'ok');
+      assert.strictEqual(capturedRequest[1].inlineData.data, 'abc123');
+      assert.strictEqual(capturedRequest[1].inlineData.mimeType, 'image/png');
+    });
   });
 
   suite('ClaudeAgent', () => {
@@ -278,6 +313,33 @@ suite('Agent Implementations', () => {
       await assert.rejects(() => gen.next(), /USER_CANCELLED_CODE_GENERATION/);
       assert.strictEqual(streamStub.firstCall.args[1]?.signal, abortController.signal);
     });
+
+    test('generateCode sends screenshot data as Claude image content', async () => {
+      const streamStub = sinon.stub().returns({
+        async *[Symbol.asyncIterator]() {
+          yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'ok' } };
+        },
+      });
+      (agent as any).apiKey = 'test-key';
+      (agent as any).client = { messages: { stream: streamStub } };
+
+      const chunks: string[] = [];
+      for await (const chunk of agent.generateCode({
+        outputFormat: 'html' as any,
+        userPrompt: 'Claude edited prompt',
+        screenshotData: { base64: 'img64', mimeType: 'image/png' },
+      })) {
+        chunks.push(chunk);
+      }
+
+      assert.strictEqual(chunks.join(''), 'ok');
+      assert.strictEqual(streamStub.firstCall.args[0].system, 'Claude edited prompt');
+      assert.strictEqual(streamStub.firstCall.args[0].messages[0].content[1].type, 'image');
+      assert.strictEqual(
+        streamStub.firstCall.args[0].messages[0].content[1].source.data,
+        'img64',
+      );
+    });
   });
 
   suite('OpenAIAgent', () => {
@@ -332,6 +394,34 @@ suite('Agent Implementations', () => {
         () => gen.next(),
         /openrouter API error: 400 - No endpoints found for deepseek\/deepseek-coder\./,
       );
+    });
+
+    test('generateCode sends screenshot data as OpenRouter image_url content', async () => {
+      await agent.setApiKey('test-key');
+
+      nock('https://openrouter.ai')
+        .post('/api/v1/chat/completions', (body) => {
+          assert.strictEqual(body.messages[0].content, 'Visible edited prompt');
+          assert.strictEqual(body.messages[1].content[1].type, 'image_url');
+          assert.ok(body.messages[1].content[1].image_url.url.includes('data:image/png;base64,img64'));
+          return true;
+        })
+        .reply(
+          200,
+          'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n',
+          { 'Content-Type': 'text/event-stream' },
+        );
+
+      const chunks: string[] = [];
+      for await (const chunk of agent.generateCode({
+        outputFormat: 'html' as any,
+        userPrompt: 'Visible edited prompt',
+        screenshotData: { base64: 'img64', mimeType: 'image/png' },
+      })) {
+        chunks.push(chunk);
+      }
+
+      assert.strictEqual(chunks.join(''), 'ok');
     });
   });
 });

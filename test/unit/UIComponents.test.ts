@@ -554,18 +554,50 @@ suite('UI Components Consolidated', () => {
     test('onGenerateRequested validation', () => {
       const logArea = document.getElementById('prompt-log-area') as HTMLPreElement;
       logArea.textContent = 'old log';
-      (document.getElementById('use-user-prompt') as HTMLInputElement).checked = false;
-      (document.getElementById('use-user-prompt') as HTMLInputElement).dispatchEvent(
-        new window.Event('change'),
-      );
-      assert.strictEqual(
-        (document.getElementById('user-prompt') as HTMLTextAreaElement).disabled,
-        true,
-      );
       (document.getElementById('use-mcp-data') as HTMLInputElement).checked = false;
+      (document.getElementById('use-screenshot-data') as HTMLInputElement).checked = false;
+      (document.getElementById('user-prompt') as HTMLTextAreaElement).value = 'Visible prompt';
       layer.onGenerateRequested();
       assert.strictEqual(logArea.textContent, '');
-      assert.ok(postMessageStub.calledWithMatch({ command: 'prompt.generate' }));
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'prompt.generate',
+          payload: sinon.match({
+            userPrompt: 'Visible prompt',
+            mcpData: null,
+            screenshotData: null,
+          }),
+        }),
+      );
+    });
+
+    test('render includes screenshot toggle and visible output format prompt preview', () => {
+      const screenshotToggle = document.getElementById('use-screenshot-data');
+      const promptEditor = document.getElementById('user-prompt') as HTMLTextAreaElement | null;
+      const formatPreview = document.getElementById(
+        'format-prompt-preview',
+      ) as HTMLTextAreaElement | null;
+
+      assert.ok(screenshotToggle);
+      assert.ok(promptEditor);
+      assert.ok(promptEditor?.value.length);
+      assert.ok(formatPreview);
+      assert.ok(formatPreview?.value.includes('Generate TSX code'));
+      assert.strictEqual(document.getElementById('hidden-prompt'), null);
+      assert.strictEqual(document.getElementById('use-user-prompt'), null);
+    });
+
+    test('output format preview updates when the selected format changes', () => {
+      const outputFormat = document.getElementById('output-format') as HTMLSelectElement;
+      const formatPreview = document.getElementById(
+        'format-prompt-preview',
+      ) as HTMLTextAreaElement;
+
+      outputFormat.value = 'vue';
+      outputFormat.dispatchEvent(new (global as any).window.Event('change'));
+
+      assert.ok(formatPreview.value.includes('Generate VUE code'));
+      assert.ok(formatPreview.value.includes('Vue 3 Single File Component'));
     });
 
     test('cancel button posts cancel command while generating', () => {

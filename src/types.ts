@@ -44,10 +44,16 @@ export interface ModelInfo {
   raw?: Record<string, unknown>;
 }
 
+export interface ScreenshotAsset {
+  base64: string;
+  mimeType: string;
+}
+
 // Prompt payload
 export interface PromptPayload {
   userPrompt?: string;
   mcpData?: unknown;
+  screenshotData?: ScreenshotAsset | null;
   outputFormat: OutputFormat;
   model?: string;
   agent?: AgentType;
