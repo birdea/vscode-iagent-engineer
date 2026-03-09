@@ -16,6 +16,6 @@
   "configuration.mcpEndpoint.description": "Figma MCP 서버 엔드포인트",
   "configuration.remoteMcpEndpoint.description": "인증 완료 후 계획 중인 remote auth 기반 모드에서 사용할 엔드포인트",
   "configuration.remoteMcpAuthUrl.description": "계획 중인 remote 모드에서 Auth Login 액션이 여는 인증 URL",
-  "configuration.openFetchedDataInEditor.description": "데이터를 성공적으로 가져온 뒤 MCP JSON을 VS Code 에디터에 자동으로 엽니다",
+  "configuration.openFetchedDataInEditor.description": "레거시 호환용 설정입니다. 현재 가져온 MCP JSON은 기본적으로 VS Code 에디터에서 열립니다",
   "configuration.claudeModels.description": "Agent 패널에서 사용하는 Claude 모델 카탈로그"
 }

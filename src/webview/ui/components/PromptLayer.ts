@@ -41,6 +41,7 @@ export class PromptLayer {
         <option value="vue">Vue 3 (SFC)</option>
         <option value="scss">SCSS</option>
         <option value="tailwind">Tailwind CSS</option>
+        <option value="kotlin">Kotlin (Compose)</option>
       </select>
     </div>
   </details>

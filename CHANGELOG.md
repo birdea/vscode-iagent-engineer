@@ -4,6 +4,15 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-09
+
+- Updated the local Figma Desktop MCP integration for the current endpoint, header, SSE, and session handling requirements.
+- Improved Setup and Agent panel UX, including inline remote-mode messaging, clearer status indicators, and direct launch actions for Figma and API key help.
+- Opened fetched design data and generated output directly in the VS Code editor instead of the panel preview.
+- Added a live Prompt log view for AI request and response progress during generation.
+- Expanded model info output and strengthened prompt-format handling so requested output types are preserved more reliably.
+- Temporarily excluded the unstable E2E suite from the default CI path so release validation can proceed on unit tests and coverage.
+
 ## [0.3.1] - 2026-03-08
 
 - Fixed remote authentication recovery so the extension restarts the OAuth flow when a saved token is rejected.

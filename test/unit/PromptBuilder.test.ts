@@ -47,7 +47,11 @@ suite('PromptBuilder', () => {
 
     const kotlinPrompt = builder.build({ outputFormat: 'kotlin' });
     assert.ok(kotlinPrompt.includes('Jetpack Compose UI code'));
-    assert.ok(kotlinPrompt.includes('Do not emit HTML, TSX, JSX, React, XML, or SwiftUI.'));
+    assert.ok(
+      kotlinPrompt.includes(
+        'Forbidden: HTML, TSX, JSX, React, XML layouts, SwiftUI, markdown fences, explanations.',
+      ),
+    );
   });
 
   test('places user instruction after MCP context and repeats final format rule', () => {

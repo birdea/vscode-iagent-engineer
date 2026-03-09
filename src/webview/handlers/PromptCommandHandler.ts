@@ -206,6 +206,8 @@ export class PromptCommandHandler {
         return 'vue';
       case 'scss':
         return 'scss';
+      case 'kotlin':
+        return 'kotlin';
       default:
         return 'plaintext';
     }
@@ -222,6 +224,8 @@ export class PromptCommandHandler {
         return 'GeneratedUi.vue';
       case 'scss':
         return 'generated-ui.scss';
+      case 'kotlin':
+        return 'GeneratedUi.kt';
       default:
         return 'generated-ui.txt';
     }

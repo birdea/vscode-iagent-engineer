@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
           const { name } = params;
           if (name === 'get_file') {
             response.result = {
-              fileId: params.arguments?.fileId || 'mock-file-123',
+              fileId: params.arguments?.fileId || params.arguments?.fileKey || 'mock-file-123',
               name: 'Mock Figma Design',
               lastModified: new Date().toISOString(),
               version: '1.0',
@@ -71,7 +71,7 @@ const server = http.createServer((req, res) => {
               nodeId: params.arguments?.nodeId,
             };
           } else {
-            response.result = { message: `Called mock tool: ${name}` };
+            response.error = { code: -32601, message: `Method not found: ${name}` };
           }
         } else {
           response.error = { code: -32601, message: 'Method not found' };

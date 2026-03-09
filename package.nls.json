@@ -16,6 +16,6 @@
   "configuration.mcpEndpoint.description": "Figma MCP server endpoint",
   "configuration.remoteMcpEndpoint.description": "Endpoint reserved for the planned remote auth-backed mode after authentication is completed",
   "configuration.remoteMcpAuthUrl.description": "Authentication URL opened by the Auth Login action for the planned remote mode",
-  "configuration.openFetchedDataInEditor.description": "Open fetched MCP JSON in a VS Code editor automatically after a successful fetch",
+  "configuration.openFetchedDataInEditor.description": "Legacy compatibility setting. Fetched MCP JSON currently opens in a VS Code editor by default",
   "configuration.claudeModels.description": "Claude model catalog used in the Agent panel"
 }
