@@ -462,6 +462,9 @@ label {
   cursor: pointer;
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .minimal-options summary::-webkit-details-marker {
@@ -470,6 +473,16 @@ label {
 
 .minimal-options[open] summary {
   margin-bottom: 6px;
+}
+
+.options-toggle-icon {
+  font-size: 14px;
+  transition: transform 0.15s ease;
+  color: var(--vscode-descriptionForeground);
+}
+
+.minimal-options[open] .options-toggle-icon {
+  transform: rotate(90deg);
 }
 
 .screenshot-preview.visible {

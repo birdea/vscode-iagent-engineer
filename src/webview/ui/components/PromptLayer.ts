@@ -22,7 +22,7 @@ export class PromptLayer {
     <textarea id="user-prompt" placeholder="${this.msg('prompt.placeholder')}"></textarea>
   </div>
   <details class="minimal-options">
-    <summary>${this.msg('prompt.options')}</summary>
+    <summary>${this.msg('prompt.options')}<i class="codicon codicon-chevron-right options-toggle-icon"></i></summary>
     <div class="field-group stack-gap-sm">
       <div class="checkbox-row">
         <input type="checkbox" id="use-user-prompt" checked />
