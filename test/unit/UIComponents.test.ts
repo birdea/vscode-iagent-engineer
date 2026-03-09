@@ -243,12 +243,6 @@ suite('UI Components Consolidated', () => {
       assert.ok(notice?.textContent?.includes('연결'));
     });
 
-    test('stringifyForPreview handles string data', () => {
-      layer.onDataResult('raw string data');
-      const preview = document.getElementById('figma-data-preview');
-      assert.strictEqual(preview?.textContent, 'raw string data');
-    });
-
     test('screenshot click when connected with data sends message', () => {
       layer.onStatus(true, ['get_image']); // set connected = true
       const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
@@ -276,11 +270,11 @@ suite('UI Components Consolidated', () => {
 
     test('onDataResult and onScreenshotResult', () => {
       layer.onDataResult({ foo: 'bar' });
-      assert.ok(document.getElementById('figma-data-preview')?.textContent?.includes('bar'));
+      const dataNotice = document.getElementById('figma-data-notice');
+      assert.strictEqual(dataNotice?.textContent, '데이터를 불러왔습니다.');
 
       layer.onScreenshotResult('base64');
-      const img = document.getElementById('figma-screenshot-preview') as HTMLImageElement;
-      assert.ok(img.src.includes('base64'));
+      assert.strictEqual(dataNotice?.textContent, '스크린샷을 가져왔습니다.');
     });
 
     test('onError calls setNotice', () => {
@@ -393,44 +387,33 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(bar?.value, 50);
     });
 
-    test('onResult updates generated code', () => {
+    test('onResult updates notice and clears generating state', () => {
+      layer.onGenerateRequested();
       layer.onResult('const x = 1;');
-      const area = document.getElementById('code-output') as HTMLPreElement;
-      assert.strictEqual(area.textContent, 'const x = 1;');
+      const notice = document.getElementById('prompt-notice');
+      const generateBtn = document.getElementById('btn-generate') as HTMLButtonElement | null;
+      assert.ok(notice?.textContent);
+      assert.strictEqual(generateBtn?.disabled, false);
     });
 
     test('onResult preserves incomplete output with warning state', () => {
       layer.onResult('partial', false, 'cancelled', 35);
       const notice = document.getElementById('prompt-notice');
       const progressText = document.getElementById('prompt-progress-text');
-      const actions = document.getElementById('code-actions');
       assert.strictEqual(notice?.textContent, 'cancelled');
       assert.strictEqual(progressText?.textContent, '불완전');
-      assert.ok(!actions?.classList.contains('hidden'));
     });
 
-    test('onError updates notice without polluting code output', () => {
+    test('onError updates notice', () => {
       layer.onError('bad things');
-      const area = document.getElementById('code-output');
-      assert.strictEqual(area?.textContent, '');
       const notice = document.getElementById('prompt-notice');
       assert.strictEqual(notice?.textContent, 'bad things');
     });
 
-    test('onChunk appends text', () => {
+    test('onChunk does not throw without preview area', () => {
       layer.onChunk('hello ');
       layer.onChunk('world');
-      const area = document.getElementById('code-output');
-      assert.strictEqual(area?.textContent, 'hello world');
-    });
-
-    test('buttons: open and save', () => {
-      layer.onResult('code');
-      document.getElementById('btn-open-editor')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open' }));
-
-      document.getElementById('btn-save-file')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.saveFile' }));
+      assert.ok(true);
     });
 
     test('onGenerateRequested validation', () => {
@@ -472,63 +455,11 @@ suite('UI Components Consolidated', () => {
       assert.ok(text?.textContent?.includes('완료'));
     });
 
-    test('btn-save-file with scss format', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      formatEl.value = 'scss';
-      layer.onResult('.class { color: red; }');
-      document.getElementById('btn-save-file')?.click();
-      assert.ok(
-        postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.scss' }),
-      );
-    });
-
-    test('btn-save-file with kotlin format', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      formatEl.value = 'kotlin';
-      layer.onResult('@Composable fun Ui() {}');
-      document.getElementById('btn-save-file')?.click();
-      assert.ok(
-        postMessageStub.calledWithMatch({ command: 'editor.saveFile', filename: 'generated.kt' }),
-      );
-    });
-
-    test('btn-open-editor with tailwind format', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      formatEl.value = 'tailwind';
-      layer.onResult('<div class="flex">');
-      document.getElementById('btn-open-editor')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'html' }));
-    });
-
-    test('btn-open-editor with scss format', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      formatEl.value = 'scss';
-      layer.onResult('.cls {}');
-      document.getElementById('btn-open-editor')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'scss' }));
-    });
-
-    test('btn-open-editor with kotlin format', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      formatEl.value = 'kotlin';
-      layer.onResult('@Composable fun View() {}');
-      document.getElementById('btn-open-editor')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'kotlin' }));
-    });
-
     test('onHostError while generating calls onError', () => {
       layer.onGenerateRequested(); // sets isGenerating = true
       layer.onHostError('error while generating');
       const notice = document.getElementById('prompt-notice');
       assert.ok(notice?.textContent?.includes('error while generating'));
-    });
-
-    test('btn-open-editor with unknown format uses plaintext', () => {
-      const formatEl = document.getElementById('output-format') as HTMLSelectElement;
-      (formatEl as any).value = 'unknown';
-      layer.onResult('some code');
-      document.getElementById('btn-open-editor')?.click();
-      assert.ok(postMessageStub.calledWithMatch({ command: 'editor.open', language: 'plaintext' }));
     });
 
     test('updateEstimate debounce callback fires', () => {

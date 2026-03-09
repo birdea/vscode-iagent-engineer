@@ -76,6 +76,10 @@ export class PromptCommandHandler {
       }
 
       this.post({ event: 'prompt.streaming', progress: 100 });
+      await this.editorIntegration.openInEditor(
+        fullCode,
+        this.toVsCodeLanguage(resolvedPayload.outputFormat),
+      );
       this.post({
         event: 'prompt.result',
         code: fullCode,
@@ -91,6 +95,10 @@ export class PromptCommandHandler {
         errMessage === USER_CANCELLED_CODE_GENERATION;
       const errorMessage = isCancelled ? t(this.locale, 'host.prompt.cancelled') : errMessage;
       if (fullCode.length > 0) {
+        await this.editorIntegration.openInEditor(
+          fullCode,
+          this.toVsCodeLanguage(resolvedPayload.outputFormat),
+        );
         this.post({
           event: 'prompt.result',
           code: fullCode,
@@ -141,6 +149,22 @@ export class PromptCommandHandler {
 
   async saveFile(code: string, filename: string) {
     await this.editorIntegration.saveAsNewFile(code, filename);
+  }
+
+  private toVsCodeLanguage(format: PromptPayload['outputFormat']): string {
+    switch (format) {
+      case 'tsx':
+        return 'typescriptreact';
+      case 'html':
+      case 'tailwind':
+        return 'html';
+      case 'scss':
+        return 'scss';
+      case 'kotlin':
+        return 'kotlin';
+      default:
+        return 'plaintext';
+    }
   }
 
   getGeneratingState() {

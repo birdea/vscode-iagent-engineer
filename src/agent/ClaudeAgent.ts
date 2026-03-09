@@ -173,7 +173,15 @@ export class ClaudeAgent extends BaseAgent {
         {
           model: modelId,
           max_tokens: modelInfo.outputTokenLimit ?? 8192,
-          system: `You are an expert UI developer. Generate ${payload.outputFormat} code that faithfully reproduces the Figma design. Output ONLY valid code. No explanation.`,
+          system:
+            'You generate UI implementations from Figma design data. ' +
+            'Follow the requested output format exactly. ' +
+            'Never switch formats on your own. ' +
+            'If the requested format is not tsx, do not output TSX, JSX, or React code. ' +
+            'If the requested format is kotlin, output Jetpack Compose Kotlin only. ' +
+            'If the requested format is html, output plain HTML/CSS only. ' +
+            'Treat the user instruction block in the prompt as required. ' +
+            'Return only valid code with no markdown fences or explanations.',
           messages: [{ role: 'user', content: prompt }],
         },
         { signal },

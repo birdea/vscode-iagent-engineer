@@ -51,8 +51,6 @@ export class FigmaLayer {
     <button class="secondary" id="btn-screenshot"><i class="codicon codicon-device-camera"></i>${this.msg('figma.screenshot')}</button>
   </div>
   <div class="notice hidden" id="figma-data-notice"></div>
-  <pre class="code-output" id="figma-data-preview"></pre>
-  <img class="screenshot-preview" id="figma-screenshot-preview" alt="${this.msg('figma.screenshotAlt')}" />
 </section>
 `;
   }
@@ -157,21 +155,12 @@ export class FigmaLayer {
   }
 
   onDataResult(data: unknown) {
-    const preview = document.getElementById('figma-data-preview') as HTMLPreElement | null;
-    if (!preview) return;
-
-    const text = this.stringifyForPreview(data);
-    preview.textContent = text;
-    preview.classList.add('visible');
+    void data;
     this.setDataNotice('success', this.msg('figma.success.dataLoaded'));
   }
 
   onScreenshotResult(base64: string) {
-    const img = document.getElementById('figma-screenshot-preview') as HTMLImageElement | null;
-    if (!img) return;
-
-    img.src = `data:image/png;base64,${base64}`;
-    img.classList.add('visible');
+    void base64;
     this.setDataNotice('success', this.msg('figma.success.screenshotLoaded'));
   }
 
@@ -304,15 +293,6 @@ export class FigmaLayer {
           })
         : '',
     );
-  }
-
-  private stringifyForPreview(data: unknown): string {
-    if (typeof data === 'string') return data;
-    try {
-      return JSON.stringify(data, null, 2);
-    } catch {
-      return this.msg('figma.preview.unable');
-    }
   }
 
   private msg(key: string, params?: Record<string, string | number>) {

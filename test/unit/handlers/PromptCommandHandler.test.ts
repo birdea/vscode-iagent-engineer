@@ -67,6 +67,29 @@ suite('PromptCommandHandler', () => {
     assert.strictEqual(capturedPayload.model, 'claude-model');
   });
 
+  test('generate preserves requested output format and user prompt', async () => {
+    let capturedPayload: any;
+    const agent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function* (payload: any) {
+        capturedPayload = payload;
+        yield 'chunk';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
+
+    await handler.generate({
+      outputFormat: 'kotlin',
+      userPrompt: 'Use a two-column card layout with bold section titles.',
+    });
+
+    assert.strictEqual(capturedPayload.outputFormat, 'kotlin');
+    assert.strictEqual(
+      capturedPayload.userPrompt,
+      'Use a two-column card layout with bold section titles.',
+    );
+  });
+
   test('generate loads saved API key before generation', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
@@ -140,6 +163,7 @@ suite('PromptCommandHandler', () => {
 
     await handler.generate({ outputFormat: 'html' });
 
+    assert.ok(editorIntegration.openInEditor.calledWith('hello world', 'html'));
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'prompt.streaming',
@@ -234,6 +258,7 @@ suite('PromptCommandHandler', () => {
 
     await handler.generate({ outputFormat: 'html' });
 
+    assert.ok(editorIntegration.openInEditor.calledWith('hello', 'html'));
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'prompt.result',
@@ -282,6 +307,20 @@ suite('PromptCommandHandler', () => {
   test('openEditor delegates to editor integration', async () => {
     await handler.openEditor('const x = 1;', 'typescript');
     assert.ok(editorIntegration.openInEditor.calledWith('const x = 1;', 'typescript'));
+  });
+
+  test('generate opens kotlin result in kotlin editor mode', async () => {
+    const agent = {
+      setApiKey: sandbox.stub().resolves(),
+      generateCode: async function* () {
+        yield '@Composable fun Demo() {}';
+      },
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
+
+    await handler.generate({ outputFormat: 'kotlin' });
+
+    assert.ok(editorIntegration.openInEditor.calledWith('@Composable fun Demo() {}', 'kotlin'));
   });
 
   test('saveFile delegates to editor integration', async () => {

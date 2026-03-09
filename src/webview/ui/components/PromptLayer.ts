@@ -1,16 +1,13 @@
 import { vscode } from '../vscodeApi';
-import { OutputFormat, PromptPayload } from '../../../types';
+import { PromptPayload } from '../../../types';
 import { getDocumentLocale, t, UiLocale } from '../../../i18n';
 import { DEBOUNCE_MS } from '../../../constants';
 
 export class PromptLayer {
-  private generatedCode = '';
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isGenerating = false;
   private requestId: string | null = null;
   private readonly locale: UiLocale = getDocumentLocale();
-  private pendingChunks: string[] = [];
-  private rafPending = false;
 
   render(): string {
     return `
@@ -57,14 +54,6 @@ export class PromptLayer {
   </div>
   <div class="notice hidden" id="prompt-notice"></div>
 </section>
-<section class="panel panel-compact">
-  <div class="panel-title">${this.msg('prompt.resultTitle')}</div>
-  <div class="btn-row hidden stack-gap-sm" id="code-actions">
-    <button class="primary" id="btn-open-editor"><i class="codicon codicon-go-to-file"></i>${this.msg('prompt.openEditor')}</button>
-    <button class="secondary" id="btn-save-file"><i class="codicon codicon-save"></i>${this.msg('prompt.saveFile')}</button>
-  </div>
-  <pre class="code-output" id="code-output"></pre>
-</section>
 `;
   }
 
@@ -87,36 +76,6 @@ export class PromptLayer {
     document
       .getElementById('btn-cancel-generate')
       ?.addEventListener('click', () => this.onCancelRequested());
-
-    document.getElementById('btn-open-editor')?.addEventListener('click', () => {
-      if (this.generatedCode) {
-        const format = outputFormatEl.value as OutputFormat;
-        vscode.postMessage({
-          command: 'editor.open',
-          code: this.generatedCode,
-          language: this.toVsCodeLanguage(format),
-        });
-      }
-    });
-
-    document.getElementById('btn-save-file')?.addEventListener('click', () => {
-      if (this.generatedCode) {
-        const format = outputFormatEl.value;
-        const ext =
-          format === 'tsx'
-            ? 'tsx'
-            : format === 'scss'
-              ? 'scss'
-              : format === 'kotlin'
-                ? 'kt'
-                : 'html';
-        vscode.postMessage({
-          command: 'editor.saveFile',
-          code: this.generatedCode,
-          filename: `generated.${ext}`,
-        });
-      }
-    });
 
     this.syncPromptInputState();
     this.updateEstimate();
@@ -143,16 +102,6 @@ export class PromptLayer {
       requestId: this.nextRequestId(),
     };
 
-    const codeOutput = document.getElementById('code-output') as HTMLPreElement | null;
-    if (codeOutput) {
-      codeOutput.textContent = '';
-      codeOutput.classList.add('visible');
-    }
-    const codeActions = document.getElementById('code-actions');
-    if (codeActions) {
-      codeActions.classList.add('hidden');
-    }
-    this.generatedCode = '';
     this.requestId = payload.requestId ?? null;
     this.setNotice('info', this.msg('prompt.notice.starting'));
     this.setGeneratingState(true);
@@ -212,27 +161,7 @@ export class PromptLayer {
     );
   }
 
-  onChunk(text: string) {
-    this.generatedCode += text;
-    this.pendingChunks.push(text);
-    if (!this.rafPending) {
-      this.rafPending = true;
-      const flush = () => {
-        const codeOutput = document.getElementById('code-output') as HTMLPreElement | null;
-        if (codeOutput && this.pendingChunks.length > 0) {
-          codeOutput.insertAdjacentText('beforeend', this.pendingChunks.join(''));
-          codeOutput.scrollTop = codeOutput.scrollHeight;
-        }
-        this.pendingChunks = [];
-        this.rafPending = false;
-      };
-      if (typeof requestAnimationFrame !== 'undefined') {
-        requestAnimationFrame(flush);
-      } else {
-        setTimeout(flush, 0);
-      }
-    }
-  }
+  onChunk(_text: string) {}
 
   onStreaming(progress: number, text?: string) {
     this.onGenerating(progress);
@@ -242,14 +171,7 @@ export class PromptLayer {
   }
 
   onResult(code: string, complete = true, message?: string, progress?: number) {
-    this.generatedCode = code;
-    const codeOutput = document.getElementById('code-output') as HTMLPreElement;
-    if (codeOutput) {
-      codeOutput.textContent = code;
-      codeOutput.classList.add('visible');
-    }
-    const actions = document.getElementById('code-actions');
-    if (actions) actions.classList.remove('hidden');
+    void code;
     if (complete) {
       this.onGenerating(100);
     } else {
@@ -264,9 +186,6 @@ export class PromptLayer {
   }
 
   onError(message: string, code?: 'cancelled' | 'failed') {
-    const actions = document.getElementById('code-actions');
-    if (actions) actions.classList.add('hidden');
-
     this.setGeneratingState(false);
     this.onGenerating(0);
     this.setNotice(code === 'cancelled' ? 'warn' : 'error', message);
@@ -338,21 +257,5 @@ export class PromptLayer {
 
   private msg(key: string, params?: Record<string, string | number>) {
     return t(this.locale, key, params);
-  }
-
-  private toVsCodeLanguage(format: OutputFormat): string {
-    switch (format) {
-      case 'tsx':
-        return 'typescriptreact';
-      case 'html':
-      case 'tailwind':
-        return 'html';
-      case 'scss':
-        return 'scss';
-      case 'kotlin':
-        return 'kotlin';
-      default:
-        return 'plaintext';
-    }
   }
 }

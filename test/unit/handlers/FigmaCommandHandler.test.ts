@@ -211,31 +211,22 @@ suite('FigmaCommandHandler', () => {
   });
 
   test('fetchData calls getDesignContext when connected and fileId exists', async () => {
-    const getStub = sandbox.stub().returns(false);
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
-
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(mcpClient.getDesignContext.calledWith('ABCDE', '1:2'));
+    assert.ok(editorIntegration.openInEditor.calledWith('{\n  "name": "Frame"\n}', 'json'));
     assert.ok(
       webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: { name: 'Frame' } }),
     );
   });
 
-  test('fetchData opens result in editor when configured', async () => {
-    const getStub = sandbox.stub();
-    getStub.withArgs('figma-mcp-helper.openFetchedDataInEditor', false).returns(true);
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
-
+  test('fetchData always opens result in editor', async () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(editorIntegration.openInEditor.calledOnce);
   });
 
   test('fetchData stores raw input before MCP request', async () => {
-    const getStub = sandbox.stub().returns(false);
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
-
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.deepStrictEqual(stateManager.getLastMcpData(), { name: 'Frame' });
@@ -246,6 +237,7 @@ suite('FigmaCommandHandler', () => {
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
+    assert.ok(editorIntegration.openInEditor.calledWithMatch(sinon.match.string, 'json'));
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'figma.dataResult',
@@ -272,6 +264,7 @@ suite('FigmaCommandHandler', () => {
 
   test('fetchData posts parse-only result when fileId is missing', async () => {
     await handler.fetchData('not-a-figma-url');
+    assert.ok(editorIntegration.openInEditor.calledWithMatch(sinon.match.string, 'json'));
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'figma.dataResult',

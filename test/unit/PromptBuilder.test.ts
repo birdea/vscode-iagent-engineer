@@ -14,6 +14,7 @@ suite('PromptBuilder', () => {
     assert.ok(prompt.includes('expert UI developer'));
     assert.ok(prompt.includes('HTML5 with inline CSS'));
     assert.ok(prompt.includes('Make it beautiful'));
+    assert.ok(prompt.includes('Do not use React, TSX, JSX'));
     assert.ok(prompt.includes('=== Output Format: HTML ==='));
   });
 
@@ -42,9 +43,25 @@ suite('PromptBuilder', () => {
   test('build prompt with multiple formats', () => {
     const scssPrompt = builder.build({ outputFormat: 'scss' });
     assert.ok(scssPrompt.includes('SCSS stylesheet'));
+    assert.ok(scssPrompt.includes('Forbidden: HTML markup'));
 
     const kotlinPrompt = builder.build({ outputFormat: 'kotlin' });
     assert.ok(kotlinPrompt.includes('Jetpack Compose UI code'));
+    assert.ok(kotlinPrompt.includes('Do not emit HTML, TSX, JSX, React, XML, or SwiftUI.'));
+  });
+
+  test('places user instruction after MCP context and repeats final format rule', () => {
+    const prompt = builder.build({
+      outputFormat: 'html',
+      userPrompt: 'Use a newspaper-like serif headline',
+      mcpData: { frame: 'hero' },
+    });
+
+    assert.ok(
+      prompt.indexOf('=== Figma Design Data (MCP) ===') <
+        prompt.indexOf('=== User Instruction ==='),
+    );
+    assert.ok(prompt.includes('Return only HTML code.'));
   });
 
   test('estimate tokens', () => {
