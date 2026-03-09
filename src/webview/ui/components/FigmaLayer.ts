@@ -8,6 +8,7 @@ export class FigmaLayer {
   private connectionMode: ConnectionMode =
     document.body?.dataset.mcpMode === 'remote' ? 'remote' : 'local';
   private readonly locale: UiLocale = getDocumentLocale();
+  private readonly stateKey = 'figmaMcpData';
 
   render(): string {
     return `
@@ -48,6 +49,7 @@ export class FigmaLayer {
   </div>
   <div class="btn-row">
     <button class="primary" id="btn-fetch"><i class="codicon codicon-cloud-download"></i>${this.msg('figma.fetchData')}</button>
+    <button class="secondary" id="btn-clear-data"><i class="codicon codicon-trash"></i>${this.msg('figma.clear')}</button>
     <button class="primary" id="btn-screenshot"><i class="codicon codicon-device-camera"></i>${this.msg('figma.screenshot')}</button>
   </div>
   <div class="notice hidden" id="figma-data-notice"></div>
@@ -57,8 +59,14 @@ export class FigmaLayer {
 
   mount() {
     const dataInput = document.getElementById('mcp-data') as HTMLTextAreaElement | null;
+    if (dataInput) {
+      dataInput.value = this.getSavedMcpData();
+    }
 
-    dataInput?.addEventListener('input', () => this.updateActionState());
+    dataInput?.addEventListener('input', () => {
+      this.persistMcpData(dataInput.value);
+      this.updateActionState();
+    });
 
     document.getElementById('btn-fetch')?.addEventListener('click', () => {
       const mcpData = dataInput?.value.trim() ?? '';
@@ -68,6 +76,16 @@ export class FigmaLayer {
       }
       this.setDataNotice('info', this.msg('figma.info.loadingData'));
       vscode.postMessage({ command: 'figma.fetchData', mcpData });
+    });
+
+    document.getElementById('btn-clear-data')?.addEventListener('click', () => {
+      if (dataInput) {
+        dataInput.value = '';
+      }
+      this.persistMcpData('');
+      this.clearDataNotice();
+      this.updateActionState();
+      vscode.postMessage({ command: 'figma.clearData' });
     });
 
     document.getElementById('btn-connect')?.addEventListener('click', () => {
@@ -192,9 +210,11 @@ export class FigmaLayer {
     const hasData = !!dataInput?.value.trim();
 
     const fetchBtn = document.getElementById('btn-fetch') as HTMLButtonElement | null;
+    const clearBtn = document.getElementById('btn-clear-data') as HTMLButtonElement | null;
     const screenshotBtn = document.getElementById('btn-screenshot') as HTMLButtonElement | null;
 
     if (fetchBtn) fetchBtn.disabled = !hasData;
+    if (clearBtn) clearBtn.disabled = !hasData;
     if (fetchBtn) {
       fetchBtn.title = hasData ? '' : this.msg('figma.title.fetchDisabled');
     }
@@ -297,6 +317,16 @@ export class FigmaLayer {
 
   private msg(key: string, params?: Record<string, string | number>) {
     return t(this.locale, key, params);
+  }
+
+  private getSavedMcpData(): string {
+    const state = (vscode.getState() as Record<string, unknown> | null) ?? {};
+    return typeof state[this.stateKey] === 'string' ? (state[this.stateKey] as string) : '';
+  }
+
+  private persistMcpData(value: string) {
+    const state = (vscode.getState() as Record<string, unknown> | null) ?? {};
+    vscode.setState({ ...state, [this.stateKey]: value });
   }
 
   private createCodicon(iconName: string): HTMLElement {

@@ -80,11 +80,11 @@ suite('PromptCommandHandler', () => {
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
 
     await handler.generate({
-      outputFormat: 'kotlin',
+      outputFormat: 'tailwind',
       userPrompt: 'Use a two-column card layout with bold section titles.',
     });
 
-    assert.strictEqual(capturedPayload.outputFormat, 'kotlin');
+    assert.strictEqual(capturedPayload.outputFormat, 'tailwind');
     assert.strictEqual(
       capturedPayload.userPrompt,
       'Use a two-column card layout with bold section titles.',
@@ -323,18 +323,18 @@ suite('PromptCommandHandler', () => {
     assert.ok(editorIntegration.openInEditor.calledWith('const x = 1;', 'typescript'));
   });
 
-  test('generate opens kotlin result in kotlin editor mode', async () => {
+  test('generate opens tailwind result in html editor mode', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
       generateCode: async function* () {
-        yield '@Composable fun Demo() {}';
+        yield '<div class="px-4">Demo</div>';
       },
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
 
-    await handler.generate({ outputFormat: 'kotlin' });
+    await handler.generate({ outputFormat: 'tailwind' });
 
-    assert.ok(editorIntegration.openInEditor.calledWith('@Composable fun Demo() {}', 'kotlin'));
+    assert.ok(editorIntegration.openInEditor.calledWith('<div class="px-4">Demo</div>', 'html'));
   });
 
   test('generate logs partial editor open when stream breaks after output', async () => {

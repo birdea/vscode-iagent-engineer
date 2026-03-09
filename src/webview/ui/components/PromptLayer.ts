@@ -6,6 +6,7 @@ import { DEBOUNCE_MS } from '../../../constants';
 export class PromptLayer {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isGenerating = false;
+  private previewReady = false;
   private requestId: string | null = null;
   private lastCode = '';
   private lastFormat: OutputFormat | undefined;
@@ -43,7 +44,6 @@ export class PromptLayer {
         <option value="vue">Vue 3 (SFC)</option>
         <option value="scss">SCSS</option>
         <option value="tailwind">Tailwind CSS</option>
-        <option value="kotlin">Kotlin (Compose)</option>
       </select>
     </div>
   </details>
@@ -51,10 +51,14 @@ export class PromptLayer {
     <span class="token-estimate" id="token-estimate">0.0KB / ~0 tok</span>
     <progress class="progress-track" id="prompt-progress" max="100" value="0" aria-label="${this.msg('prompt.progress.aria')}"></progress>
   </div>
-  <div class="btn-row">
-    <button class="primary" id="btn-generate"><i class="codicon codicon-play"></i>${this.msg('prompt.generate')}</button>
-    <button class="secondary" id="btn-preview-open-panel" disabled><i class="codicon codicon-go-to-file"></i>${this.msg('prompt.preview.openPanel')}</button>
-    <button class="secondary hidden" id="btn-cancel-generate"><i class="codicon codicon-debug-stop"></i>${this.msg('prompt.cancel')}</button>
+  <div class="btn-row row-space-between">
+    <div class="row">
+      <button class="primary" id="btn-generate"><i class="codicon codicon-play"></i>${this.msg('prompt.generate')}</button>
+      <button class="secondary hidden" id="btn-cancel-generate"><i class="codicon codicon-debug-stop"></i>${this.msg('prompt.cancel')}</button>
+    </div>
+    <div class="row">
+      <button class="secondary button-pseudo-disabled" id="btn-preview-open-panel" aria-disabled="true"><i class="codicon codicon-go-to-file"></i>${this.msg('prompt.preview.openPanel')}</button>
+    </div>
   </div>
   <div class="notice hidden" id="prompt-notice"></div>
   <details class="minimal-options stack-gap-sm" id="prompt-log-panel" open>
@@ -119,6 +123,7 @@ export class PromptLayer {
     this.clearLog();
     this.lastCode = '';
     this.lastFormat = payload.outputFormat;
+    this.previewReady = false;
     this.requestId = payload.requestId ?? null;
     this.setNotice('info', this.msg('prompt.notice.starting'));
     this.setGeneratingState(true);
@@ -129,6 +134,11 @@ export class PromptLayer {
   }
 
   onOpenPreviewPanelRequested() {
+    if (this.isGenerating) {
+      this.setNotice('info', this.msg('prompt.preview.generating'));
+      return;
+    }
+
     const code = this.lastCode.trim() ? this.lastCode : '';
     if (!code) {
       this.setNotice('warn', this.msg('prompt.preview.empty'));
@@ -207,8 +217,10 @@ export class PromptLayer {
     this.lastFormat = format;
     if (complete) {
       this.onGenerating(100);
+      this.previewReady = true;
     } else {
       this.setProgressState(progress ?? 0, this.msg('prompt.status.incomplete'));
+      this.previewReady = false;
     }
     this.setGeneratingState(false);
     this.updatePreviewButtonState();
@@ -222,6 +234,7 @@ export class PromptLayer {
   onError(message: string, code?: 'cancelled' | 'failed') {
     this.setGeneratingState(false);
     this.onGenerating(0);
+    this.previewReady = false;
     this.updatePreviewButtonState();
     this.setNotice(code === 'cancelled' ? 'warn' : 'error', message);
   }
@@ -282,12 +295,13 @@ export class PromptLayer {
     const previewPanelBtn = document.getElementById(
       'btn-preview-open-panel',
     ) as HTMLButtonElement | null;
-    const disabled = !this.lastCode.trim() && !this.isGenerating;
     if (!previewPanelBtn) {
       return;
     }
 
-    previewPanelBtn.disabled = disabled;
+    const enabled = !this.isGenerating && this.previewReady && !!this.lastCode.trim();
+    previewPanelBtn.classList.toggle('button-pseudo-disabled', !enabled);
+    previewPanelBtn.setAttribute('aria-disabled', String(!enabled));
   }
 
   private setNotice(level: 'info' | 'success' | 'warn' | 'error', message: string) {

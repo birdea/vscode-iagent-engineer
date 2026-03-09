@@ -88,13 +88,11 @@ export class EditorIntegration {
         ? 'json'
         : language === 'typescriptreact'
           ? 'tsx'
-          : language === 'html'
-            ? 'html'
-            : language === 'scss'
+        : language === 'html'
+          ? 'html'
+          : language === 'scss'
               ? 'scss'
-              : language === 'kotlin'
-                ? 'kt'
-                : 'txt';
+              : 'txt';
 
     return `generated-${Date.now()}.${extension}`;
   }

@@ -182,6 +182,7 @@ export class FigmaCommandHandler {
 
   async fetchData(input: string) {
     const parsed = parseMcpData(input);
+    this.stateManager.setLastMcpInput(input);
     this.stateManager.setLastMcpData(parsed.raw);
 
     if (this.activeMode === 'remote') {
@@ -259,6 +260,11 @@ export class FigmaCommandHandler {
         message: t(this.locale, 'host.figma.screenshotFailed'),
       });
     }
+  }
+
+  clearData() {
+    this.stateManager.clearLastMcpInput();
+    this.stateManager.clearLastMcpData();
   }
 
   private async fetchRemoteData(

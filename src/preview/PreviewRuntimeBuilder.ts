@@ -1,4 +1,6 @@
 import * as esbuild from 'esbuild';
+import * as fs from 'fs';
+import * as path from 'path';
 import { OutputFormat } from '../types';
 import { buildPreviewDocument } from './PreviewRenderer';
 
@@ -7,32 +9,71 @@ export interface PreviewPanelContent {
   html: string;
 }
 
+type PreviewIssueLevel = 'info' | 'warn' | 'error';
+
+interface PreviewIssue {
+  level: PreviewIssueLevel;
+  label: string;
+  detail: string;
+}
+
 export async function buildPreviewPanelContent(
   code: string,
   cspSource: string,
   preferredFormat?: OutputFormat,
 ): Promise<PreviewPanelContent> {
   const tailwindEnabled = shouldEnableTailwindPreview(code, preferredFormat);
-  const tailwindWarning = tailwindEnabled
-    ? ['Tailwind Play CDN is enabled for this preview. It requires network access in the webview.']
+  const tailwindIssues = tailwindEnabled
+    ? [
+        createIssue(
+          'info',
+          'Tailwind Runtime',
+          'Tailwind Play CDN is enabled for this preview. It requires network access in the webview.',
+        ),
+      ]
     : [];
+  const runtimeSupport = analyzeRuntimeSupport(code);
 
   if (shouldUseRuntimePreview(code, preferredFormat)) {
+    if (!runtimeSupport.supported) {
+      const preview = buildPreviewDocument(code, preferredFormat);
+      const issues = [
+        createIssue('warn', 'Fallback Reason', runtimeSupport.reason),
+        ...tailwindIssues,
+        ...toIssues(preview.warnings, 'warn', 'Static Preview Note'),
+      ];
+      return {
+        title: preview.title,
+        html: buildStaticPanelHtml(
+          preview.title,
+          'Runtime preview is unavailable for this file, so a static fallback is shown.',
+          issues,
+          preview.html,
+          cspSource,
+          tailwindEnabled,
+        ),
+      };
+    }
+
     try {
-      return await buildRuntimePreviewContent(code, cspSource, tailwindEnabled, tailwindWarning);
+      return await buildRuntimePreviewContent(code, cspSource, tailwindEnabled, tailwindIssues);
     } catch (error) {
       const preview = buildPreviewDocument(code, preferredFormat);
-      preview.warnings = [
-        `Runtime preview failed and fell back to static rendering: ${toMessage(error)}`,
-        ...tailwindWarning,
-        ...preview.warnings,
+      const issues = [
+        createIssue(
+          'error',
+          'Runtime Build Error',
+          `Runtime preview failed and fell back to static rendering: ${toMessage(error)}`,
+        ),
+        ...tailwindIssues,
+        ...toIssues(preview.warnings, 'warn', 'Static Preview Note'),
       ];
       return {
         title: preview.title,
         html: buildStaticPanelHtml(
           preview.title,
           preview.description,
-          preview.warnings,
+          issues,
           preview.html,
           cspSource,
           tailwindEnabled,
@@ -42,18 +83,24 @@ export async function buildPreviewPanelContent(
   }
 
   const preview = buildPreviewDocument(code, preferredFormat);
-  preview.warnings = [...tailwindWarning, ...preview.warnings];
+  const issues = [...tailwindIssues, ...toIssues(preview.warnings, 'warn', 'Static Preview Note')];
   return {
     title: preview.title,
     html: buildStaticPanelHtml(
       preview.title,
       preview.description,
-      preview.warnings,
+      issues,
       preview.html,
       cspSource,
       tailwindEnabled,
     ),
   };
+}
+
+interface RuntimeSupportResult {
+  supported: boolean;
+  reason: string;
+  unsupportedImports: string[];
 }
 
 function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): boolean {
@@ -64,11 +111,41 @@ function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): 
   return /from\s+['"]react['"]/.test(code) || /className\s*=/.test(code);
 }
 
+function analyzeRuntimeSupport(code: string): RuntimeSupportResult {
+  const imports = [...code.matchAll(/import\s+(?:[\s\S]+?\s+from\s+)?['"]([^'"]+)['"]/g)].map(
+    (match) => match[1],
+  );
+  const unsupportedImports = imports.filter(
+    (specifier) =>
+      !specifier.startsWith('./') &&
+      !specifier.startsWith('../') &&
+      !specifier.startsWith('@/') &&
+      specifier !== 'react' &&
+      specifier !== 'react-dom' &&
+      specifier !== 'react-dom/client' &&
+      specifier !== 'react/jsx-runtime',
+  );
+
+  if (!unsupportedImports.length) {
+    return {
+      supported: true,
+      reason: '',
+      unsupportedImports: [],
+    };
+  }
+
+  return {
+    supported: false,
+    reason: `Runtime preview currently supports React with local relative imports only. Unsupported imports: ${unsupportedImports.join(', ')}`,
+    unsupportedImports,
+  };
+}
+
 async function buildRuntimePreviewContent(
   code: string,
   cspSource: string,
   tailwindEnabled: boolean,
-  tailwindWarning: string[],
+  tailwindIssues: PreviewIssue[],
 ): Promise<PreviewPanelContent> {
   const bundle = await buildReactPreviewBundle(code);
   return {
@@ -77,8 +154,12 @@ async function buildRuntimePreviewContent(
       'React / TSX Preview',
       'Rendered with a lightweight React runtime preview.',
       [
-        'Single-file React output is executed directly inside the preview panel.',
-        ...tailwindWarning,
+        createIssue(
+          'info',
+          'Runtime Status',
+          'Single-file React output is executed directly inside the preview panel.',
+        ),
+        ...tailwindIssues,
       ],
       bundle,
       cspSource,
@@ -88,6 +169,7 @@ async function buildRuntimePreviewContent(
 }
 
 async function buildReactPreviewBundle(code: string): Promise<string> {
+  const resolver = createPreviewResolver(process.cwd());
   const buildResult = await esbuild.build({
     bundle: true,
     write: false,
@@ -104,10 +186,41 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
             namespace: 'preview',
           }));
 
+          build.onResolve({ filter: /^\.{1,2}\// }, (args) => {
+            const resolved = resolver.resolveImport(args.path, args.resolveDir);
+            if (!resolved) {
+              return {
+                errors: [{ text: `Could not resolve relative import: ${args.path}` }],
+              };
+            }
+            return { path: resolved.path, namespace: resolved.namespace };
+          });
+
+          build.onResolve({ filter: /^@\// }, (args) => {
+            const resolved = resolver.resolveAliasImport(args.path);
+            if (!resolved) {
+              return {
+                errors: [{ text: `Could not resolve alias import: ${args.path}` }],
+              };
+            }
+            return { path: resolved.path, namespace: resolved.namespace };
+          });
+
           build.onLoad({ filter: /^virtual:preview-app$/, namespace: 'preview' }, () => ({
             contents: code,
             loader: 'tsx',
             resolveDir: process.cwd(),
+          }));
+
+          build.onLoad({ filter: /\.(tsx|ts|jsx|js|json)$/, namespace: 'file' }, (args) => ({
+            contents: fs.readFileSync(args.path, 'utf8'),
+            loader: toEsbuildLoader(args.path),
+            resolveDir: path.dirname(args.path),
+          }));
+
+          build.onLoad({ filter: /\.(css|scss|sass|less)$/, namespace: 'style-stub' }, () => ({
+            contents: 'export default {};',
+            loader: 'js',
           }));
         },
       },
@@ -123,7 +236,7 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
 
         function showError(message) {
           if (errorElement) {
-            errorElement.textContent = message;
+            errorElement.innerHTML = '<strong>Runtime preview failed.</strong><br />' + message;
             errorElement.style.display = 'block';
           }
         }
@@ -169,12 +282,11 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
 function buildRuntimePanelHtml(
   title: string,
   description: string,
-  warnings: string[],
+  issues: PreviewIssue[],
   bundle: string,
   cspSource: string,
   tailwindEnabled: boolean,
 ): string {
-  const warningItems = warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
   const tailwindScript = tailwindEnabled
     ? '<script src="https://cdn.tailwindcss.com"></script>'
     : '';
@@ -209,11 +321,36 @@ function buildRuntimePanelHtml(
       font-size: 12px;
       color: var(--vscode-descriptionForeground);
     }
-    .meta ul {
-      margin: 8px 0 0;
-      padding-left: 18px;
+    .issues {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .issue {
+      border-radius: 8px;
+      padding: 8px 10px;
       font-size: 11px;
-      color: var(--vscode-descriptionForeground);
+      border: 1px solid transparent;
+    }
+    .issue strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+    .issue.info {
+      background: rgba(90, 140, 255, 0.12);
+      border-color: rgba(90, 140, 255, 0.28);
+      color: var(--vscode-foreground);
+    }
+    .issue.warn {
+      background: rgba(255, 187, 0, 0.12);
+      border-color: rgba(255, 187, 0, 0.28);
+      color: var(--vscode-foreground);
+    }
+    .issue.error {
+      background: rgba(255, 99, 71, 0.12);
+      border-color: rgba(255, 99, 71, 0.28);
+      color: var(--vscode-foreground);
     }
     #runtime-error {
       display: none;
@@ -237,7 +374,7 @@ function buildRuntimePanelHtml(
   <div class="meta">
     <h1>${escapeHtml(title)}</h1>
     <p>${escapeHtml(description)}</p>
-    <ul>${warningItems}</ul>
+    ${renderIssues(issues)}
   </div>
   <div id="runtime-error"></div>
   <div id="root"></div>
@@ -249,13 +386,11 @@ function buildRuntimePanelHtml(
 function buildStaticPanelHtml(
   title: string,
   description: string,
-  warnings: string[],
+  issues: PreviewIssue[],
   previewHtml: string,
   cspSource: string,
   tailwindEnabled: boolean,
 ): string {
-  const warningItems = warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
-  const warningBlock = warningItems ? `<ul class="warnings">${warningItems}</ul>` : '';
   const preparedPreviewHtml = prepareStaticPreviewHtml(previewHtml, tailwindEnabled);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -294,11 +429,36 @@ function buildStaticPanelHtml(
       font-size: 12px;
       color: var(--vscode-descriptionForeground);
     }
-    .warnings {
-      margin: 8px 0 0;
-      padding-left: 18px;
+    .issues {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .issue {
+      border-radius: 8px;
+      padding: 8px 10px;
       font-size: 11px;
-      color: var(--vscode-descriptionForeground);
+      border: 1px solid transparent;
+    }
+    .issue strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+    .issue.info {
+      background: rgba(90, 140, 255, 0.12);
+      border-color: rgba(90, 140, 255, 0.28);
+      color: var(--vscode-foreground);
+    }
+    .issue.warn {
+      background: rgba(255, 187, 0, 0.12);
+      border-color: rgba(255, 187, 0, 0.28);
+      color: var(--vscode-foreground);
+    }
+    .issue.error {
+      background: rgba(255, 99, 71, 0.12);
+      border-color: rgba(255, 99, 71, 0.28);
+      color: var(--vscode-foreground);
     }
     iframe {
       width: 100%;
@@ -316,7 +476,7 @@ function buildStaticPanelHtml(
     <div class="meta">
       <h1>${escapeHtml(title)}</h1>
       <p>${escapeHtml(description)}</p>
-      ${warningBlock}
+      ${renderIssues(issues)}
     </div>
     <iframe sandbox="allow-same-origin allow-scripts" srcdoc="${escapeAttribute(preparedPreviewHtml)}"></iframe>
   </div>
@@ -358,6 +518,118 @@ function shouldEnableTailwindPreview(code: string, preferredFormat?: OutputForma
     /\bclassName=\{[`'"][\s\S]*?(bg-|text-|flex|grid|px-|py-|mx-|my-|rounded-)/.test(code) ||
     /\bline-clamp-\d+\b/.test(code)
   );
+}
+
+function createIssue(level: PreviewIssueLevel, label: string, detail: string): PreviewIssue {
+  return { level, label, detail };
+}
+
+function toIssues(
+  messages: string[],
+  level: PreviewIssueLevel,
+  defaultLabel: string,
+): PreviewIssue[] {
+  return messages.map((message, index) => createIssue(level, `${defaultLabel} ${index + 1}`, message));
+}
+
+function renderIssues(issues: PreviewIssue[]): string {
+  if (!issues.length) {
+    return '';
+  }
+
+  const content = issues
+    .map(
+      (issue) =>
+        `<div class="issue ${issue.level}"><strong>${escapeHtml(issue.label)}</strong><span>${escapeHtml(issue.detail)}</span></div>`,
+    )
+    .join('');
+  return `<div class="issues">${content}</div>`;
+}
+
+type PreviewResolvedModule = {
+  path: string;
+  namespace: 'file' | 'style-stub';
+};
+
+function createPreviewResolver(workspaceRoot: string) {
+  const tsconfig = readTsConfig(workspaceRoot);
+  const baseUrl = tsconfig?.compilerOptions?.baseUrl
+    ? path.resolve(workspaceRoot, tsconfig.compilerOptions.baseUrl)
+    : workspaceRoot;
+
+  return {
+    resolveImport(specifier: string, resolveDir: string): PreviewResolvedModule | null {
+      return resolveFile(path.resolve(resolveDir, specifier));
+    },
+    resolveAliasImport(specifier: string): PreviewResolvedModule | null {
+      const relative = specifier.slice(2);
+      const candidates = [path.resolve(baseUrl, relative), path.resolve(workspaceRoot, 'src', relative)];
+      for (const candidate of candidates) {
+        const resolved = resolveFile(candidate);
+        if (resolved) {
+          return resolved;
+        }
+      }
+      return null;
+    },
+  };
+}
+
+function readTsConfig(workspaceRoot: string): { compilerOptions?: { baseUrl?: string } } | null {
+  const tsconfigPath = path.join(workspaceRoot, 'tsconfig.json');
+  if (!fs.existsSync(tsconfigPath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function resolveFile(basePath: string): PreviewResolvedModule | null {
+  const direct = tryResolvePath(basePath);
+  if (direct) {
+    return direct;
+  }
+
+  const extensions = ['.tsx', '.ts', '.jsx', '.js', '.json', '.css', '.scss', '.sass', '.less'];
+  for (const extension of extensions) {
+    const candidate = tryResolvePath(`${basePath}${extension}`);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  for (const filename of ['index.tsx', 'index.ts', 'index.jsx', 'index.js', 'index.json']) {
+    const candidate = tryResolvePath(path.join(basePath, filename));
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function tryResolvePath(candidate: string): PreviewResolvedModule | null {
+  if (!fs.existsSync(candidate) || fs.statSync(candidate).isDirectory()) {
+    return null;
+  }
+
+  if (/\.(css|scss|sass|less)$/.test(candidate)) {
+    return { path: candidate, namespace: 'style-stub' };
+  }
+
+  return { path: candidate, namespace: 'file' };
+}
+
+function toEsbuildLoader(filePath: string): esbuild.Loader {
+  if (filePath.endsWith('.tsx')) return 'tsx';
+  if (filePath.endsWith('.ts')) return 'ts';
+  if (filePath.endsWith('.jsx')) return 'jsx';
+  if (filePath.endsWith('.json')) return 'json';
+  return 'js';
 }
 
 function toMessage(error: unknown): string {

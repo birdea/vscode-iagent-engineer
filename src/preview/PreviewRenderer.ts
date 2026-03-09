@@ -5,7 +5,6 @@ export type DetectedPreviewFormat =
   | 'react'
   | 'vue'
   | 'scss'
-  | 'kotlin'
   | 'unknown';
 
 export interface PreviewDocument {
@@ -90,18 +89,6 @@ export function buildPreviewDocument(code: string, preferredFormat?: OutputForma
           source,
         ),
       };
-    case 'kotlin':
-      return {
-        detectedFormat,
-        renderable: false,
-        title: 'Compose Preview Unavailable',
-        description: 'Jetpack Compose output cannot be rendered inside a VS Code webview.',
-        warnings: [],
-        html: buildUnsupportedHtml(
-          'Kotlin Compose preview requires an Android or Compose runtime outside this extension.',
-          source,
-        ),
-      };
     default:
       return {
         detectedFormat,
@@ -110,7 +97,7 @@ export function buildPreviewDocument(code: string, preferredFormat?: OutputForma
         description: 'The generated output format could not be identified confidently.',
         warnings: [],
         html: buildUnsupportedHtml(
-          'The output could not be classified as HTML, React, Vue, SCSS, or Kotlin Compose.',
+          'The output could not be classified as HTML, React, Vue, or SCSS.',
           source,
         ),
       };
@@ -218,10 +205,6 @@ function detectPreviewFormat(code: string, preferredFormat?: OutputFormat): Dete
     return 'react';
   }
 
-  if (/@Composable/.test(trimmed) || /Modifier\./.test(trimmed)) {
-    return 'kotlin';
-  }
-
   if (looksLikeScss(trimmed)) {
     return 'scss';
   }
@@ -236,7 +219,6 @@ function detectPreviewFormat(code: string, preferredFormat?: OutputFormat): Dete
   if (preferredFormat === 'vue') return 'vue';
   if (preferredFormat === 'tsx') return 'react';
   if (preferredFormat === 'scss') return 'scss';
-  if (preferredFormat === 'kotlin') return 'kotlin';
   if (preferredFormat === 'html' || preferredFormat === 'tailwind') return 'html';
 
   return 'unknown';

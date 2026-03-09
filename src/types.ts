@@ -1,7 +1,7 @@
 // Agent types
 export type AgentType = 'gemini' | 'claude';
 export type ConnectionMode = 'local' | 'remote';
-export type OutputFormat = 'html' | 'tsx' | 'vue' | 'scss' | 'tailwind' | 'kotlin';
+export type OutputFormat = 'html' | 'tsx' | 'vue' | 'scss' | 'tailwind';
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
 export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'system';
 
@@ -73,6 +73,7 @@ export type WebviewToHostMessage =
   | { command: 'figma.openSettings'; mode?: ConnectionMode }
   | { command: 'figma.openDesktopApp' }
   | { command: 'figma.fetchData'; mcpData: string }
+  | { command: 'figma.clearData' }
   | { command: 'figma.screenshot'; mcpData: string }
   | { command: 'agent.getState' }
   | { command: 'agent.getApiKeyHelp'; agent: AgentType }

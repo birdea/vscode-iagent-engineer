@@ -77,7 +77,6 @@ suite('EditorIntegration', () => {
 
     await integration.openInEditor('html', 'html');
     await integration.openInEditor('scss', 'scss');
-    await integration.openInEditor('kotlin', 'kotlin');
     await integration.openInEditor('tsx', 'typescriptreact');
 
     const openedUris = vscode.workspace.openTextDocument
@@ -85,7 +84,6 @@ suite('EditorIntegration', () => {
       .map((call: sinon.SinonSpyCall) => call.args[0].toString());
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.html')));
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.scss')));
-    assert.ok(openedUris.some((uri: string) => uri.endsWith('.kt')));
     assert.ok(openedUris.some((uri: string) => uri.endsWith('.tsx')));
   });
 

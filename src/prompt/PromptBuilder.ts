@@ -8,8 +8,6 @@ const FORMAT_INSTRUCTIONS: Record<OutputFormat, string> = {
   scss: 'Generate SCSS stylesheet with BEM naming convention and CSS custom properties. Do not emit HTML, TSX, JSX, or JavaScript.',
   tailwind:
     'Generate HTML with Tailwind CSS utility classes. Use responsive design principles. Do not use React, TSX, JSX, Vue, or separate CSS files.',
-  kotlin:
-    'Generate Jetpack Compose UI code in Kotlin. Use composable functions, idiomatic Compose layout primitives, and avoid web-specific markup.',
 };
 
 const FORMAT_FORBIDDEN: Record<OutputFormat, string> = {
@@ -19,7 +17,6 @@ const FORMAT_FORBIDDEN: Record<OutputFormat, string> = {
   scss: 'Forbidden: HTML markup, TSX/JSX, JavaScript, markdown fences, explanations.',
   tailwind:
     'Forbidden: React/TSX unless explicitly requested via TSX format, separate CSS files, markdown fences, explanations.',
-  kotlin: 'Forbidden: HTML, TSX, JSX, React, XML layouts, SwiftUI, markdown fences, explanations.',
 };
 
 export class PromptBuilder {

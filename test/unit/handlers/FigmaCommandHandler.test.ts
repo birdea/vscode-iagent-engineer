@@ -230,6 +230,20 @@ suite('FigmaCommandHandler', () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.deepStrictEqual(stateManager.getLastMcpData(), { name: 'Frame' });
+    assert.strictEqual(
+      stateManager.getLastMcpInput(),
+      'https://figma.com/file/ABCDE/demo?node-id=1-2',
+    );
+  });
+
+  test('clearData resets saved figma input and data', () => {
+    stateManager.setLastMcpInput('abc');
+    stateManager.setLastMcpData({ foo: 'bar' });
+
+    handler.clearData();
+
+    assert.strictEqual(stateManager.getLastMcpInput(), '');
+    assert.strictEqual(stateManager.getLastMcpData(), null);
   });
 
   test('fetchData posts parse-only result when disconnected', async () => {

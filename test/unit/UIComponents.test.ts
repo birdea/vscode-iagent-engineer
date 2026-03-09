@@ -304,6 +304,17 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchData' }));
     });
 
+    test('clear button clears figma data and posts clear command', () => {
+      const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
+      mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
+      mcpInput.dispatchEvent(new (global as any).window.Event('input'));
+
+      document.getElementById('btn-clear-data')?.click();
+
+      assert.strictEqual(mcpInput.value, '');
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.clearData' }));
+    });
+
     test('updateActionState sets disconnected title when data present but not connected', () => {
       const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
       mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
@@ -437,11 +448,11 @@ suite('UI Components Consolidated', () => {
       const previewPanelButton = document.getElementById(
         'btn-preview-open-panel',
       ) as HTMLButtonElement;
-      assert.strictEqual(previewPanelButton.disabled, true);
+      assert.strictEqual(previewPanelButton.getAttribute('aria-disabled'), 'true');
 
       layer.onResult('<div>preview</div>', 'html');
 
-      assert.strictEqual(previewPanelButton.disabled, false);
+      assert.strictEqual(previewPanelButton.getAttribute('aria-disabled'), 'false');
     });
 
     test('open preview panel posts host command with latest code', () => {
@@ -455,6 +466,16 @@ suite('UI Components Consolidated', () => {
           format: 'html',
         }),
       );
+    });
+
+    test('open preview panel while generating shows progress notice', () => {
+      layer.onGenerateRequested();
+
+      document.getElementById('btn-preview-open-panel')?.click();
+
+      const notice = document.getElementById('prompt-notice');
+      assert.ok(notice?.textContent?.includes('진행 중'));
+      assert.ok(!postMessageStub.calledWithMatch({ command: 'preview.openPanel' }));
     });
 
     test('onGenerateRequested validation', () => {

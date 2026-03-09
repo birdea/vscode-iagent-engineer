@@ -259,6 +259,10 @@ button:disabled {
   cursor: default;
 }
 
+button.button-pseudo-disabled {
+  opacity: 0.45;
+}
+
 button.icon-btn {
   padding: 6px 8px;
 }

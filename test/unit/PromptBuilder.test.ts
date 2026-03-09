@@ -44,14 +44,6 @@ suite('PromptBuilder', () => {
     const scssPrompt = builder.build({ outputFormat: 'scss' });
     assert.ok(scssPrompt.includes('SCSS stylesheet'));
     assert.ok(scssPrompt.includes('Forbidden: HTML markup'));
-
-    const kotlinPrompt = builder.build({ outputFormat: 'kotlin' });
-    assert.ok(kotlinPrompt.includes('Jetpack Compose UI code'));
-    assert.ok(
-      kotlinPrompt.includes(
-        'Forbidden: HTML, TSX, JSX, React, XML layouts, SwiftUI, markdown fences, explanations.',
-      ),
-    );
   });
 
   test('places user instruction after MCP context and repeats final format rule', () => {
