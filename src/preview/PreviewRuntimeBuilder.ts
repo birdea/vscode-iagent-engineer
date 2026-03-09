@@ -103,6 +103,21 @@ interface RuntimeSupportResult {
   unsupportedImports: string[];
 }
 
+interface TsConfigData {
+  compilerOptions?: {
+    baseUrl?: string;
+    paths?: Record<string, string[]>;
+  };
+}
+
+interface PathAliasMapping {
+  key: string;
+  wildcard: boolean;
+  prefix: string;
+  suffix: string;
+  targets: string[];
+}
+
 function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): boolean {
   if (preferredFormat === 'tsx') {
     return true;
@@ -112,6 +127,7 @@ function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): 
 }
 
 function analyzeRuntimeSupport(code: string): RuntimeSupportResult {
+  const resolver = createPreviewResolver(process.cwd());
   const imports = [...code.matchAll(/import\s+(?:[\s\S]+?\s+from\s+)?['"]([^'"]+)['"]/g)].map(
     (match) => match[1],
   );
@@ -119,7 +135,7 @@ function analyzeRuntimeSupport(code: string): RuntimeSupportResult {
     (specifier) =>
       !specifier.startsWith('./') &&
       !specifier.startsWith('../') &&
-      !specifier.startsWith('@/') &&
+      !resolver.supportsAliasImport(specifier) &&
       specifier !== 'react' &&
       specifier !== 'react-dom' &&
       specifier !== 'react-dom/client' &&
@@ -196,7 +212,11 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
             return { path: resolved.path, namespace: resolved.namespace };
           });
 
-          build.onResolve({ filter: /^@\// }, (args) => {
+          build.onResolve({ filter: /^[^./].*|^@\// }, (args) => {
+            if (!resolver.supportsAliasImport(args.path)) {
+              return null;
+            }
+
             const resolved = resolver.resolveAliasImport(args.path);
             if (!resolved) {
               return {
@@ -556,14 +576,30 @@ function createPreviewResolver(workspaceRoot: string) {
   const baseUrl = tsconfig?.compilerOptions?.baseUrl
     ? path.resolve(workspaceRoot, tsconfig.compilerOptions.baseUrl)
     : workspaceRoot;
+  const pathAliases = buildPathAliasMappings(tsconfig);
 
   return {
     resolveImport(specifier: string, resolveDir: string): PreviewResolvedModule | null {
       return resolveFile(path.resolve(resolveDir, specifier));
     },
+    supportsAliasImport(specifier: string): boolean {
+      if (specifier.startsWith('@/')) {
+        return true;
+      }
+      return matchPathAlias(specifier, pathAliases) !== null;
+    },
     resolveAliasImport(specifier: string): PreviewResolvedModule | null {
-      const relative = specifier.slice(2);
-      const candidates = [path.resolve(baseUrl, relative), path.resolve(workspaceRoot, 'src', relative)];
+      const candidates: string[] = [];
+      const aliasMatch = matchPathAlias(specifier, pathAliases);
+      if (aliasMatch) {
+        candidates.push(...aliasMatch.targets.map((target) => path.resolve(baseUrl, target)));
+      }
+
+      if (specifier.startsWith('@/')) {
+        const relative = specifier.slice(2);
+        candidates.push(path.resolve(baseUrl, relative), path.resolve(workspaceRoot, 'src', relative));
+      }
+
       for (const candidate of candidates) {
         const resolved = resolveFile(candidate);
         if (resolved) {
@@ -575,7 +611,52 @@ function createPreviewResolver(workspaceRoot: string) {
   };
 }
 
-function readTsConfig(workspaceRoot: string): { compilerOptions?: { baseUrl?: string } } | null {
+function buildPathAliasMappings(tsconfig: TsConfigData | null): PathAliasMapping[] {
+  const paths = tsconfig?.compilerOptions?.paths ?? {};
+  return Object.entries(paths)
+    .map(([key, targets]) => {
+      const wildcard = key.includes('*');
+      const [prefix, suffix = ''] = key.split('*');
+      return {
+        key,
+        wildcard,
+        prefix,
+        suffix,
+        targets,
+      };
+    })
+    .sort((left, right) => right.key.length - left.key.length);
+}
+
+function matchPathAlias(
+  specifier: string,
+  mappings: PathAliasMapping[],
+): { targets: string[] } | null {
+  for (const mapping of mappings) {
+    if (!mapping.wildcard) {
+      if (specifier !== mapping.key) {
+        continue;
+      }
+      return { targets: mapping.targets };
+    }
+
+    if (!specifier.startsWith(mapping.prefix) || !specifier.endsWith(mapping.suffix)) {
+      continue;
+    }
+
+    const wildcardValue = specifier.slice(
+      mapping.prefix.length,
+      specifier.length - mapping.suffix.length,
+    );
+    return {
+      targets: mapping.targets.map((target) => target.replace(/\*/g, wildcardValue)),
+    };
+  }
+
+  return null;
+}
+
+function readTsConfig(workspaceRoot: string): TsConfigData | null {
   const tsconfigPath = path.join(workspaceRoot, 'tsconfig.json');
   if (!fs.existsSync(tsconfigPath)) {
     return null;

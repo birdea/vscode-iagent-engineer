@@ -193,6 +193,10 @@ textarea:disabled {
   align-items: center;
 }
 
+.btn-row-space-between {
+  justify-content: space-between;
+}
+
 .row {
   display: flex;
   align-items: center;
