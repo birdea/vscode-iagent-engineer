@@ -568,7 +568,58 @@ ${sanitizedPreviewHtml}
 }
 
 function stripScriptTags(value: string): string {
-  return value.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+  const lowerValue = value.toLowerCase();
+  let cursor = 0;
+  let sanitized = '';
+
+  while (cursor < value.length) {
+    const scriptStart = findScriptTagStart(lowerValue, cursor, false);
+    if (scriptStart === -1) {
+      sanitized += value.slice(cursor);
+      break;
+    }
+
+    sanitized += value.slice(cursor, scriptStart);
+    const openingTagEnd = lowerValue.indexOf('>', scriptStart + '<script'.length);
+    if (openingTagEnd === -1) {
+      break;
+    }
+
+    const closingTagStart = findScriptTagStart(lowerValue, openingTagEnd + 1, true);
+    if (closingTagStart === -1) {
+      break;
+    }
+
+    const closingTagEnd = lowerValue.indexOf('>', closingTagStart + '</script'.length);
+    if (closingTagEnd === -1) {
+      break;
+    }
+
+    cursor = closingTagEnd + 1;
+  }
+
+  return sanitized;
+}
+
+function findScriptTagStart(value: string, fromIndex: number, closing: boolean): number {
+  const tagPrefix = closing ? '</script' : '<script';
+  let cursor = fromIndex;
+
+  while (cursor < value.length) {
+    const candidate = value.indexOf(tagPrefix, cursor);
+    if (candidate === -1) {
+      return -1;
+    }
+
+    const nextCharacter = value[candidate + tagPrefix.length] ?? '';
+    if (!nextCharacter || /[\s>/]/.test(nextCharacter)) {
+      return candidate;
+    }
+
+    cursor = candidate + tagPrefix.length;
+  }
+
+  return -1;
 }
 
 function shouldEnableTailwindPreview(code: string, preferredFormat?: OutputFormat): boolean {

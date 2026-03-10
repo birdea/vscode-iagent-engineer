@@ -43,6 +43,20 @@ suite('PreviewRuntimeBuilder', () => {
     assert.ok(!content.html.includes('window.__preview_ran'));
   });
 
+  test('static html preview strips script tags with spaced closing delimiters', async () => {
+    const content = await buildPreviewPanelContent(
+      `
+        <div>preview</div>
+        <script type="text/javascript">window.__preview_spaced = true;</script   >
+      `,
+      'csp',
+      'html',
+    );
+
+    assert.ok(!content.html.includes('window.__preview_spaced'));
+    assert.ok(!content.html.toLowerCase().includes('<script'));
+  });
+
   test('runtime preview renders structured status details', async () => {
     const content = await buildPreviewPanelContent(
       `
