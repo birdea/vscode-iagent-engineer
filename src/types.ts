@@ -5,6 +5,7 @@ export type OutputFormat = 'html' | 'tsx' | 'vue' | 'tailwind';
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
 export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'system';
 export type PreviewTarget = 'panel' | 'browser';
+export type FigmaDataResultKind = 'designContext' | 'parsedInput' | 'metadata' | 'variableDefs';
 
 // Log entry
 export interface LogEntry {
@@ -80,6 +81,8 @@ export type WebviewToHostMessage =
   | { command: 'figma.openSettings'; mode?: ConnectionMode }
   | { command: 'figma.openDesktopApp' }
   | { command: 'figma.fetchData'; mcpData: string }
+  | { command: 'figma.fetchMetadata'; mcpData: string }
+  | { command: 'figma.fetchVariableDefs'; mcpData: string }
   | { command: 'figma.clearData' }
   | { command: 'figma.screenshot'; mcpData: string }
   | { command: 'agent.getState' }
@@ -105,7 +108,7 @@ export type HostToWebviewMessage =
   | { event: 'figma.status'; connected: boolean; methods: string[]; error?: string }
   | { event: 'figma.authStarted'; mode: ConnectionMode; authUrl: string }
   | { event: 'figma.connectRequested' }
-  | { event: 'figma.dataResult'; data: unknown }
+  | { event: 'figma.dataResult'; data: unknown; kind: FigmaDataResultKind }
   | { event: 'figma.dataFetchError'; message: string; fallbackData: unknown }
   | { event: 'figma.screenshotResult'; base64: string }
   | { event: 'agent.state'; agent: AgentType; model: string; hasApiKey: boolean }

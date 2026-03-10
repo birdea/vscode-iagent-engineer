@@ -1,6 +1,6 @@
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, t, UiLocale } from '../../../i18n';
-import { ConnectionMode } from '../../../types';
+import { ConnectionMode, FigmaDataResultKind } from '../../../types';
 
 export class FigmaLayer {
   private connected = false;
@@ -54,6 +54,12 @@ export class FigmaLayer {
     </div>
     <button class="secondary" id="btn-clear-data"><i class="codicon codicon-trash"></i>${this.msg('figma.clear')}</button>
   </div>
+  <div class="btn-row">
+    <div class="row">
+      <button class="secondary" id="btn-fetch-metadata">${this.msg('figma.metadata')}</button>
+      <button class="secondary" id="btn-fetch-variable-defs">${this.msg('figma.variableDefs')}</button>
+    </div>
+  </div>
   <div class="notice hidden" id="figma-data-notice"></div>
 </section>
 `;
@@ -78,6 +84,34 @@ export class FigmaLayer {
       }
       this.setDataNotice('info', this.msg('figma.info.loadingData'));
       vscode.postMessage({ command: 'figma.fetchData', mcpData });
+    });
+
+    document.getElementById('btn-fetch-metadata')?.addEventListener('click', () => {
+      const mcpData = dataInput?.value.trim() ?? '';
+      if (!mcpData) {
+        this.setDataNotice('warn', this.msg('figma.warn.enterDataForMetadata'));
+        return;
+      }
+      if (!this.connected) {
+        this.setDataNotice('warn', this.msg('figma.warn.connectBeforeMetadata'));
+        return;
+      }
+      this.setDataNotice('info', this.msg('figma.info.loadingMetadata'));
+      vscode.postMessage({ command: 'figma.fetchMetadata', mcpData });
+    });
+
+    document.getElementById('btn-fetch-variable-defs')?.addEventListener('click', () => {
+      const mcpData = dataInput?.value.trim() ?? '';
+      if (!mcpData) {
+        this.setDataNotice('warn', this.msg('figma.warn.enterDataForVariableDefs'));
+        return;
+      }
+      if (!this.connected) {
+        this.setDataNotice('warn', this.msg('figma.warn.connectBeforeVariableDefs'));
+        return;
+      }
+      this.setDataNotice('info', this.msg('figma.info.loadingVariableDefs'));
+      vscode.postMessage({ command: 'figma.fetchVariableDefs', mcpData });
     });
 
     document.getElementById('btn-clear-data')?.addEventListener('click', () => {
@@ -175,8 +209,20 @@ export class FigmaLayer {
     this.syncConnectButton();
   }
 
-  onDataResult(data: unknown) {
+  onDataResult(data: unknown, kind: FigmaDataResultKind = 'designContext') {
     void data;
+    if (kind === 'metadata') {
+      this.setDataNotice('success', this.msg('figma.success.metadataLoaded'));
+      return;
+    }
+    if (kind === 'variableDefs') {
+      this.setDataNotice('success', this.msg('figma.success.variableDefsLoaded'));
+      return;
+    }
+    if (kind === 'parsedInput') {
+      this.setDataNotice('info', this.msg('figma.info.parsedInput'));
+      return;
+    }
     this.setDataNotice('success', this.msg('figma.success.dataLoaded'));
   }
 
@@ -214,12 +260,24 @@ export class FigmaLayer {
 
     const fetchBtn = document.getElementById('btn-fetch') as HTMLButtonElement | null;
     const clearBtn = document.getElementById('btn-clear-data') as HTMLButtonElement | null;
+    const metadataBtn = document.getElementById('btn-fetch-metadata') as HTMLButtonElement | null;
     const screenshotBtn = document.getElementById('btn-screenshot') as HTMLButtonElement | null;
+    const variableDefsBtn = document.getElementById(
+      'btn-fetch-variable-defs',
+    ) as HTMLButtonElement | null;
 
     if (fetchBtn) fetchBtn.disabled = !hasData;
     if (clearBtn) clearBtn.disabled = !hasData;
     if (fetchBtn) {
       fetchBtn.title = hasData ? '' : this.msg('figma.title.fetchDisabled');
+    }
+    if (metadataBtn) {
+      metadataBtn.disabled = !hasData || !this.connected;
+      metadataBtn.title = !hasData
+        ? this.msg('figma.title.metadataNeedsData')
+        : !this.connected
+          ? this.msg('figma.title.metadataNeedsConnection')
+          : '';
     }
     if (screenshotBtn) {
       screenshotBtn.disabled = !hasData || !this.connected;
@@ -227,6 +285,14 @@ export class FigmaLayer {
         ? this.msg('figma.title.screenshotNeedsData')
         : !this.connected
           ? this.msg('figma.title.screenshotNeedsConnection')
+          : '';
+    }
+    if (variableDefsBtn) {
+      variableDefsBtn.disabled = !hasData || !this.connected;
+      variableDefsBtn.title = !hasData
+        ? this.msg('figma.title.variableDefsNeedsData')
+        : !this.connected
+          ? this.msg('figma.title.variableDefsNeedsConnection')
           : '';
     }
   }

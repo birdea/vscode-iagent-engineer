@@ -141,6 +141,77 @@ suite('McpClient', () => {
     assert.strictEqual(img, 'imgdata');
   });
 
+  test('getMetadata prefers get_metadata with normalized nodeId', async () => {
+    nock('http://127.0.0.1:3845')
+      .post('/mcp')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: {} }, { 'mcp-session-id': 'session-1' });
+    await client.initialize();
+
+    nock('http://127.0.0.1:3845')
+      .matchHeader('mcp-session-id', 'session-1')
+      .post('/mcp', (body) => {
+        const payload = body as {
+          params?: { name?: string; arguments?: { fileKey?: string; nodeId?: string } };
+        };
+        return (
+          payload.params?.name === 'get_metadata' &&
+          payload.params?.arguments?.fileKey === 'FILE123' &&
+          payload.params?.arguments?.nodeId === '4-5'
+        );
+      })
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 2,
+        result: {
+          content: [{ type: 'text', text: '{"layers":[{"id":"1"}]}' }],
+        },
+      });
+
+    const result = await client.getMetadata('FILE123', '4:5');
+    assert.deepStrictEqual(result, { layers: [{ id: '1' }] });
+  });
+
+  test('getVariableDefs falls back from fileKey to fileId', async () => {
+    nock('http://127.0.0.1:3845')
+      .post('/mcp')
+      .reply(200, { jsonrpc: '2.0', id: 1, result: {} }, { 'mcp-session-id': 'session-1' });
+    await client.initialize();
+
+    nock('http://127.0.0.1:3845')
+      .post('/mcp')
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 2,
+        error: { code: -32601, message: 'Method not found' },
+      })
+      .post('/mcp')
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 3,
+        error: { code: -32601, message: 'Method not found' },
+      })
+      .post('/mcp', (body) => {
+        const payload = body as {
+          params?: { name?: string; arguments?: { fileId?: string; nodeId?: string } };
+        };
+        return (
+          payload.params?.name === 'get_variable_defs' &&
+          payload.params?.arguments?.fileId === 'FILE123' &&
+          payload.params?.arguments?.nodeId === '4-5'
+        );
+      })
+      .reply(200, {
+        jsonrpc: '2.0',
+        id: 4,
+        result: {
+          structuredContent: { variables: [{ name: 'color.primary' }] },
+        },
+      });
+
+    const result = await client.getVariableDefs('FILE123', '4:5');
+    assert.deepStrictEqual(result, { variables: [{ name: 'color.primary' }] });
+  });
+
   test('request error handling', async () => {
     nock('http://127.0.0.1:3845').post('/mcp').replyWithError('Network error');
 

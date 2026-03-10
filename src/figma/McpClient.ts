@@ -576,6 +576,84 @@ export class McpClient {
     return this.extractStructuredToolResult(result);
   }
 
+  async getMetadata(fileId: string, nodeId?: string): Promise<unknown> {
+    const modernNodeId = this.toLocalNodeId(nodeId, true);
+    const legacyNodeId = this.toLocalNodeId(nodeId, false);
+    const result = await this.callWithFallback(
+      this.uniqueAttempts([
+        {
+          name: 'get_metadata',
+          args: {
+            fileKey: fileId,
+            ...(modernNodeId ? { nodeId: modernNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_metadata',
+          args: {
+            fileKey: fileId,
+            ...(legacyNodeId ? { nodeId: legacyNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_metadata',
+          args: {
+            fileId,
+            ...(modernNodeId ? { nodeId: modernNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_metadata',
+          args: {
+            fileId,
+            ...(legacyNodeId ? { nodeId: legacyNodeId } : {}),
+          },
+        },
+      ]),
+    );
+
+    return this.extractStructuredToolResult(result);
+  }
+
+  async getVariableDefs(fileId: string, nodeId?: string): Promise<unknown> {
+    const modernNodeId = this.toLocalNodeId(nodeId, true);
+    const legacyNodeId = this.toLocalNodeId(nodeId, false);
+    const result = await this.callWithFallback(
+      this.uniqueAttempts([
+        {
+          name: 'get_variable_defs',
+          args: {
+            fileKey: fileId,
+            ...(modernNodeId ? { nodeId: modernNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_variable_defs',
+          args: {
+            fileKey: fileId,
+            ...(legacyNodeId ? { nodeId: legacyNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_variable_defs',
+          args: {
+            fileId,
+            ...(modernNodeId ? { nodeId: modernNodeId } : {}),
+          },
+        },
+        {
+          name: 'get_variable_defs',
+          args: {
+            fileId,
+            ...(legacyNodeId ? { nodeId: legacyNodeId } : {}),
+          },
+        },
+      ]),
+    );
+
+    return this.extractStructuredToolResult(result);
+  }
+
   async getImage(fileId: string, nodeId: string): Promise<string> {
     const modernNodeId = this.toLocalNodeId(nodeId, true);
     const legacyNodeId = this.toLocalNodeId(nodeId, false);

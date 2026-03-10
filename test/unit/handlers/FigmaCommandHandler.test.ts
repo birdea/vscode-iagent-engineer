@@ -36,6 +36,8 @@ suite('FigmaCommandHandler', () => {
       listTools: sandbox.stub().resolves(['get_file']),
       isConnected: sandbox.stub().returns(true),
       getDesignContext: sandbox.stub().resolves({ name: 'Frame' }),
+      getMetadata: sandbox.stub().resolves({ layers: [{ id: '1' }] }),
+      getVariableDefs: sandbox.stub().resolves({ variables: [{ name: 'color.primary' }] }),
       callTool: sandbox.stub().resolves({ name: 'Frame' }),
     };
     remoteApiClient = {
@@ -216,7 +218,11 @@ suite('FigmaCommandHandler', () => {
     assert.ok(mcpClient.getDesignContext.calledWith('ABCDE', '1:2'));
     assert.ok(editorIntegration.openInEditor.calledWith('{\n  "name": "Frame"\n}', 'json'));
     assert.ok(
-      webview.postMessage.calledWithMatch({ event: 'figma.dataResult', data: { name: 'Frame' } }),
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: { name: 'Frame' },
+        kind: 'designContext',
+      }),
     );
   });
 
@@ -256,6 +262,7 @@ suite('FigmaCommandHandler', () => {
       webview.postMessage.calledWithMatch({
         event: 'figma.dataResult',
         data: sinon.match({ fileId: 'ABCDE', nodeId: '1:2' }),
+        kind: 'parsedInput',
       }),
     );
   });
@@ -283,6 +290,48 @@ suite('FigmaCommandHandler', () => {
       webview.postMessage.calledWithMatch({
         event: 'figma.dataResult',
         data: sinon.match({ fileId: '' }),
+        kind: 'parsedInput',
+      }),
+    );
+  });
+
+  test('fetchMetadata calls MCP client and posts metadata result', async () => {
+    await handler.fetchMetadata('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(mcpClient.getMetadata.calledWith('ABCDE', '1:2'));
+    assert.ok(editorIntegration.openInEditor.calledWith('{\n  "layers": [\n    {\n      "id": "1"\n    }\n  ]\n}', 'json'));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: { layers: [{ id: '1' }] },
+        kind: 'metadata',
+      }),
+    );
+  });
+
+  test('fetchVariableDefs calls MCP client and posts variable defs result', async () => {
+    await handler.fetchVariableDefs('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(mcpClient.getVariableDefs.calledWith('ABCDE', '1:2'));
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: { variables: [{ name: 'color.primary' }] },
+        kind: 'variableDefs',
+      }),
+    );
+  });
+
+  test('fetchMetadata requires connection', async () => {
+    mcpClient.isConnected.returns(false);
+
+    await handler.fetchMetadata('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'error',
+        source: 'figma',
+        message: sinon.match(/먼저 MCP 서버에 연결/),
       }),
     );
   });

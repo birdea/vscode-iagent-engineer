@@ -261,6 +261,24 @@ suite('UI Components Consolidated', () => {
       assert.ok(notice?.textContent?.includes('연결'));
     });
 
+    test('metadata click when connected with data sends message', () => {
+      layer.onStatus(true, ['get_metadata']);
+      const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
+      mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
+      mcpInput.dispatchEvent(new (global as any).window.Event('input'));
+      document.getElementById('btn-fetch-metadata')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchMetadata' }));
+    });
+
+    test('variable defs click when connected with data sends message', () => {
+      layer.onStatus(true, ['get_variable_defs']);
+      const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
+      mcpInput.value = 'https://figma.com/file/ABC/test?node-id=1:2';
+      mcpInput.dispatchEvent(new (global as any).window.Event('input'));
+      document.getElementById('btn-fetch-variable-defs')?.click();
+      assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchVariableDefs' }));
+    });
+
     test('screenshot click when connected with data sends message', () => {
       layer.onStatus(true, ['get_image']); // set connected = true
       const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;
@@ -287,9 +305,18 @@ suite('UI Components Consolidated', () => {
     });
 
     test('onDataResult and onScreenshotResult', () => {
-      layer.onDataResult({ foo: 'bar' });
+      layer.onDataResult({ foo: 'bar' }, 'designContext');
       const dataNotice = document.getElementById('figma-data-notice');
       assert.strictEqual(dataNotice?.textContent, '데이터를 불러왔습니다.');
+
+      layer.onDataResult({ foo: 'bar' }, 'metadata');
+      assert.strictEqual(dataNotice?.textContent, '메타데이터를 불러왔습니다.');
+
+      layer.onDataResult({ foo: 'bar' }, 'variableDefs');
+      assert.strictEqual(dataNotice?.textContent, '변수 정의를 불러왔습니다.');
+
+      layer.onDataResult({ foo: 'bar' }, 'parsedInput');
+      assert.ok(dataNotice?.textContent?.includes('로컬에서 파싱'));
 
       layer.onScreenshotResult('base64');
       assert.strictEqual(dataNotice?.textContent, '스크린샷을 가져왔습니다.');
@@ -339,7 +366,13 @@ suite('UI Components Consolidated', () => {
       mcpInput.dispatchEvent(new (global as any).window.Event('input'));
       layer.onStatus(false, [], undefined); // connected=false, hasData=true triggers line 160
       const screenshotBtn = document.getElementById('btn-screenshot') as HTMLButtonElement;
+      const metadataBtn = document.getElementById('btn-fetch-metadata') as HTMLButtonElement;
+      const variableDefsBtn = document.getElementById(
+        'btn-fetch-variable-defs',
+      ) as HTMLButtonElement;
       assert.ok(screenshotBtn.title.length > 0);
+      assert.ok(metadataBtn.title.length > 0);
+      assert.ok(variableDefsBtn.title.length > 0);
     });
   });
 

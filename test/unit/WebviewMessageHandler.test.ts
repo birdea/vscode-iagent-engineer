@@ -510,6 +510,32 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(postMessageSpy.calledWithMatch({ event: 'figma.dataResult' }));
   });
 
+  test('handle figma.fetchMetadata', async () => {
+    const fetchMetadataStub = sandbox
+      .stub((handler as any).figmaHandler, 'fetchMetadata')
+      .resolves();
+
+    await handler.handle({
+      command: 'figma.fetchMetadata',
+      mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1',
+    });
+
+    assert.ok(fetchMetadataStub.calledWith('https://figma.com/file/ABCDE/test?node-id=1-1'));
+  });
+
+  test('handle figma.fetchVariableDefs', async () => {
+    const fetchVariableDefsStub = sandbox
+      .stub((handler as any).figmaHandler, 'fetchVariableDefs')
+      .resolves();
+
+    await handler.handle({
+      command: 'figma.fetchVariableDefs',
+      mcpData: 'https://figma.com/file/ABCDE/test?node-id=1-1',
+    });
+
+    assert.ok(fetchVariableDefsStub.calledWith('https://figma.com/file/ABCDE/test?node-id=1-1'));
+  });
+
   test('handle agent.getApiKeyHelp for gemini opens url', async () => {
     const vscode = require('vscode');
     await handler.handle({ command: 'agent.getApiKeyHelp', agent: 'gemini' });

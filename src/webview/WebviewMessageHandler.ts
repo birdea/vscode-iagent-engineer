@@ -79,6 +79,12 @@ export class WebviewMessageHandler {
         case 'figma.fetchData':
           await this.figmaHandler.fetchData(msg.mcpData);
           break;
+        case 'figma.fetchMetadata':
+          await this.figmaHandler.fetchMetadata(msg.mcpData);
+          break;
+        case 'figma.fetchVariableDefs':
+          await this.figmaHandler.fetchVariableDefs(msg.mcpData);
+          break;
         case 'figma.clearData':
           this.figmaHandler.clearData();
           break;

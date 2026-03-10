@@ -47,11 +47,11 @@ export function init() {
             figma.onAuthStarted();
             break;
           case 'figma.dataResult':
-            figma.onDataResult(msg.data);
+            figma.onDataResult(msg.data, msg.kind);
             break;
           case 'figma.dataFetchError':
             figma.onError(msg.message);
-            figma.onDataResult(msg.fallbackData);
+            figma.onDataResult(msg.fallbackData, 'parsedInput');
             break;
           case 'figma.screenshotResult':
             figma.onScreenshotResult(msg.base64);

@@ -7,7 +7,7 @@ import { parseMcpData } from '../../figma/McpParser';
 import { ScreenshotService } from '../../figma/ScreenshotService';
 import { EditorIntegration } from '../../editor/EditorIntegration';
 import { Logger } from '../../logger/Logger';
-import { ConnectionMode, HostToWebviewMessage } from '../../types';
+import { ConnectionMode, FigmaDataResultKind, HostToWebviewMessage } from '../../types';
 import { CONFIG_KEYS, DEFAULT_MCP_ENDPOINT } from '../../constants';
 import { StateManager } from '../../state/StateManager';
 import { UiLocale, t } from '../../i18n';
@@ -200,7 +200,7 @@ export class FigmaCommandHandler {
           'figma-design-data.json',
         );
 
-        this.post({ event: 'figma.dataResult', data });
+        this.post({ event: 'figma.dataResult', data, kind: 'designContext' });
       } catch (e) {
         const errMessage = toErrorMessage(e);
         Logger.error(
@@ -223,8 +223,24 @@ export class FigmaCommandHandler {
         'json',
         'figma-design-data.json',
       );
-      this.post({ event: 'figma.dataResult', data: parsed });
+      this.post({ event: 'figma.dataResult', data: parsed, kind: 'parsedInput' });
     }
+  }
+
+  async fetchMetadata(input: string) {
+    await this.fetchStructuredData(input, {
+      kind: 'metadata',
+      fileName: 'figma-metadata.json',
+      fetcher: (fileId, nodeId) => this.mcpClient.getMetadata(fileId, nodeId),
+    });
+  }
+
+  async fetchVariableDefs(input: string) {
+    await this.fetchStructuredData(input, {
+      kind: 'variableDefs',
+      fileName: 'figma-variable-definitions.json',
+      fetcher: (fileId, nodeId) => this.mcpClient.getVariableDefs(fileId, nodeId),
+    });
   }
 
   async fetchScreenshot(input: string) {
@@ -305,5 +321,63 @@ export class FigmaCommandHandler {
       return t(this.locale, 'host.figma.fetchTimeout');
     }
     return t(this.locale, 'host.figma.fetchGeneric');
+  }
+
+  private async fetchStructuredData(
+    input: string,
+    options: {
+      kind: Extract<FigmaDataResultKind, 'metadata' | 'variableDefs'>;
+      fileName: string;
+      fetcher: (fileId: string, nodeId?: string) => Promise<unknown>;
+    },
+  ): Promise<void> {
+    const parsed = parseMcpData(input);
+    this.stateManager.setLastMcpInput(input);
+    this.stateManager.setLastMcpData(parsed.raw);
+
+    if (this.activeMode === 'remote') {
+      this.post({
+        event: 'error',
+        source: 'figma',
+        message: t(this.locale, 'host.figma.remoteComingSoon'),
+      });
+      return;
+    }
+
+    if (!parsed.fileId) {
+      this.post({
+        event: 'error',
+        source: 'figma',
+        message: t(this.locale, 'host.figma.fileIdMissing'),
+      });
+      return;
+    }
+
+    if (!this.mcpClient.isConnected()) {
+      this.post({
+        event: 'error',
+        source: 'figma',
+        message: t(this.locale, 'host.figma.fetchRequiresConnection'),
+      });
+      return;
+    }
+
+    try {
+      const data = await options.fetcher(parsed.fileId, parsed.nodeId);
+      this.stateManager.setLastMcpData(data);
+      await this.editorIntegration.openInEditor(JSON.stringify(data, null, 2), 'json', options.fileName);
+      this.post({ event: 'figma.dataResult', data, kind: options.kind });
+    } catch (e) {
+      const errMessage = toErrorMessage(e);
+      Logger.error(
+        'figma',
+        `${options.kind} fetch failed for fileId=${parsed.fileId}, nodeId=${parsed.nodeId}: ${errMessage}`,
+      );
+      this.post({
+        event: 'error',
+        source: 'figma',
+        message: this.toFriendlyFetchMessage(errMessage),
+      });
+    }
   }
 }
