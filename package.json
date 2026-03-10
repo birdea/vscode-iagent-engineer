@@ -2,7 +2,7 @@
   "name": "figma-mcp-helper",
   "displayName": "Figma MCP Helper",
   "description": "Figma MCP + AI Agent code generation for VSCode",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "publisher": "bd-creative",
   "license": "MIT",
   "repository": {
