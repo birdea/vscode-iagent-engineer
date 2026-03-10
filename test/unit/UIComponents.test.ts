@@ -279,6 +279,16 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'figma.fetchVariableDefs' }));
     });
 
+    test('metadata and variable defs buttons render codicons and updated labels', () => {
+      const metadataBtn = document.getElementById('btn-fetch-metadata');
+      const variableDefsBtn = document.getElementById('btn-fetch-variable-defs');
+
+      assert.ok(metadataBtn?.textContent?.includes('Get Metadata'));
+      assert.ok(variableDefsBtn?.textContent?.includes('Get Variable Defs'));
+      assert.ok(metadataBtn?.querySelector('.codicon.codicon-info'));
+      assert.ok(variableDefsBtn?.querySelector('.codicon.codicon-symbol-constant'));
+    });
+
     test('screenshot click when connected with data sends message', () => {
       layer.onStatus(true, ['get_image']); // set connected = true
       const mcpInput = document.getElementById('mcp-data') as HTMLTextAreaElement;

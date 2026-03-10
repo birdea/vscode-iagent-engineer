@@ -56,8 +56,8 @@ export class FigmaLayer {
   </div>
   <div class="btn-row">
     <div class="row">
-      <button class="secondary" id="btn-fetch-metadata">${this.msg('figma.metadata')}</button>
-      <button class="secondary" id="btn-fetch-variable-defs">${this.msg('figma.variableDefs')}</button>
+      <button class="secondary" id="btn-fetch-metadata"><i class="codicon codicon-info"></i>${this.msg('figma.metadata')}</button>
+      <button class="secondary" id="btn-fetch-variable-defs"><i class="codicon codicon-symbol-constant"></i>${this.msg('figma.variableDefs')}</button>
     </div>
   </div>
   <div class="notice hidden" id="figma-data-notice"></div>
