@@ -14,7 +14,7 @@ Figma MCP Helper connects VS Code to a Figma Desktop MCP server, fetches design 
 
 The screenshot above shows the current sidebar workflow for Setup, Prompt, and Log in a single VS Code session.
 
-Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=_zxHVuY8A9Q)
+Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=YmeUWzeAsxw)
 
 ## Why It Matters
 
