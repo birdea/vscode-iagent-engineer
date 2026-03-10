@@ -20,6 +20,7 @@ export async function buildPreviewPanelContent(
   code: string,
   cspSource: string,
   preferredFormat?: OutputFormat,
+  workspaceRoot = process.cwd(),
 ): Promise<PreviewPanelContent> {
   const tailwindEnabled = shouldEnableTailwindPreview(code, preferredFormat);
   const tailwindIssues = tailwindEnabled
@@ -31,7 +32,7 @@ export async function buildPreviewPanelContent(
         ),
       ]
     : [];
-  const runtimeSupport = analyzeRuntimeSupport(code);
+  const runtimeSupport = analyzeRuntimeSupport(code, workspaceRoot);
 
   if (shouldUseRuntimePreview(code, preferredFormat)) {
     if (!runtimeSupport.supported) {
@@ -55,7 +56,13 @@ export async function buildPreviewPanelContent(
     }
 
     try {
-      return await buildRuntimePreviewContent(code, cspSource, tailwindEnabled, tailwindIssues);
+      return await buildRuntimePreviewContent(
+        code,
+        cspSource,
+        tailwindEnabled,
+        tailwindIssues,
+        workspaceRoot,
+      );
     } catch (error) {
       const preview = buildPreviewDocument(code, preferredFormat);
       const issues = [
@@ -149,8 +156,8 @@ function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): 
   return /from\s+['"]react['"]/.test(code) || /className\s*=/.test(code);
 }
 
-function analyzeRuntimeSupport(code: string): RuntimeSupportResult {
-  const resolver = createPreviewResolver(process.cwd());
+function analyzeRuntimeSupport(code: string, workspaceRoot: string): RuntimeSupportResult {
+  const resolver = createPreviewResolver(workspaceRoot);
   const imports = [...code.matchAll(/import\s+(?:[\s\S]+?\s+from\s+)?['"]([^'"]+)['"]/g)].map(
     (match) => match[1],
   );
@@ -185,8 +192,9 @@ async function buildRuntimePreviewContent(
   cspSource: string,
   tailwindEnabled: boolean,
   tailwindIssues: PreviewIssue[],
+  workspaceRoot: string,
 ): Promise<PreviewPanelContent> {
-  const bundle = await buildReactPreviewBundle(code);
+  const bundle = await buildReactPreviewBundle(code, workspaceRoot);
   return {
     title: 'React / TSX Preview',
     html: buildRuntimePanelHtml(
@@ -207,9 +215,9 @@ async function buildRuntimePreviewContent(
   };
 }
 
-async function buildReactPreviewBundle(code: string): Promise<string> {
+async function buildReactPreviewBundle(code: string, workspaceRoot: string): Promise<string> {
   const esbuild = await loadEsbuild();
-  const resolver = createPreviewResolver(process.cwd());
+  const resolver = createPreviewResolver(workspaceRoot);
   const buildResult = await esbuild.build({
     bundle: true,
     write: false,
@@ -253,7 +261,7 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
           build.onLoad({ filter: /^virtual:preview-app$/, namespace: 'preview' }, () => ({
             contents: code,
             loader: 'tsx',
-            resolveDir: process.cwd(),
+            resolveDir: workspaceRoot,
           }));
 
           build.onLoad({ filter: /\.(tsx|ts|jsx|js|json)$/, namespace: 'file' }, (args) => ({
@@ -316,7 +324,7 @@ async function buildReactPreviewBundle(code: string): Promise<string> {
       `,
       loader: 'tsx',
       sourcefile: 'preview-entry.tsx',
-      resolveDir: process.cwd(),
+      resolveDir: workspaceRoot,
     },
   });
 
@@ -436,6 +444,7 @@ function buildStaticPanelHtml(
   tailwindEnabled: boolean,
 ): string {
   const preparedPreviewHtml = prepareStaticPreviewHtml(previewHtml, tailwindEnabled);
+  const iframeSandbox = tailwindEnabled ? 'allow-same-origin allow-scripts' : 'allow-same-origin';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -522,20 +531,26 @@ function buildStaticPanelHtml(
       <p>${escapeHtml(description)}</p>
       ${renderIssues(issues)}
     </div>
-    <iframe sandbox="allow-same-origin allow-scripts" srcdoc="${escapeAttribute(preparedPreviewHtml)}"></iframe>
+    <iframe sandbox="${iframeSandbox}" srcdoc="${escapeAttribute(preparedPreviewHtml)}"></iframe>
   </div>
 </body>
 </html>`;
 }
 
 function prepareStaticPreviewHtml(previewHtml: string, tailwindEnabled: boolean): string {
-  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://cdn.tailwindcss.com; script-src 'unsafe-inline' https://cdn.tailwindcss.com; img-src data: blob: http://localhost:3845 https:; font-src https:; connect-src http://localhost:3845 https:;">`;
+  const sanitizedPreviewHtml = tailwindEnabled ? previewHtml : stripScriptTags(previewHtml);
+  const scriptPolicy = tailwindEnabled ? " script-src https://cdn.tailwindcss.com;" : '';
+  const connectPolicy = tailwindEnabled ? ' connect-src http://localhost:3845 https:;' : '';
+  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://cdn.tailwindcss.com;${scriptPolicy} img-src data: blob: http://localhost:3845 https:; font-src https:;${connectPolicy}">`;
   const tailwindScript = tailwindEnabled
     ? '<script src="https://cdn.tailwindcss.com"></script>'
     : '';
 
-  if (/<head[\s>]/i.test(previewHtml)) {
-    return previewHtml.replace(/<head[^>]*>/i, (match) => `${match}${csp}${tailwindScript}`);
+  if (/<head[\s>]/i.test(sanitizedPreviewHtml)) {
+    return sanitizedPreviewHtml.replace(
+      /<head[^>]*>/i,
+      (match) => `${match}${csp}${tailwindScript}`,
+    );
   }
 
   return `<!DOCTYPE html>
@@ -547,9 +562,13 @@ function prepareStaticPreviewHtml(previewHtml: string, tailwindEnabled: boolean)
   ${tailwindScript}
 </head>
 <body>
-${previewHtml}
+${sanitizedPreviewHtml}
 </body>
 </html>`;
+}
+
+function stripScriptTags(value: string): string {
+  return value.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 }
 
 function shouldEnableTailwindPreview(code: string, preferredFormat?: OutputFormat): boolean {
@@ -734,7 +753,7 @@ function tryResolvePath(candidate: string): PreviewResolvedModule | null {
   return { path: candidate, namespace: 'file' };
 }
 
-function toEsbuildLoader(filePath: string): esbuild.Loader {
+function toEsbuildLoader(filePath: string): import('esbuild').Loader {
   if (filePath.endsWith('.tsx')) return 'tsx';
   if (filePath.endsWith('.ts')) return 'ts';
   if (filePath.endsWith('.jsx')) return 'jsx';

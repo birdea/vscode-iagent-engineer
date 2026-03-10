@@ -46,6 +46,7 @@ const mockVscode = {
     getConfiguration: sinon.stub().returns({
       get: sinon.stub(),
     }),
+    getWorkspaceFolder: sinon.stub(),
     onDidChangeConfiguration: sinon.stub().returns({ dispose: sinon.stub() }),
     openTextDocument: sinon.stub(),
     textDocuments: [],

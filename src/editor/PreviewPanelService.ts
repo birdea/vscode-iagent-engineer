@@ -32,8 +32,21 @@ export class PreviewPanelService {
       code,
       this.panel.webview.cspSource,
       preferredFormat,
+      this.getWorkspaceRoot(),
     );
     this.panel.webview.html = preview.html;
     this.panel.title = `Generated UI Preview · ${preview.title}`;
+  }
+
+  private getWorkspaceRoot(): string {
+    const activeDocumentUri = vscode.window.activeTextEditor?.document?.uri;
+    if (activeDocumentUri) {
+      const folder = vscode.workspace.getWorkspaceFolder?.(activeDocumentUri);
+      if (folder?.uri.fsPath) {
+        return folder.uri.fsPath;
+      }
+    }
+
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd();
   }
 }

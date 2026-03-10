@@ -27,6 +27,22 @@ suite('PreviewRuntimeBuilder', () => {
     assert.ok(content.html.includes('<iframe'));
   });
 
+  test('static html preview strips scripts and keeps iframe sandbox script-free', async () => {
+    const content = await buildPreviewPanelContent(
+      `
+        <div>preview</div>
+        <script>window.__preview_ran = true;</script>
+      `,
+      'csp',
+      'html',
+    );
+
+    assert.ok(content.title.includes('HTML Preview'));
+    assert.ok(content.html.includes('sandbox="allow-same-origin"'));
+    assert.ok(!content.html.includes('allow-scripts'));
+    assert.ok(!content.html.includes('window.__preview_ran'));
+  });
+
   test('runtime preview renders structured status details', async () => {
     const content = await buildPreviewPanelContent(
       `
@@ -70,6 +86,54 @@ suite('PreviewRuntimeBuilder', () => {
 
       assert.ok(content.html.includes('Runtime Status'));
       assert.ok(content.html.includes('Imported Child'));
+      assert.ok(!content.html.includes('Fallback Reason'));
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('runtime preview resolves tsconfig aliases from an explicit workspace root', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(process.cwd(), 'preview-workspace-root-'));
+    const aliasRoot = path.join(tempRoot, 'src', 'components');
+    const childPath = path.join(aliasRoot, 'Child.tsx');
+
+    try {
+      fs.mkdirSync(aliasRoot, { recursive: true });
+      fs.writeFileSync(
+        path.join(tempRoot, 'tsconfig.json'),
+        JSON.stringify(
+          {
+            compilerOptions: {
+              baseUrl: '.',
+              paths: {
+                '@/*': ['src/*'],
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+      fs.writeFileSync(
+        childPath,
+        "import React from 'react'; export default function Child(){ return <div>Workspace Root Child</div>; }",
+      );
+
+      const content = await buildPreviewPanelContent(
+        `
+          import React from 'react';
+          import Child from '@/components/Child';
+
+          export default function App() {
+            return <Child />;
+          }
+        `,
+        'csp',
+        'tsx',
+        tempRoot,
+      );
+
+      assert.ok(content.html.includes('Workspace Root Child'));
       assert.ok(!content.html.includes('Fallback Reason'));
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
