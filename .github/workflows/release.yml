@@ -20,8 +20,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: linux-x64
+          - runner: windows-latest
+            target: win32-x64
+          - runner: macos-latest
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x64
+
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
 
@@ -53,8 +66,10 @@ jobs:
           if [[ -z "${safe_ref_name}" ]]; then
             safe_ref_name="manual"
           fi
+          target_safe_name="$(printf '%s' "${{ matrix.target }}" | tr '/:@ ' '-' | tr -cd 'A-Za-z0-9._-')"
           echo "safe_ref_name=${safe_ref_name}" >> "${GITHUB_OUTPUT}"
-          echo "vsix_name=figma-mcp-helper-${safe_ref_name}.vsix" >> "${GITHUB_OUTPUT}"
+          echo "target_safe_name=${target_safe_name}" >> "${GITHUB_OUTPUT}"
+          echo "vsix_name=figma-mcp-helper-${safe_ref_name}-${target_safe_name}.vsix" >> "${GITHUB_OUTPUT}"
 
       - name: Build
         run: npm run build
@@ -63,22 +78,67 @@ jobs:
         run: npm test
 
       - name: Build VSIX
-        run: npx vsce package --out "${{ steps.package_meta.outputs.vsix_name }}"
+        run: npx vsce package --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
         with:
-          name: vsix-${{ steps.package_meta.outputs.safe_ref_name }}
+          name: vsix-${{ steps.package_meta.outputs.target_safe_name }}
           path: ${{ steps.package_meta.outputs.vsix_name }}
 
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
+    steps:
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.package_meta.outputs.vsix_name }}
+          files: release-assets/**/*.vsix
+
+  marketplace-publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target:
+          - linux-x64
+          - win32-x64
+          - darwin-arm64
+          - darwin-x64
+
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: vsix-${{ matrix.target }}
+          path: release-assets
+
+      - name: Resolve VSIX path
+        id: vsix
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release-assets/*.vsix)
+          if [[ "${#files[@]}" -ne 1 ]]; then
+            echo "Expected exactly one VSIX for target ${{ matrix.target }}, found ${#files[@]}." >&2
+            exit 1
+          fi
+          echo "path=${files[0]}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish to VS Code Marketplace
-        if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx vsce publish --packagePath "${{ steps.package_meta.outputs.vsix_name }}"
+        run: npx vsce publish --packagePath "${{ steps.vsix.outputs.path }}"
