@@ -9,6 +9,8 @@ import { buildPreviewDocument } from '../preview/PreviewRenderer';
 import { OutputFormat } from '../types';
 
 const PREVIEW_HOST = '127.0.0.1';
+const BROWSER_PREVIEW_UNAVAILABLE_MESSAGE =
+  'Browser preview is unavailable in this packaged installation. Use the Preview Panel instead.';
 
 type BrowserPreviewMode = 'tsx-runtime' | 'html-static' | 'tailwind-static' | 'vue-static';
 
@@ -242,9 +244,7 @@ export class BrowserPreviewService {
     try {
       await fs.access(sourceNodeModulesDir);
     } catch {
-      throw new Error(
-        `Browser preview dependencies are missing at ${sourceNodeModulesDir}. Run npm install first.`,
-      );
+      throw new Error(BROWSER_PREVIEW_UNAVAILABLE_MESSAGE);
     }
 
     try {

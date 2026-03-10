@@ -94,7 +94,7 @@ suite('BrowserPreviewService', () => {
 
     await assert.rejects(
       () => (service as any).ensureDependencyLink(previewDir),
-      /Run npm install first/,
+      /Browser preview is unavailable in this packaged installation/,
     );
   });
 

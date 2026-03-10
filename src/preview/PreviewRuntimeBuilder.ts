@@ -1,4 +1,3 @@
-import * as esbuild from 'esbuild';
 import * as fs from 'fs';
 import * as path from 'path';
 import { OutputFormat } from '../types';
@@ -118,6 +117,31 @@ interface PathAliasMapping {
   targets: string[];
 }
 
+type EsbuildModule = typeof import('esbuild');
+
+let esbuildModulePromise: Promise<EsbuildModule> | null = null;
+
+async function loadEsbuild(): Promise<EsbuildModule> {
+  if (!esbuildModulePromise) {
+    esbuildModulePromise = Promise.resolve().then(() => {
+      const dynamicRequire = new Function(
+        'try { return require; } catch { return undefined; }',
+      )() as NodeJS.Require | undefined;
+      if (dynamicRequire) {
+        return dynamicRequire('esbuild') as EsbuildModule;
+      }
+
+      const dynamicImport = new Function(
+        'specifier',
+        'return import(specifier)',
+      ) as (specifier: string) => Promise<EsbuildModule>;
+      return dynamicImport('esbuild');
+    });
+  }
+
+  return await esbuildModulePromise;
+}
+
 function shouldUseRuntimePreview(code: string, preferredFormat?: OutputFormat): boolean {
   if (preferredFormat === 'tsx') {
     return true;
@@ -185,6 +209,7 @@ async function buildRuntimePreviewContent(
 }
 
 async function buildReactPreviewBundle(code: string): Promise<string> {
+  const esbuild = await loadEsbuild();
   const resolver = createPreviewResolver(process.cwd());
   const buildResult = await esbuild.build({
     bundle: true,
