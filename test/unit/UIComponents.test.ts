@@ -850,106 +850,112 @@ suite('UI Components Consolidated', () => {
       layer.mount();
     });
 
-    test('renders timeline chart and switches metric mode', () => {
-      layer.onState({
-        status: 'ready',
-        sessionId: 'codex:test',
-        detail: {
-          summary: {
-            id: 'codex:test',
-            agent: 'codex',
-            filePath: '/tmp/session.jsonl',
-            fileName: 'session.jsonl',
-            modifiedAt: '2026-03-11T10:00:00.000Z',
-            fileSizeBytes: 4096,
-            totalInputTokens: 320,
-            totalOutputTokens: 140,
-            totalCachedTokens: 60,
-            totalTokens: 520,
-            requestCount: 2,
-            parseStatus: 'ok',
-            warnings: [],
-          },
-          metadata: {
-            sourceFormat: 'jsonl',
-          },
-          timeline: [
-            {
-              id: 'p1',
-              timestamp: '2026-03-11T10:00:00.000Z',
-              endTimestamp: '2026-03-11T10:00:03.000Z',
-              inputTokens: 100,
-              outputTokens: 40,
-              cachedTokens: 20,
-              totalTokens: 160,
-              payloadKb: 4.4,
-              latencyMs: 3000,
-              latencyPhase: 'response_completed',
-              eventType: 'turn',
-              label: 'T01',
-              detail: 'Inspect setup',
-              sourceEventId: 'raw-1',
-            },
-            {
-              id: 'p2',
-              timestamp: '2026-03-11T10:01:00.000Z',
-              endTimestamp: '2026-03-11T10:01:05.000Z',
-              inputTokens: 220,
-              outputTokens: 100,
-              cachedTokens: 40,
-              totalTokens: 360,
-              payloadKb: 7.8,
-              latencyMs: 5000,
-              latencyPhase: 'response_completed',
-              eventType: 'turn',
-              label: 'T02',
-              detail: 'Render profiler chart',
-              sourceEventId: 'raw-2',
-            },
-          ],
-          eventBubbles: [
-            {
-              id: 'bubble-1',
-              timestamp: '2026-03-11T10:01:05.000Z',
-              title: 'Turn completed',
-              detail: 'Render profiler chart',
-              rawEventId: 'raw-2',
-            },
-          ],
-          rawEvents: [
-            {
-              id: 'raw-1',
+    test('renders timeline chart and switches metric mode', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: {
+            summary: {
+              id: 'codex:test',
+              agent: 'codex',
               filePath: '/tmp/session.jsonl',
-              lineNumber: 4,
-              timestamp: '2026-03-11T10:00:03.000Z',
-              eventType: 'token_count',
-              summary: 'Token snapshot',
-              excerpt: '{"sample":1}',
-              payloadKb: 4.4,
+              fileName: 'session.jsonl',
+              modifiedAt: '2026-03-11T10:00:00.000Z',
+              fileSizeBytes: 4096,
+              totalInputTokens: 320,
+              totalOutputTokens: 140,
+              totalCachedTokens: 60,
+              totalTokens: 520,
+              requestCount: 2,
+              parseStatus: 'ok',
+              warnings: [],
             },
-            {
-              id: 'raw-2',
-              filePath: '/tmp/session.jsonl',
-              lineNumber: 8,
-              timestamp: '2026-03-11T10:01:05.000Z',
-              eventType: 'task_complete',
-              summary: 'Turn completed',
-              excerpt: '{"sample":2}',
-              payloadKb: 7.8,
+            metadata: {
+              sourceFormat: 'jsonl',
             },
-          ],
-        },
+            timeline: [
+              {
+                id: 'p1',
+                timestamp: '2026-03-11T10:00:00.000Z',
+                endTimestamp: '2026-03-11T10:00:03.000Z',
+                inputTokens: 100,
+                outputTokens: 40,
+                cachedTokens: 20,
+                totalTokens: 160,
+                payloadKb: 4.4,
+                latencyMs: 3000,
+                latencyPhase: 'response_completed',
+                eventType: 'turn',
+                label: 'T01',
+                detail: 'Inspect setup',
+                sourceEventId: 'raw-1',
+              },
+              {
+                id: 'p2',
+                timestamp: '2026-03-11T10:01:00.000Z',
+                endTimestamp: '2026-03-11T10:01:05.000Z',
+                inputTokens: 220,
+                outputTokens: 100,
+                cachedTokens: 40,
+                totalTokens: 360,
+                payloadKb: 7.8,
+                latencyMs: 5000,
+                latencyPhase: 'response_completed',
+                eventType: 'turn',
+                label: 'T02',
+                detail: 'Render profiler chart',
+                sourceEventId: 'raw-2',
+              },
+            ],
+            eventBubbles: [
+              {
+                id: 'bubble-1',
+                timestamp: '2026-03-11T10:01:05.000Z',
+                title: 'Turn completed',
+                detail: 'Render profiler chart',
+                rawEventId: 'raw-2',
+              },
+            ],
+            rawEvents: [
+              {
+                id: 'raw-1',
+                filePath: '/tmp/session.jsonl',
+                lineNumber: 4,
+                timestamp: '2026-03-11T10:00:03.000Z',
+                eventType: 'token_count',
+                summary: 'Token snapshot',
+                excerpt: '{"sample":1}',
+                payloadKb: 4.4,
+              },
+              {
+                id: 'raw-2',
+                filePath: '/tmp/session.jsonl',
+                lineNumber: 8,
+                timestamp: '2026-03-11T10:01:05.000Z',
+                eventType: 'task_complete',
+                summary: 'Turn completed',
+                excerpt: '{"sample":2}',
+                payloadKb: 7.8,
+              },
+            ],
+          },
+        });
       });
 
       assert.ok(
         document.getElementById('profiler-detail-overview')?.textContent?.includes('jsonl'),
       );
-      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Input'));
-      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Trend'));
+      // visx React chart renders legend toggle buttons with series labels
+      const chartShell = document.getElementById('profiler-chart-shell');
+      assert.ok(chartShell?.textContent?.includes('Input'));
+      assert.ok(chartShell?.textContent?.includes('Trend'));
       assert.ok(
         document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
       );
-      assert.strictEqual(document.querySelectorAll('.profiler-focus-card').length, 2);
+      // visx chart renders bar rects for each timeline point
+      assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
   });
 

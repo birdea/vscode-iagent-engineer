@@ -639,9 +639,9 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 
 대응:
 
-- 초기 버전은 SVG 또는 Canvas 기반 단순 커스텀 차트로 시작
-- 외부 차트 라이브러리 의존은 최소화
-- 가로 스크롤과 hover만 우선 구현
+- ~~초기 버전은 SVG 또는 Canvas 기반 단순 커스텀 차트로 시작~~ → visx(Airbnb) 라이브러리로 전환 완료 (섹션 19 참조)
+- visx 모듈식 import로 번들 크기 증가를 최소화
+- 가로 스크롤, hover crosshair, series toggle, bar click navigation 구현 완료
 
 ## 16. 권장 구현 우선순위
 
@@ -723,12 +723,83 @@ v1의 성공 기준은 명확하다.
 ### 이번 수정 이후 남는 후속 과제
 
 - 실제 Gemini session fixture 확보 및 parser 구현
-- chart hover/crosshair 세밀화
+- ~~chart hover/crosshair 세밀화~~ → visx 전환으로 해결
 - 선택 구간 zoom/filter UI 추가
-- series visibility toggle, highlighted focus range, percentile guide line 추가
+- ~~series visibility toggle~~, highlighted focus range, percentile guide line 추가 → visx 전환으로 toggle 해결
 - data/latency chart에도 endpoint marker와 trend overlay를 일관되게 적용
 - raw event list와 chart hotspot 간 양방향 selection sync 추가
 - archive manifest에 통계 요약 추가
 - parse warning, partial parse 원인, skipped directory 이유를 UI에 더 구체적으로 노출
 - 모바일 폭과 좁은 panel 폭에서의 axis tick density 최적화
 - 접근성 보강: 색상 외 마커/텍스트 대체, keyboard focus 이동, screen-reader용 summary 문구 추가
+
+## 19. 2026-03-12 차트 라이브러리 전환: visx
+
+### 배경
+
+기존 차트는 `ProfilerDetailLayer.ts` 내에서 SVG path 문자열을 직접 생성하는 ~450줄의 커스텀 구현이었다. 유지보수 비용, 인터랙션 확장성(hover, crosshair, series toggle, bar click navigation 등)을 고려하여 범용 차트 라이브러리로 전환한다.
+
+### 라이브러리 선정: visx (Airbnb)
+
+선정 사유:
+
+- **SVG 기반 + React**: 기존 렌더링 방식(SVG)과 동일하며, 프로젝트에 이미 React 의존성이 존재
+- **모듈식 패키지**: 필요한 모듈만 import하여 번들 크기를 최소화 (~15-20KB gzip)
+- **D3 기반 저수준 제어**: 기존 커스텀 구현과 동등한 수준의 스타일링/마커/레이아웃 자유도 유지
+- **VS Code Webview 호환**: DOM 직접 조작 없이 React 컴포넌트로 동작하므로 webview 환경에서 안정적
+
+비교 검토한 대안:
+
+- `Recharts`: 선언적 API로 빠른 개발이 가능하지만 세밀한 커스터마이징에 제약
+- `Chart.js / uPlot`: Canvas 기반으로 접근성이 떨어지며 React 래퍼가 별도 필요
+- `ECharts`: 기능이 풍부하지만 번들 크기가 큼
+
+### 설치 패키지
+
+```
+@visx/scale @visx/shape @visx/axis @visx/grid @visx/group @visx/tooltip @visx/event @visx/responsive
+```
+
+### 구현 구조
+
+```
+ProfilerDetailLayer.ts (host layer)
+  └─ mountChart() → React.createElement(ProfilerChart)
+       └─ ProfilerChart.tsx (visx React component)
+            ├─ scaleTime / scaleLinear  (x/y 축)
+            ├─ LinePath                 (시리즈 라인)
+            ├─ Bar (rect)              (데이터 포인트별 막대)
+            ├─ GridRows                (수평 그리드)
+            ├─ AxisBottom / AxisRight  (축 라벨)
+            ├─ Group                   (마커, 크로스헤어)
+            └─ localPoint              (마우스 이벤트 좌표)
+```
+
+- `ProfilerDetailLayer`는 기존처럼 overview, bubble list, raw list를 문자열 HTML로 렌더링
+- 차트 영역만 `ReactDOM.createRoot()`로 마운트하여 React 컴포넌트로 위임
+- esbuild 설정에 `jsx: 'automatic'`, `loader: { '.tsx': 'tsx' }` 추가
+
+### 구현된 요구사항
+
+1. **시리즈 토글**: 범례(legend) 내 각 시리즈 라벨을 클릭하면 해당 시리즈의 visibility가 토글된다. 비활성 시리즈는 strikethrough + 반투명 처리.
+2. **막대그래프 오버레이**: 각 타임라인 포인트에 반투명 bar를 렌더링하여 데이터가 존재하는 시점을 시각적으로 표시한다.
+3. **막대 클릭 → 원본 로그 포커스**: 막대를 클릭하면 해당 타임라인 포인트의 `sourceEventId`를 통해 원본 raw event의 `filePath:lineNumber`로 커서를 이동시킨다 (`profiler.openSource` 커맨드).
+4. **고정 시간 간격 횡스크롤**: 차트 너비는 시간 범위에 비례하여 계산되며(`PIXELS_PER_MINUTE = 14`, `MIN_POINT_SPACING = 72`), 화면을 초과하면 수평 스크롤로 탐색한다. 데이터를 한 화면에 압축하지 않는다.
+
+### 추가 구현 사항
+
+- **Tooltip + Crosshair**: 차트 위에서 마우스 이동 시 가장 가까운 데이터 포인트에 수직 크로스헤어와 tooltip 카드를 표시한다.
+- **Area fill**: 첫 번째 visible 시리즈 아래에 반투명 area fill을 렌더링한다.
+- **Endpoint markers**: 각 시리즈의 마지막 데이터 포인트에 고유 형상(circle, square, diamond, triangle) 마커를 표시한다.
+
+### 번들 영향
+
+- 변경 전: `dist/webview.js` ~245KB
+- 변경 후: `dist/webview.js` ~388KB (+143KB, visx + d3-scale 의존성)
+- gzip 후 실질 증가분은 ~40KB 수준으로 VS Code 확장 로드 시간에 미미한 영향
+
+### 테스트
+
+- 기존 `ProfilerDetailLayer` 테스트를 `react.act()`로 래핑하여 React 비동기 렌더링에 대응
+- 차트 내 `.profiler-chart-bar` 요소 존재 확인으로 bar 렌더링 검증
+- 범례 텍스트('Input', 'Trend') 존재 확인으로 시리즈 정의 검증

@@ -30,6 +30,8 @@ const webviewConfig = {
   minify: isProduction,
   target: 'es2020',
   logLevel: 'info',
+  jsx: 'automatic',
+  loader: { '.tsx': 'tsx', '.ts': 'ts' },
 };
 
 function copyStyle() {

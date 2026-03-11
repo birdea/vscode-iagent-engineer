@@ -1,3 +1,5 @@
+import React from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import {
   ProfilerDetailState,
   ProfilerMetricType,
@@ -7,56 +9,18 @@ import {
 } from '../../../types';
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
+import { ProfilerChart } from './ProfilerChart';
 
 const EMPTY_STATE: ProfilerDetailState = {
   status: 'idle',
   message: '세션을 선택하면 상세 분석이 표시됩니다.',
 };
 
-const SERIES_COLORS = {
-  total: '#2a73d9',
-  output: '#6e9a2f',
-  input: '#e48a0a',
-  cached: '#1f2f8c',
-  trend: '#e12d99',
-  data: '#2a73d9',
-  dataTrend: '#e48a0a',
-  latency: '#e48a0a',
-  latencyTrend: '#1f2f8c',
-};
-
-type ChartMarkerShape = 'circle' | 'square' | 'diamond' | 'triangleDown' | 'triangleUp';
-
-type ChartSeries = {
-  key: string;
-  label: string;
-  color: string;
-  marker: ChartMarkerShape;
-  values: number[];
-  lineWidth?: number;
-  opacity?: number;
-};
-
-type ChartGeometry = {
-  width: number;
-  height: number;
-  plotWidth: number;
-  plotHeight: number;
-  padding: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-  };
-  minTime: number;
-  domainRange: number;
-  maxValue: number;
-};
-
 export class ProfilerDetailLayer {
   private state = EMPTY_STATE;
   private metric: ProfilerMetricType = 'tokens';
   private readonly locale: UiLocale = getDocumentLocale();
+  private chartRoot: Root | null = null;
 
   render(): string {
     return `
@@ -135,6 +99,10 @@ export class ProfilerDetailLayer {
 
     if (this.state.status !== 'ready' || !this.state.detail) {
       overview.innerHTML = '';
+      if (this.chartRoot) {
+        this.chartRoot.unmount();
+        this.chartRoot = null;
+      }
       chartShell.innerHTML = '';
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
@@ -143,9 +111,24 @@ export class ProfilerDetailLayer {
 
     const detail = this.state.detail;
     overview.innerHTML = this.renderOverview(detail);
-    chartShell.innerHTML = this.renderChart(detail);
+    this.mountChart(chartShell, detail);
     bubbleList.innerHTML = this.renderBubbleList(detail);
     rawList.innerHTML = this.renderRawList(detail);
+  }
+
+  private mountChart(container: HTMLElement, detail: SessionDetail) {
+    if (!this.chartRoot) {
+      this.chartRoot = createRoot(container);
+    }
+    this.chartRoot.render(
+      React.createElement(ProfilerChart, {
+        detail,
+        metric: this.metric,
+        onOpenSource: (filePath: string, lineNumber: number) => {
+          vscode.postMessage({ command: 'profiler.openSource', filePath, lineNumber });
+        },
+      }),
+    );
   }
 
   private renderOverview(detail: SessionDetail): string {
@@ -208,113 +191,6 @@ export class ProfilerDetailLayer {
     ${this.summaryCell('Largest payload', topPayload ? this.formatMetricValue(topPayload.payloadKb ?? 0, 'data') : '-')}
     ${this.summaryCell('Slowest request', topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-')}
   </div>
-</div>`;
-  }
-
-  private renderChart(detail: SessionDetail): string {
-    const timeline = this.getOrderedTimeline(detail.timeline);
-    if (timeline.length === 0) {
-      return '<div class="profiler-empty-chart">No timeline samples available for this session.</div>';
-    }
-
-    const series = this.getChartSeries(timeline);
-    const geometry = this.getChartGeometry(timeline, series);
-    const { width, height, plotWidth, plotHeight, padding, minTime, domainRange, maxValue } =
-      geometry;
-
-    const grid = [0, 0.33, 0.66, 1]
-      .map((ratio) => {
-        const y = padding.top + plotHeight * ratio;
-        const value = maxValue * (1 - ratio);
-        return `
-<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="profiler-chart-grid" />
-<text x="${width - padding.right + 12}" y="${y + 4}" class="profiler-chart-axis profiler-chart-axis-right">${this.formatAxisValue(value)}</text>`;
-      })
-      .join('');
-
-    const paths = series
-      .map((item, index) => {
-        const points = timeline.map((point, pointIndex) => {
-          const value = item.values[pointIndex] ?? 0;
-          return {
-            x: this.getPointX(
-              point,
-              pointIndex,
-              timeline,
-              minTime,
-              domainRange,
-              padding.left,
-              plotWidth,
-            ),
-            y: this.getPointY(value, padding.top, plotHeight, maxValue),
-            value,
-          };
-        });
-        const linePath = this.buildLinePath(points);
-        const areaPath = index === 0 ? this.buildAreaPath(points, padding.top + plotHeight) : '';
-        const lastPoint = points[points.length - 1];
-        return `
-${areaPath ? `<path d="${areaPath}" fill="${item.color}" opacity="0.08" />` : ''}
-<path d="${linePath}" fill="none" stroke="${item.color}" stroke-width="${item.lineWidth ?? 2.4}" stroke-linecap="round" stroke-linejoin="round" opacity="${item.opacity ?? 1}" />
-${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.y, 7.5) : ''}`;
-      })
-      .join('');
-
-    const xLabels = this.buildXAxisLabels(
-      timeline,
-      minTime,
-      domainRange,
-      padding.left,
-      plotWidth,
-    ).map((label) => {
-      return `<text x="${label.x}" y="${height - 16}" class="profiler-chart-axis" text-anchor="middle">${this.escapeHtml(label.text)}</text>`;
-    });
-
-    const focus = this.renderChartFocus(detail, timeline);
-
-    return `
-<div class="profiler-chart-panel">
-  <div class="profiler-chart-head">
-    <div>
-      <div class="profiler-chart-title">${this.getMetricTitle()}</div>
-      <div class="profiler-chart-note">${timeline.length} samples | ${series.length} series</div>
-    </div>
-    <div class="profiler-chart-legend">${series.map((item) => this.renderLegendItem(item)).join('')}</div>
-  </div>
-  <div class="profiler-chart-scroll">
-    <div class="profiler-chart-inner" style="width:${width}px">
-      <svg viewBox="0 0 ${width} ${height}" class="profiler-chart-svg" aria-label="${this.escapeAttr(this.getMetricTitle())}">
-        <rect x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}" class="profiler-chart-frame" rx="14" ry="14" />
-        ${grid}
-        ${paths}
-        <line x1="${padding.left}" y1="${padding.top + plotHeight}" x2="${width - padding.right}" y2="${padding.top + plotHeight}" class="profiler-chart-baseline" />
-        ${xLabels.join('')}
-      </svg>
-    </div>
-  </div>
-  ${focus}
-</div>
-`;
-  }
-
-  private renderChartFocus(detail: SessionDetail, timeline: SessionTimelinePoint[]): string {
-    const ranked = [...timeline]
-      .sort((a, b) => this.getPrimaryValue(b) - this.getPrimaryValue(a))
-      .slice(0, Math.min(3, timeline.length));
-
-    return `
-<div class="profiler-chart-focus">
-  ${ranked
-    .map((point) => {
-      const raw = this.findRawEvent(detail, point.sourceEventId);
-      return `
-<button class="profiler-focus-card" ${this.getSourceAttrs(raw)}>
-  <span>${this.escapeHtml(point.label ?? point.eventType)}</span>
-  <strong>${this.formatMetricValue(this.getPrimaryValue(point), this.metric)}</strong>
-  <p>${this.escapeHtml(this.truncate(point.detail ?? raw?.summary ?? '-', 96))}</p>
-</button>`;
-    })
-    .join('')}
 </div>`;
   }
 
@@ -382,261 +258,8 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
     return [...timeline].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }
 
-  private getChartSeries(timeline: SessionTimelinePoint[]): ChartSeries[] {
-    if (this.metric === 'tokens') {
-      const totals = timeline.map((point) => point.totalTokens ?? this.getTokenTotal(point));
-      return [
-        {
-          key: 'total',
-          label: 'Total',
-          color: SERIES_COLORS.total,
-          marker: 'circle',
-          values: totals,
-          lineWidth: 3.2,
-        },
-        {
-          key: 'output',
-          label: 'Output',
-          color: SERIES_COLORS.output,
-          marker: 'square',
-          values: timeline.map((point) => point.outputTokens ?? 0),
-        },
-        {
-          key: 'input',
-          label: 'Input',
-          color: SERIES_COLORS.input,
-          marker: 'diamond',
-          values: timeline.map((point) => point.inputTokens ?? 0),
-        },
-        {
-          key: 'cached',
-          label: 'Cached',
-          color: SERIES_COLORS.cached,
-          marker: 'triangleDown',
-          values: timeline.map((point) => point.cachedTokens ?? 0),
-        },
-        {
-          key: 'trend',
-          label: 'Trend',
-          color: SERIES_COLORS.trend,
-          marker: 'triangleUp',
-          values: this.computeMovingAverage(totals, 3),
-          opacity: 0.95,
-        },
-      ];
-    }
-
-    if (this.metric === 'data') {
-      const payloads = timeline.map((point) => point.payloadKb ?? 0);
-      return [
-        {
-          key: 'payload',
-          label: 'Payload KB',
-          color: SERIES_COLORS.data,
-          marker: 'circle',
-          values: payloads,
-          lineWidth: 3.2,
-        },
-        {
-          key: 'trend',
-          label: 'Payload trend',
-          color: SERIES_COLORS.dataTrend,
-          marker: 'diamond',
-          values: this.computeMovingAverage(payloads, 3),
-          opacity: 0.95,
-        },
-      ];
-    }
-
-    const latencies = timeline.map((point) => point.latencyMs ?? 0);
-    return [
-      {
-        key: 'latency',
-        label: 'Latency ms',
-        color: SERIES_COLORS.latency,
-        marker: 'diamond',
-        values: latencies,
-        lineWidth: 3.2,
-      },
-      {
-        key: 'trend',
-        label: 'Latency trend',
-        color: SERIES_COLORS.latencyTrend,
-        marker: 'triangleDown',
-        values: this.computeMovingAverage(latencies, 3),
-        opacity: 0.95,
-      },
-    ];
-  }
-
-  private renderLegendItem(item: ChartSeries): string {
-    return `<span class="profiler-legend-item">${this.renderLegendMarker(item.marker, item.color)}${this.escapeHtml(item.label)}</span>`;
-  }
-
-  private renderLegendMarker(marker: ChartMarkerShape, color: string): string {
-    return `<svg viewBox="0 0 16 16" class="profiler-legend-marker" aria-hidden="true">${this.renderMarkerShape(marker, color, 8, 8, 5.2)}</svg>`;
-  }
-
-  private getChartGeometry(timeline: SessionTimelinePoint[], series: ChartSeries[]): ChartGeometry {
-    const width = this.getChartWidth(timeline);
-    const height = 252;
-    const padding = { top: 18, right: 56, bottom: 34, left: 18 };
-    const plotWidth = width - padding.left - padding.right;
-    const plotHeight = height - padding.top - padding.bottom;
-    const times = timeline.map((point) => new Date(point.timestamp).valueOf());
-    const minTime = Math.min(...times);
-    const maxTime = Math.max(
-      ...timeline.map((point) => new Date(point.endTimestamp ?? point.timestamp).valueOf()),
-    );
-    const domainRange = Math.max(1, maxTime - minTime);
-    const maxValue = Math.max(1, ...series.flatMap((item) => item.values));
-
-    return {
-      width,
-      height,
-      plotWidth,
-      plotHeight,
-      padding,
-      minTime,
-      domainRange,
-      maxValue,
-    };
-  }
-
-  private getChartWidth(timeline: SessionTimelinePoint[]): number {
-    const times = timeline.map((point) => new Date(point.timestamp).valueOf());
-    const minTime = Math.min(...times);
-    const maxTime = Math.max(
-      ...timeline.map((point) => new Date(point.endTimestamp ?? point.timestamp).valueOf()),
-    );
-    const spanMinutes = Math.max(1, (maxTime - minTime) / 60000);
-    return Math.max(640, timeline.length * 72, Math.round(spanMinutes * 14));
-  }
-
-  private getPrimaryValue(point: SessionTimelinePoint): number {
-    if (this.metric === 'data') {
-      return point.payloadKb ?? 0;
-    }
-    if (this.metric === 'latency') {
-      return point.latencyMs ?? 0;
-    }
-    return point.totalTokens ?? this.getTokenTotal(point);
-  }
-
   private getTokenTotal(point: SessionTimelinePoint): number {
     return (point.inputTokens ?? 0) + (point.outputTokens ?? 0) + (point.cachedTokens ?? 0);
-  }
-
-  private getPointX(
-    point: SessionTimelinePoint,
-    index: number,
-    timeline: SessionTimelinePoint[],
-    minTime: number,
-    domainRange: number,
-    left: number,
-    plotWidth: number,
-  ): number {
-    const current = new Date(point.timestamp).valueOf();
-    const ratio = Number.isFinite(current)
-      ? (current - minTime) / domainRange
-      : index / Math.max(1, timeline.length - 1);
-    return left + Math.max(0, Math.min(1, ratio)) * plotWidth;
-  }
-
-  private getPointY(value: number, top: number, plotHeight: number, maxValue: number): number {
-    const ratio = Math.max(0, value) / Math.max(1, maxValue);
-    return top + plotHeight - ratio * plotHeight;
-  }
-
-  private buildXAxisLabels(
-    timeline: SessionTimelinePoint[],
-    minTime: number,
-    domainRange: number,
-    left: number,
-    plotWidth: number,
-  ) {
-    if (timeline.length <= 3) {
-      return timeline.map((point, index) => ({
-        x: this.getPointX(point, index, timeline, minTime, domainRange, left, plotWidth),
-        text: this.formatAxisTime(new Date(point.timestamp), domainRange),
-      }));
-    }
-
-    return [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-      const time = new Date(minTime + domainRange * ratio);
-      return {
-        x: left + plotWidth * ratio,
-        text: this.formatAxisTime(time, domainRange),
-      };
-    });
-  }
-
-  private buildLinePath(points: Array<{ x: number; y: number }>): string {
-    if (points.length === 0) {
-      return '';
-    }
-    return points
-      .map(
-        (point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`,
-      )
-      .join(' ');
-  }
-
-  private buildAreaPath(points: Array<{ x: number; y: number }>, baselineY: number): string {
-    if (points.length === 0) {
-      return '';
-    }
-
-    const start = points[0];
-    const end = points[points.length - 1];
-    return [
-      `M ${start.x.toFixed(2)} ${baselineY.toFixed(2)}`,
-      ...points.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
-      `L ${end.x.toFixed(2)} ${baselineY.toFixed(2)}`,
-      'Z',
-    ].join(' ');
-  }
-
-  private renderMarker(
-    shape: ChartMarkerShape,
-    color: string,
-    x: number,
-    y: number,
-    size: number,
-  ): string {
-    return this.renderMarkerShape(shape, color, x, y, size);
-  }
-
-  private renderMarkerShape(
-    shape: ChartMarkerShape,
-    color: string,
-    x: number,
-    y: number,
-    size: number,
-  ): string {
-    const stroke = 'rgba(255,255,255,0.9)';
-    switch (shape) {
-      case 'square':
-        return `<rect x="${x - size}" y="${y - size}" width="${size * 2}" height="${size * 2}" rx="2.5" ry="2.5" fill="${color}" stroke="${stroke}" stroke-width="1.4" />`;
-      case 'diamond':
-        return `<polygon points="${x},${y - size} ${x + size},${y} ${x},${y + size} ${x - size},${y}" fill="${color}" stroke="${stroke}" stroke-width="1.4" />`;
-      case 'triangleDown':
-        return `<polygon points="${x - size},${y - size * 0.7} ${x + size},${y - size * 0.7} ${x},${y + size}" fill="${color}" stroke="${stroke}" stroke-width="1.4" />`;
-      case 'triangleUp':
-        return `<polygon points="${x - size},${y + size * 0.7} ${x + size},${y + size * 0.7} ${x},${y - size}" fill="${color}" stroke="${stroke}" stroke-width="1.4" />`;
-      case 'circle':
-      default:
-        return `<circle cx="${x}" cy="${y}" r="${size}" fill="${color}" stroke="${stroke}" stroke-width="1.4" />`;
-    }
-  }
-
-  private computeMovingAverage(values: number[], windowSize: number): number[] {
-    return values.map((_, index) => {
-      const start = Math.max(0, index - windowSize + 1);
-      const slice = values.slice(start, index + 1);
-      const total = slice.reduce((sum, value) => sum + value, 0);
-      return slice.length > 0 ? total / slice.length : 0;
-    });
   }
 
   private findRawEvent(detail: SessionDetail, rawEventId?: string): SessionRawEventRef | undefined {
@@ -659,18 +282,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
   <span class="profiler-metric-label">${label}</span>
   <strong class="profiler-metric-value">${value}</strong>
 </div>`;
-  }
-
-  private getMetricTitle(): string {
-    switch (this.metric) {
-      case 'data':
-        return 'Payload Size Comparison';
-      case 'latency':
-        return 'Latency Comparison';
-      case 'tokens':
-      default:
-        return 'Token Flow Comparison';
-    }
   }
 
   private compactPath(value: string, depth = 3): string {
@@ -703,26 +314,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
     return this.formatNumber(Math.round(value));
   }
 
-  private formatAxisValue(value: number): string {
-    if (this.metric === 'tokens') {
-      return this.formatCompactNumber(Math.round(value));
-    }
-    if (this.metric === 'data') {
-      return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} KB`;
-    }
-    return value >= 1000 ? `${(value / 1000).toFixed(1)}s` : `${Math.round(value)}ms`;
-  }
-
-  private formatCompactNumber(value: number): string {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
-    }
-    if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}k`;
-    }
-    return String(value);
-  }
-
   private formatBytes(bytes: number): string {
     if (bytes >= 1024 * 1024) {
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -745,20 +336,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
 
   private formatNumber(value: number): string {
     return Number.isFinite(value) ? value.toLocaleString() : '0';
-  }
-
-  private formatAxisTime(date: Date, domainRange: number): string {
-    if (Number.isNaN(date.valueOf())) {
-      return '-';
-    }
-
-    const longSpan = domainRange >= 24 * 60 * 60 * 1000;
-    return date.toLocaleString(this.locale === 'ko' ? 'ko-KR' : 'en-US', {
-      month: longSpan ? 'numeric' : undefined,
-      day: longSpan ? 'numeric' : undefined,
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }
 
   private formatTime(value?: string): string {
