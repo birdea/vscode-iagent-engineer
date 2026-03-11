@@ -14,6 +14,8 @@ export class RemoteFigmaAuthService {
     try {
       const parsed = JSON.parse(raw) as RemoteAuthSession;
       if (!parsed.accessToken) {
+        Logger.warn('figma', 'Saved remote auth session is missing an access token — clearing it');
+        await this.clearSession();
         return null;
       }
       return parsed;
