@@ -950,21 +950,6 @@ suite('UI Components Consolidated', () => {
         document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
       );
       assert.strictEqual(document.querySelectorAll('.profiler-focus-card').length, 2);
-
-      const dataButton = document.querySelector('[data-metric="data"]') as HTMLButtonElement;
-      dataButton.click();
-
-      assert.ok(
-        document.getElementById('profiler-chart-shell')?.textContent?.includes('Payload KB'),
-      );
-      assert.ok(document.querySelector('.profiler-chart-hotspot'));
-
-      const latencyButton = document.querySelector('[data-metric="latency"]') as HTMLButtonElement;
-      latencyButton.click();
-
-      assert.ok(
-        document.getElementById('profiler-chart-shell')?.textContent?.includes('Latency ms'),
-      );
     });
   });
 
@@ -1011,7 +996,7 @@ suite('UI Components Consolidated', () => {
       const row = document.querySelector('.profiler-session-row') as HTMLButtonElement;
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
-      assert.ok(row.textContent?.includes('very-long-session...'));
+      assert.ok(row.textContent?.includes('very-long-session-file-name.jsonl'));
       assert.ok(row.textContent?.includes('2026-03-11'));
       assert.ok(row.textContent?.includes('55.0 KB'));
       assert.ok(!row.textContent?.includes('Unknown model'));

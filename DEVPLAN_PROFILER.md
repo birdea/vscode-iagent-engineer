@@ -12,6 +12,16 @@
 - 차트는 패딩, 레전드, 보조 문구, 포커스 카드 크기를 줄여 한 화면에서 더 많은 시계열과 요약값을 읽을 수 있어야 한다.
 - 이벤트 카드와 raw 이벤트도 작은 활자와 짧은 요약 중심으로 줄여 차트와 동시에 보이게 한다.
 
+### 0.1 2026-03-12 통계 카드 compact 재구성
+
+- Sidebar와 Bottom Panel 양쪽의 통계 정보가 개별 카드 형태(`profiler-metric-card`, `profiler-summary-cell`, `profiler-insight-card`)로 표시되어 공간 낭비가 심했다.
+- key name과 value가 불필요하게 개행되고, 큰 폰트와 bold 처리로 공간 효율이 낮았다.
+- 이미 완성된 `Prompt Panel`의 `prompt-metric-cell` 패턴(label 좌측, value 우측, 한 행에 inline 배치, 10px 폰트, 1px gap grid)을 기준으로 통일한다.
+- Sidebar: `profiler-metric-grid` → `profiler-metrics-board` (2열 compact grid)
+- Bottom Panel: `profiler-summary-grid` + `profiler-insight-grid` → `profiler-overview-board` (3열 compact grid) 하나로 병합
+- 모든 셀은 `profiler-metric-cell` 클래스로 통일하여 `flex row`, `justify-content: space-between`, `padding: 4px 8px`, `font-size: 10px`로 렌더링한다.
+- insight card의 부가 설명(p 태그)은 제거하고, 핵심 수치만 남긴다.
+
 ## 1. 목적
 
 이 문서는 `vscode-figma-mcp-helper`에 `AI Agent 세션 프로파일러`를 추가하기 위한 개발 기획서다.
@@ -249,7 +259,7 @@ Shared Domain
 - `Start Analysis` 버튼
 - 분석 상태 배지 (`idle`, `scanning`, `done`, `error`)
 - 장시간 작업 중 `로딩중..` 인라인 상태 표시
-- 전체 집계 카드
+- 전체 집계 보드 (Prompt Panel과 동일한 compact inline key-value 레이아웃)
   - 총 세션 수
   - 총 input tokens
   - 총 output tokens

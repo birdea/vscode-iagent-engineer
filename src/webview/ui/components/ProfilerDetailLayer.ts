@@ -61,18 +61,6 @@ export class ProfilerDetailLayer {
   render(): string {
     return `
 <section class="panel profiler-detail-shell">
-  <div class="section-heading">
-    <div>
-      <div class="panel-title">F.Profiler</div>
-      <div class="description-text" id="profiler-detail-subtitle">Session timeline analysis</div>
-    </div>
-    <div class="profiler-detail-metric-toggle">
-      <button class="secondary active" data-metric="tokens">Tokens</button>
-      <button class="secondary" data-metric="data">KB</button>
-      <button class="secondary" data-metric="latency">Latency</button>
-    </div>
-  </div>
-  <div class="notice info" id="profiler-detail-notice">${this.state.message ?? ''}</div>
   <div class="profiler-detail-overview" id="profiler-detail-overview"></div>
   <div class="profiler-detail-viewer">
     <div class="profiler-chart-shell" id="profiler-chart-shell"></div>
@@ -85,19 +73,6 @@ export class ProfilerDetailLayer {
   }
 
   mount() {
-    document.querySelector('.profiler-detail-metric-toggle')?.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement | null;
-      const button = target?.closest<HTMLButtonElement>('[data-metric]');
-      if (!button) {
-        return;
-      }
-      const metric = button.dataset.metric as ProfilerMetricType | undefined;
-      if (!metric) {
-        return;
-      }
-      this.metric = metric;
-      this.renderDynamicContent();
-    });
     document.getElementById('profiler-chart-shell')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
       const button = target?.closest<HTMLButtonElement>('[data-file-path]');
@@ -141,56 +116,36 @@ export class ProfilerDetailLayer {
   }
 
   private renderDynamicContent() {
-    const notice = document.getElementById('profiler-detail-notice');
     const overview = document.getElementById('profiler-detail-overview');
     const chartShell = document.getElementById('profiler-chart-shell');
     const bubbleList = document.getElementById('profiler-bubble-list');
     const rawList = document.getElementById('profiler-raw-list');
-    const subtitle = document.getElementById('profiler-detail-subtitle');
 
-    document
-      .querySelectorAll<HTMLButtonElement>('.profiler-detail-metric-toggle [data-metric]')
-      .forEach((button) => {
-        button.classList.toggle('active', button.dataset.metric === this.metric);
-      });
-
-    if (!notice || !overview || !chartShell || !bubbleList || !rawList || !subtitle) {
+    if (!overview || !chartShell || !bubbleList || !rawList) {
       return;
     }
 
     if (this.state.status === 'loading') {
-      notice.textContent = this.state.message ?? '로딩중..';
-      notice.className = 'notice info';
-      notice.title = '';
       overview.innerHTML = '';
       chartShell.innerHTML = this.renderLoadingState();
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
-      subtitle.textContent = 'Loading session detail...';
       return;
     }
 
     if (this.state.status !== 'ready' || !this.state.detail) {
-      notice.textContent = this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.';
-      notice.className = `notice ${this.state.status === 'error' ? 'error' : 'info'}`;
-      notice.title = '';
       overview.innerHTML = '';
       chartShell.innerHTML = '';
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
-      subtitle.textContent = 'Session timeline analysis';
       return;
     }
 
     const detail = this.state.detail;
-    notice.textContent = this.compactPath(detail.summary.filePath, 7);
-    notice.className = 'notice info';
-    notice.title = detail.summary.filePath;
     overview.innerHTML = this.renderOverview(detail);
     chartShell.innerHTML = this.renderChart(detail);
     bubbleList.innerHTML = this.renderBubbleList(detail);
     rawList.innerHTML = this.renderRawList(detail);
-    subtitle.textContent = `${detail.summary.agent.toUpperCase()} · ${detail.summary.model ?? 'Unknown model'}`;
   }
 
   private renderOverview(detail: SessionDetail): string {
@@ -242,44 +197,17 @@ export class ProfilerDetailLayer {
       ${this.metaPill('Workspace', detail.metadata.cwd ? this.compactPath(detail.metadata.cwd, 5) : '-')}
     </div>
   </div>
-  <div class="profiler-summary-grid">
+  <div class="profiler-overview-board">
     ${this.summaryCell('Total', this.formatNumber(summary.totalTokens ?? 0))}
     ${this.summaryCell('Turns', this.formatNumber(summary.requestCount ?? timeline.length))}
     ${this.summaryCell('Peak turn', this.formatNumber(peakTokens))}
     ${this.summaryCell('Slowest', this.formatDuration(peakLatency))}
     ${this.summaryCell('Span', this.formatDuration(spanMs))}
     ${this.summaryCell('Size', this.formatBytes(summary.fileSizeBytes))}
+    ${this.summaryCell('Peak tokens', topToken ? this.formatNumber(topToken.totalTokens ?? this.getTokenTotal(topToken)) : '-')}
+    ${this.summaryCell('Largest payload', topPayload ? this.formatMetricValue(topPayload.payloadKb ?? 0, 'data') : '-')}
+    ${this.summaryCell('Slowest request', topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-')}
   </div>
-  <div class="profiler-insight-grid">
-    ${this.insightCard(
-      'Peak tokens',
-      topToken,
-      topToken ? this.formatNumber(topToken.totalTokens ?? this.getTokenTotal(topToken)) : '-',
-    )}
-    ${this.insightCard(
-      'Largest payload',
-      topPayload,
-      topPayload ? this.formatMetricValue(topPayload.payloadKb ?? 0, 'data') : '-',
-    )}
-    ${this.insightCard(
-      'Slowest request',
-      topLatency,
-      topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-',
-    )}
-  </div>
-</div>`;
-  }
-
-  private insightCard(
-    label: string,
-    point: SessionTimelinePoint | undefined,
-    value: string,
-  ): string {
-    return `
-<div class="profiler-insight-card">
-  <span>${label}</span>
-  <strong>${value}</strong>
-  <p>${this.escapeHtml(point ? `${point.label ?? point.eventType} | ${this.truncate(point.detail ?? '-', 72)}` : '-')}</p>
 </div>`;
   }
 
@@ -342,7 +270,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
       return `<text x="${label.x}" y="${height - 16}" class="profiler-chart-axis" text-anchor="middle">${this.escapeHtml(label.text)}</text>`;
     });
 
-    const hotspots = this.renderChartHotspots(detail, timeline, series[0], geometry);
     const focus = this.renderChartFocus(detail, timeline);
 
     return `
@@ -363,7 +290,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
         <line x1="${padding.left}" y1="${padding.top + plotHeight}" x2="${width - padding.right}" y2="${padding.top + plotHeight}" class="profiler-chart-baseline" />
         ${xLabels.join('')}
       </svg>
-      ${hotspots}
     </div>
   </div>
   ${focus}
@@ -390,55 +316,6 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
     })
     .join('')}
 </div>`;
-  }
-
-  private renderChartHotspots(
-    detail: SessionDetail,
-    timeline: SessionTimelinePoint[],
-    anchorSeries: ChartSeries,
-    geometry: ChartGeometry,
-  ): string {
-    const ranked = [...timeline]
-      .sort((a, b) => this.getPrimaryValue(b) - this.getPrimaryValue(a))
-      .slice(0, Math.min(5, timeline.length));
-
-    const buttons = ranked
-      .map((point, index) => {
-        const raw = this.findRawEvent(detail, point.sourceEventId);
-        if (!raw) {
-          return '';
-        }
-
-        const pointIndex = timeline.findIndex((candidate) => candidate.id === point.id);
-        const x = this.getPointX(
-          point,
-          pointIndex,
-          timeline,
-          geometry.minTime,
-          geometry.domainRange,
-          geometry.padding.left,
-          geometry.plotWidth,
-        );
-        const y = this.getPointY(
-          anchorSeries.values[pointIndex] ?? this.getPrimaryValue(point),
-          geometry.padding.top,
-          geometry.plotHeight,
-          geometry.maxValue,
-        );
-
-        return `
-<button
-  class="profiler-chart-hotspot"
-  style="left:${x}px; top:${Math.max(12, y - 16 - index * 2)}px"
-  ${this.getSourceAttrs(raw)}
-  title="${this.escapeAttr(point.detail ?? raw.summary)}"
->
-  ${this.escapeHtml(point.label ?? point.eventType)}
-</button>`;
-      })
-      .join('');
-
-    return `<div class="profiler-chart-hotspots">${buttons}</div>`;
   }
 
   private renderBubbleList(detail: SessionDetail): string {
@@ -778,9 +655,9 @@ ${lastPoint ? this.renderMarker(item.marker, item.color, lastPoint.x, lastPoint.
 
   private summaryCell(label: string, value: string): string {
     return `
-<div class="profiler-summary-cell">
-  <span>${label}</span>
-  <strong>${value}</strong>
+<div class="profiler-metric-cell">
+  <span class="profiler-metric-label">${label}</span>
+  <strong class="profiler-metric-value">${value}</strong>
 </div>`;
   }
 

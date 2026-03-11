@@ -7,6 +7,9 @@ import {
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 
+type SortField = 'name' | 'time' | 'size';
+type SortDirection = 'asc' | 'desc';
+
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
   selectedAgent: 'codex',
@@ -74,6 +77,8 @@ export class ProfilerLayer {
   private state = EMPTY_STATE;
   private locale: UiLocale = getDocumentLocale();
   private notice = '';
+  private sortField: SortField = 'time';
+  private sortDirection: SortDirection = 'desc';
 
   render(): string {
     return `
@@ -89,8 +94,8 @@ export class ProfilerLayer {
     <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
   </div>
   <div class="notice ${this.notice ? 'info' : 'hidden'}" id="profiler-notice">${this.notice}</div>
-  <div class="profiler-metric-grid" id="profiler-metric-grid"></div>
   <div class="profiler-tab-row" id="profiler-tab-row"></div>
+  <div class="profiler-sort-bar" id="profiler-sort-bar"></div>
   <div class="profiler-list" id="profiler-session-list"></div>
 </section>`;
   }
@@ -116,6 +121,24 @@ export class ProfilerLayer {
         ...this.state,
         selectedAgent: agent,
       };
+      this.renderDynamicContent();
+    });
+    document.getElementById('profiler-sort-bar')?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest<HTMLButtonElement>('[data-sort]');
+      if (!button) {
+        return;
+      }
+      const field = button.dataset.sort as SortField | undefined;
+      if (!field) {
+        return;
+      }
+      if (this.sortField === field) {
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        this.sortDirection = field === 'name' ? 'asc' : 'desc';
+      }
       this.renderDynamicContent();
     });
     document.getElementById('profiler-session-list')?.addEventListener('click', (event) => {
@@ -158,8 +181,8 @@ export class ProfilerLayer {
     ) as HTMLButtonElement | null;
     const notice = document.getElementById('profiler-notice');
     const badge = document.getElementById('profiler-status-badge');
-    const metrics = document.getElementById('profiler-metric-grid');
     const tabs = document.getElementById('profiler-tab-row');
+    const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
     if (startButton) startButton.disabled = loading;
@@ -169,25 +192,15 @@ export class ProfilerLayer {
       notice.textContent = this.notice;
       notice.className = `notice ${this.notice ? 'info' : 'hidden'}`;
     }
-    if (metrics) {
-      metrics.innerHTML = this.renderMetrics();
-    }
     if (tabs) {
       tabs.innerHTML = this.renderTabs();
+    }
+    if (sortBar) {
+      sortBar.innerHTML = this.renderSortBar();
     }
     if (list) {
       list.innerHTML = this.renderSessionList();
     }
-  }
-
-  private renderMetrics(): string {
-    const aggregate = this.state.aggregate;
-    return [
-      this.metricCard(this.msg('sessions'), String(aggregate.totalSessions)),
-      this.metricCard(this.msg('input'), this.formatNumber(aggregate.totalInputTokens)),
-      this.metricCard(this.msg('output'), this.formatNumber(aggregate.totalOutputTokens)),
-      this.metricCard(this.msg('fileSize'), this.formatBytes(aggregate.totalFileSizeBytes)),
-    ].join('');
   }
 
   private renderTabs(): string {
@@ -200,6 +213,24 @@ export class ProfilerLayer {
       .join('');
   }
 
+  private renderSortBar(): string {
+    const sessions = this.state.sessionsByAgent[this.state.selectedAgent] ?? [];
+    if (sessions.length === 0) {
+      return '';
+    }
+    const arrow = (field: SortField) => {
+      if (this.sortField !== field) {
+        return '';
+      }
+      return this.sortDirection === 'asc' ? ' ↑' : ' ↓';
+    };
+    const active = (field: SortField) => (this.sortField === field ? ' active' : '');
+    return `
+<button class="profiler-sort-btn${active('name')}" data-sort="name">Name${arrow('name')}</button>
+<button class="profiler-sort-btn${active('time')}" data-sort="time">Time${arrow('time')}</button>
+<button class="profiler-sort-btn${active('size')}" data-sort="size">Size${arrow('size')}</button>`;
+  }
+
   private renderSessionList(): string {
     if (this.state.status === 'loading' && this.state.aggregate.totalSessions === 0) {
       return `<div class="profiler-empty">${this.msg('loading')}</div>`;
@@ -210,13 +241,32 @@ export class ProfilerLayer {
       return `<div class="profiler-empty">${this.msg('empty')}</div>`;
     }
 
-    return sessions.map((session) => this.renderSessionRow(session)).join('');
+    const sorted = [...sessions].sort((a, b) => {
+      let cmp = 0;
+      switch (this.sortField) {
+        case 'name':
+          cmp = a.fileName.localeCompare(b.fileName);
+          break;
+        case 'time': {
+          const ta = a.startedAt ?? a.modifiedAt ?? '';
+          const tb = b.startedAt ?? b.modifiedAt ?? '';
+          cmp = ta.localeCompare(tb);
+          break;
+        }
+        case 'size':
+          cmp = a.fileSizeBytes - b.fileSizeBytes;
+          break;
+      }
+      return this.sortDirection === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted.map((session) => this.renderSessionRow(session)).join('');
   }
 
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
     const timestamp = session.startedAt ?? session.modifiedAt;
-    const displayName = this.truncate(session.fileName, 20);
+    const displayName = session.fileName;
     return `
 <button
   class="profiler-session-row ${isSelected ? 'selected' : ''}"
@@ -225,8 +275,10 @@ export class ProfilerLayer {
   title="${this.escapeAttr(session.filePath)}"
 >
   <span class="profiler-session-file" title="${this.escapeAttr(session.fileName)}">${this.escapeHtml(displayName)}</span>
-  <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
-  <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
+  <span class="profiler-session-meta">
+    <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
+    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
+  </span>
 </button>`;
   }
 
@@ -234,14 +286,6 @@ export class ProfilerLayer {
     const loading = this.state.status === 'loading';
     const label = loading ? this.msg('loading') : this.state.status.toUpperCase();
     return `<span class="profiler-status-chip ${this.state.status}">${label}</span>`;
-  }
-
-  private metricCard(label: string, value: string): string {
-    return `
-<div class="profiler-metric-card">
-  <span class="profiler-metric-label">${label}</span>
-  <strong class="profiler-metric-value">${value}</strong>
-</div>`;
   }
 
   private formatDate(value?: string): string {
