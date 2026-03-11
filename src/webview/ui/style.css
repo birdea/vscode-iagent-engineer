@@ -283,6 +283,7 @@ textarea:disabled {
   align-items: center;
   gap: 4px;
   padding: 8px 10px;
+  color: var(--vscode-foreground);
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
   border-radius: var(--figmalab-radius);
   background: color-mix(
@@ -293,14 +294,14 @@ textarea:disabled {
 }
 
 .prompt-metric-label {
-  font-size: 12px;
-  color: var(--vscode-foreground);
+  font-size: inherit;
+  color: inherit;
 }
 
 .prompt-metric-value {
-  font-size: 12px;
+  font-size: inherit;
   font-weight: 400;
-  color: var(--vscode-foreground);
+  color: inherit;
 }
 
 .btn-row-space-between {
