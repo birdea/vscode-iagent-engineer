@@ -94,6 +94,10 @@ export class PromptLayer {
       <span class="prompt-metric-label">${this.msg('prompt.metrics.maxOutput')}</span>
       <strong class="prompt-metric-value" id="prompt-model-max-output-tokens">-</strong>
     </div>
+    <div class="prompt-metric-card">
+      <span class="prompt-metric-label">${this.msg('prompt.metrics.contextWindow')}</span>
+      <strong class="prompt-metric-value" id="prompt-model-context-window">-</strong>
+    </div>
   </div>
   <div class="prompt-action-group">
     <div class="prompt-primary-toolbar">
@@ -468,18 +472,23 @@ export class PromptLayer {
   private refreshModelMetrics() {
     const modelMaxInputTokensEl = document.getElementById('prompt-model-max-input-tokens');
     const modelMaxOutputTokensEl = document.getElementById('prompt-model-max-output-tokens');
-    if (!modelMaxInputTokensEl || !modelMaxOutputTokensEl) {
+    const modelContextWindowEl = document.getElementById('prompt-model-context-window');
+    if (!modelMaxInputTokensEl || !modelMaxOutputTokensEl || !modelContextWindowEl) {
       return;
     }
 
     const modelInfo = this.modelCatalog.find((entry) => entry.id === this.currentModel);
     const maxInputTokens = modelInfo?.inputTokenLimit ?? modelInfo?.contextWindow ?? null;
     const maxOutputTokens = modelInfo?.maxOutputTokens ?? modelInfo?.outputTokenLimit ?? null;
+    const contextWindow = modelInfo?.contextWindow ?? modelInfo?.inputTokenLimit ?? null;
     modelMaxInputTokensEl.textContent = maxInputTokens
       ? `${maxInputTokens.toLocaleString()} tok`
       : '-';
     modelMaxOutputTokensEl.textContent = maxOutputTokens
       ? `${maxOutputTokens.toLocaleString()} tok`
+      : '-';
+    modelContextWindowEl.textContent = contextWindow
+      ? `${contextWindow.toLocaleString()} tok`
       : '-';
   }
 

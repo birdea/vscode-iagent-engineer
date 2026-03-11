@@ -491,7 +491,13 @@ suite('UI Components Consolidated', () => {
       layer.onAgentState('claude', 'sonnet', true);
       postMessageStub.resetHistory();
       layer.onModelsResult([
-        { id: 'sonnet', name: 'Sonnet', inputTokenLimit: 200000, outputTokenLimit: 8192 },
+        {
+          id: 'sonnet',
+          name: 'Sonnet',
+          inputTokenLimit: 200000,
+          outputTokenLimit: 8192,
+          contextWindow: 200000,
+        },
       ]);
       assert.strictEqual(
         document.getElementById('prompt-model-max-input-tokens')?.textContent,
@@ -500,6 +506,10 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(
         document.getElementById('prompt-model-max-output-tokens')?.textContent,
         '8,192 tok',
+      );
+      assert.strictEqual(
+        document.getElementById('prompt-model-context-window')?.textContent,
+        '200,000 tok',
       );
     });
 
