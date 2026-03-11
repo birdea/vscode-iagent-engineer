@@ -744,3 +744,600 @@ a:hover {
     width: 100%;
   }
 }
+
+.profiler-panel-shell,
+.profiler-detail-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profiler-toolbar {
+  justify-content: flex-start;
+}
+
+.profiler-status-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--vscode-editorWidget-background) 82%, transparent);
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.profiler-status-chip.loading {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.profiler-status-chip.ready {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.profiler-status-chip.error {
+  color: var(--vscode-errorForeground);
+}
+
+.profiler-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.profiler-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.profiler-metric-card,
+.profiler-summary-cell {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 12px;
+  padding: 9px 10px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--vscode-editorWidget-background) 82%, transparent),
+    color-mix(in srgb, var(--vscode-sideBar-background) 72%, transparent)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
+}
+
+.profiler-metric-label,
+.profiler-summary-cell span {
+  display: block;
+  color: var(--vscode-descriptionForeground);
+  font-size: 9px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profiler-metric-value,
+.profiler-summary-cell strong {
+  font-size: 13px;
+  color: var(--vscode-foreground);
+}
+
+.profiler-tab-row {
+  display: flex;
+  gap: 6px;
+}
+
+.profiler-tab {
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.profiler-tab.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.profiler-tab span {
+  opacity: 0.8;
+  margin-left: 4px;
+}
+
+.profiler-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.profiler-session-row,
+.profiler-bubble-card,
+.profiler-raw-row {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vscode-editor-background) 96%, transparent),
+    color-mix(in srgb, var(--vscode-editorWidget-background) 82%, transparent)
+  );
+  color: var(--vscode-foreground);
+  padding: 9px 10px;
+}
+
+.profiler-session-row.selected {
+  border-color: var(--vscode-focusBorder);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-focusBorder) 50%, transparent);
+}
+
+.profiler-raw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profiler-session-file,
+.profiler-raw-header strong {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.profiler-session-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(112px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.profiler-session-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profiler-session-stamp,
+.profiler-session-size,
+.profiler-raw-meta,
+.profiler-bubble-card span {
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+}
+
+.profiler-session-stamp {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.profiler-session-size {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.profiler-empty,
+.profiler-empty-chart,
+.profiler-loading-state {
+  border: 1px dashed var(--vscode-panel-border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-detail-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.profiler-detail-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top left, rgba(255, 156, 93, 0.1), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(98, 184, 255, 0.08), transparent 22%);
+}
+
+.profiler-detail-metric-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.profiler-detail-metric-toggle button.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.profiler-detail-overview,
+.profiler-detail-viewer,
+.profiler-chart-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.profiler-detail-viewer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  gap: 10px;
+}
+
+.profiler-overview-panel,
+.profiler-chart-panel,
+.profiler-side-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 90%, transparent);
+  border-radius: 14px;
+  padding: 10px;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--vscode-editorWidget-background) 94%, transparent),
+    color-mix(in srgb, var(--vscode-sideBar-background) 86%, transparent)
+  );
+}
+
+.profiler-overview-panel {
+  gap: 8px;
+}
+
+.profiler-overview-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.profiler-overview-identity span,
+.profiler-meta-pill strong {
+  display: block;
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profiler-overview-identity strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--vscode-foreground);
+  word-break: break-word;
+}
+
+.profiler-overview-identity p {
+  margin-top: 4px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.profiler-meta-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.profiler-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--vscode-foreground);
+  font-size: 10px;
+  line-height: 1.2;
+  background: color-mix(in srgb, var(--vscode-editor-background) 72%, transparent);
+}
+
+.profiler-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.profiler-insight-card {
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  border-radius: 12px;
+  padding: 8px 9px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 72%, transparent);
+}
+
+.profiler-insight-card span {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-insight-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.profiler-insight-card p {
+  margin-top: 4px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.profiler-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.profiler-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profiler-chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+}
+
+.profiler-chart-note {
+  margin-top: 2px;
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-legend-marker {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.profiler-chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 78%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 172, 92, 0.11), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(98, 184, 255, 0.08), transparent 26%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--vscode-editorWidget-background) 90%, transparent),
+      color-mix(in srgb, var(--vscode-sideBar-background) 82%, transparent)
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
+}
+
+.profiler-chart-inner {
+  position: relative;
+  min-height: 252px;
+  padding-bottom: 4px;
+}
+
+.profiler-chart-svg {
+  display: block;
+  width: 100%;
+  height: 252px;
+}
+
+.profiler-chart-frame {
+  fill: color-mix(in srgb, var(--vscode-editor-background) 28%, transparent);
+}
+
+.profiler-chart-grid {
+  stroke: color-mix(in srgb, var(--vscode-panel-border) 72%, transparent);
+  stroke-dasharray: 3 8;
+}
+
+.profiler-chart-axis {
+  fill: var(--vscode-descriptionForeground);
+  font-size: 9px;
+}
+
+.profiler-chart-axis-right {
+  text-anchor: start;
+}
+
+.profiler-chart-baseline {
+  stroke: color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  stroke-width: 1;
+}
+
+.profiler-chart-hotspots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.profiler-chart-hotspot {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  border: 1px solid color-mix(in srgb, var(--vscode-focusBorder) 42%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vscode-button-secondaryBackground) 92%, transparent),
+    color-mix(in srgb, var(--vscode-editor-background) 94%, transparent)
+  );
+  color: var(--vscode-foreground);
+  font-size: 9px;
+  font-weight: 700;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.profiler-chart-focus {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.profiler-focus-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  border-radius: 12px;
+  padding: 8px 9px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 72%, transparent);
+}
+
+.profiler-focus-card span {
+  display: block;
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profiler-focus-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--vscode-foreground);
+}
+
+.profiler-focus-card p {
+  margin-top: 4px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.profiler-detail-rail,
+.profiler-bubble-list,
+.profiler-raw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.profiler-bubble-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profiler-bubble-card p,
+.profiler-raw-row pre {
+  margin-top: 6px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.profiler-raw-row pre {
+  font-size: 10px;
+  max-height: 72px;
+  overflow: hidden;
+}
+
+.profiler-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 2px;
+}
+
+.profiler-spinner {
+  width: 20px;
+  height: 20px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--vscode-panel-border) 70%, transparent);
+  border-top-color: var(--vscode-button-background);
+  animation: profiler-spin 0.9s linear infinite;
+}
+
+@media (max-width: 960px) {
+  .profiler-overview-head,
+  .profiler-insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profiler-detail-viewer {
+    grid-template-columns: 1fr;
+  }
+
+  .profiler-chart-focus {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .profiler-metric-grid,
+  .profiler-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profiler-detail-metric-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .profiler-detail-metric-toggle button {
+    flex: 1;
+  }
+
+  .profiler-tab-row {
+    flex-wrap: wrap;
+  }
+
+  .profiler-session-row {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .profiler-session-stamp,
+  .profiler-session-size {
+    text-align: left;
+  }
+
+  .profiler-chart-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profiler-chart-legend {
+    justify-content: flex-start;
+  }
+}
+
+@keyframes profiler-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

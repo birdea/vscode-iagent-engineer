@@ -1,5 +1,17 @@
 # AI Agent Session Profiler Development Plan
 
+## 0. 2026-03-12 UI 재개발 반영
+
+이번 개정에서는 프로파일러 UI의 정보 밀도와 가독성을 다시 정의한다.
+
+- Sidebar `Profiler Panel`의 세션 리스트는 `세션 파일명`, `timestamp(YYYY-MM-DD HH:mm)`, `파일 크기`만 보여주는 초경량 목록으로 단순화한다.
+- 세션 파일명은 긴 경우 20자 이내로 잘라 리스트 폭을 고정한다.
+- 에이전트 탭은 유지하되, 세션 행 내부의 `model`, `input/output token`, 기타 부가 문구는 제거한다.
+- Bottom `F.Profiler`는 기존의 큰 카드 나열형 구성을 버리고, `상단 compact overview + 중앙 chart + 우측 event/raw rail` 구조의 고밀도 레이아웃으로 재정렬한다.
+- 메타/통계/인사이트는 한 덩어리의 overview 보드 안에 통합한다.
+- 차트는 패딩, 레전드, 보조 문구, 포커스 카드 크기를 줄여 한 화면에서 더 많은 시계열과 요약값을 읽을 수 있어야 한다.
+- 이벤트 카드와 raw 이벤트도 작은 활자와 짧은 요약 중심으로 줄여 차트와 동시에 보이게 한다.
+
 ## 1. 목적
 
 이 문서는 `vscode-figma-mcp-helper`에 `AI Agent 세션 프로파일러`를 추가하기 위한 개발 기획서다.
@@ -16,6 +28,8 @@
 
 가장 중요한 제품 목표는 `Bottom Panel > F.Profiler`의 시간 기반 차트다. 이 차트는 사용자가 지난 세션에서 `어떤 대화가 있었는지`, `어떤 시점에 데이터(KB)와 토큰 사용량이 급증했는지`, `어떤 이벤트가 비용 증가를 유발했는지`를 빠르게 분석할 수 있어야 한다.
 
+이 문서에서 말하는 "완성도 높은 차트"의 기준은 이번 작업에 첨부된 참조 이미지와 동일한 수준의 읽기 경험이다. 즉, 다중 시계열 라인이 한 화면에서 명확히 분리되고, 수평 그리드와 우측 y축 라벨만으로도 값의 높낮이를 빠르게 읽을 수 있으며, 범례와 종점 마커만 보고도 어느 시리즈가 어떤 추세를 보이는지 즉시 파악할 수 있는 차트를 목표로 한다.
+
 ## 2. 요구사항 재정의
 
 ### 기능 요구사항
@@ -27,7 +41,7 @@
 - 요약 리스트에서 특정 세션을 선택하면 상세 분석 결과를 하단 `Panel`에 표시한다.
 - `Start Analysis` 버튼으로 전체 스캔을 실행하고, 총 세션 수와 총 토큰 사용량을 집계한다.
 - 탭 리스트뷰는 `Claude / Codex / Gemini` 3개로 나눈다.
-- 각 세션 요약 항목에는 `날짜`, `파일 크기`, `총 토큰 사용량(input/output)`을 보여준다.
+- 각 세션 요약 항목에는 기본적으로 `파일명`, `timestamp`, `파일 크기`만 보여준다.
 - 상세 뷰에는 `에이전트 이름`, `모델`, `원본 파일 경로`, `시간별 사용량 그래프`, `주요 이벤트 요약`, `원본 메시지 열기` 기능을 포함한다.
 - 사용자가 원하면 발견된 원본 파일을 선택 폴더로 모아 저장하는 `archive/export` 기능을 제공한다.
 - 분석 진행 중이거나 오래 걸리는 작업 중에는 `로딩중..` 상태를 명확히 표시한다.
@@ -245,11 +259,9 @@ Shared Domain
   - `Codex`
   - `Gemini`
 - 세션 리스트
-  - 날짜/시간
+  - 파일명(최대 20자)
+  - 날짜/시간(`YYYY-MM-DD HH:mm`)
   - 파일 크기
-  - 총 input/output tokens
-  - 모델명 요약
-  - 경고 아이콘(파싱 불완전)
 - 보조 액션
   - `Refresh`
   - `Archive All`
@@ -279,20 +291,20 @@ VS Code 공식 용어 기준 이 영역은 `Panel`이다. `Problems / Output / T
 - 헤더
   - agent name
   - model
-  - session id
   - source path
-  - start/end time
-- 요약 블록
-  - total input tokens
-  - total output tokens
-  - cached tokens
-  - max context / max observed payload
-  - file size
+  - compact timestamp / range
+- compact overview 보드
+  - 세션 식별 정보
+  - source / provider / status / workspace / range pill
+  - total / turns / peak turn / slowest / span / file size
+  - peak tokens / largest payload / slowest request 인사이트
 - 그래프 영역
   - 가로 스크롤 지원
   - x축: timestamp
   - y축: 기본은 tokens
-  - 시리즈: input / output / cached / max
+  - 기본 시각화는 첨부 참조 이미지처럼 `다중 시계열 line chart` 품질을 목표로 한다
+  - 수평 grid line, 우측 y축 라벨, 하단 범례, 시리즈 종점 마커를 포함한다
+  - 시리즈: `total / input / output / cached / trend`를 우선 제공하고, 필요한 경우 `max context` 또는 `payload trend`를 보조 시리즈로 확장한다
   - 보조 metric: data size(KB) 토글 또는 보조 축
   - latency metric: request -> response-received / response-complete duration(ms)
   - 특정 시점 spike가 명확히 보이도록 hover, crosshair, zoom 또는 좁은 구간 집중 탐색 지원
@@ -302,11 +314,10 @@ VS Code 공식 용어 기준 이 영역은 `Panel`이다. `Problems / Output / T
   - 주요 event message 요약
   - hover tooltip
   - click 시 원본 이벤트 또는 메시지를 editor에 표시
-- 하단 raw event list
-  - timestamp
-  - type
-  - short summary
-  - open action
+- 우측 rail
+  - key events
+  - linked raw events
+  - 모두 compact card로 표시
 - 상세 분석 로딩 중 `로딩중..` 오버레이 또는 skeleton 표시
 
 ## 8. 데이터 소스 전략
@@ -469,6 +480,17 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 - 기본 정렬은 시간순이며, 필요한 경우 high-usage event만 필터링할 수 있어야 한다.
 - 느린 응답 구간은 latency 시리즈나 marker로 분명히 표시되어야 한다.
 - 사용자는 `토큰을 많이 쓴 구간`, `데이터가 큰 구간`, `응답이 오래 걸린 구간`이 서로 어떻게 겹치는지 빠르게 비교할 수 있어야 한다.
+
+## 10.3 참조 차트 수준 목표
+
+이번 작업의 참조 이미지는 단순한 선 그래프 예시가 아니라, 실제로 달성해야 하는 시각적 판독성 기준이다.
+
+- 한 차트 안에서 4~5개 시리즈를 동시에 올려도 라인이 서로 뭉개지지 않아야 한다.
+- 우측 y축 숫자만으로도 대략적인 규모를 즉시 읽을 수 있어야 한다.
+- 종점 마커를 통해 "현재/마지막 상태"를 빠르게 비교할 수 있어야 한다.
+- 날짜 축 라벨은 과도하게 빽빽하지 않게 유지하되, 세션이 며칠에 걸치면 월/일 단위 변화를 읽을 수 있어야 한다.
+- 범례는 색만이 아니라 마커 형태까지 함께 보여서 테마가 바뀌어도 구분이 가능해야 한다.
+- spike hotspot, key event card, raw row가 차트와 직접 연결되어 "차트에서 본 이상치"를 바로 원문 이벤트로 추적할 수 있어야 한다.
 
 ## 11. 아카이브 기능 설계
 
@@ -637,3 +659,66 @@ v1의 성공 기준은 명확하다.
 - Codex 세션 파일을 안정적으로 스캔하고 분석할 수 있다.
 - Claude/Gemini는 설정 가능한 경로 기반으로 동일 UI에 수용된다.
 - 사용자는 세션 목록 탐색, 상세 분석 확인, 파일 아카이브를 VS Code 안에서 수행할 수 있다.
+
+## 18. 2026-03-11 재평가 및 수정 계획
+
+### 현재 draft 구현 평가
+
+- 사이드바/하단 패널 뼈대는 이미 들어갔다.
+- `Codex`는 부분 파싱만 되어 있었고, turn 단위 누적 token delta와 latency 분석이 부족했다.
+- `Claude`는 실제 로컬 JSONL 포맷이 존재하지만 상세 분석이 사실상 미구현이었다.
+- `Gemini`는 현재 로컬에서 세션 원본 포맷을 확인하지 못했고, `.gemini` 루트에는 브라우저 프로필 노이즈가 많아 탐색 전략을 보수적으로 다뤄야 한다.
+- `F.Profiler`는 SVG polyline 수준이라 `시간순 세션 구간`, `turn/request 단위 token 소모`, `spike 구간`, `payload/latency 비교`를 읽기 어려웠다.
+
+즉, 현재 구현은 v1 초안으로는 의미가 있지만, 사용자가 원하는 "지난 세션을 다시 읽는 분석 도구" 수준에는 도달하지 못했다.
+
+### 실포맷 재확인 결과
+
+#### Codex
+
+- 실제 포맷은 `session_meta`, `task_started`, `user_message`, `token_count`, `agent_message`, `task_complete`, `function_call/custom_tool_call` 중심의 JSONL이다.
+- `token_count.info.total_token_usage`는 누적값이므로 차트는 raw 누적치가 아니라 `turn delta`로 다시 계산해야 한다.
+- latency는 `task_started -> first response` 또는 `task_started -> task_complete` 기준으로 계산하는 것이 자연스럽다.
+
+#### Claude
+
+- 실제 포맷은 `user`, `assistant`, `progress`, `queue-operation`, `file-history-snapshot` 등이 섞인 JSONL이다.
+- assistant record의 `message.usage` 안에 `input/output/cache_*`가 있으며, `requestId` 기준으로 묶어야 중복 집계가 줄어든다.
+- assistant content는 `text`, `tool_use`, `thinking`으로 나뉘므로 bubble title/detail 생성 규칙이 agent별로 달라야 한다.
+
+#### Gemini
+
+- 현재 로컬 환경에서는 세션 원본을 확인하지 못했다.
+- 따라서 이번 수정에서는 `Gemini parser 완성`보다 `탐색 noise 축소 + fallback 안전화`를 우선한다.
+- 실제 Gemini 세션 샘플 확보 후 parser를 별도 phase로 확정하는 것이 맞다.
+
+### 수정 구현 원칙
+
+- 차트의 기본 단위는 low-level event 전체가 아니라 `Codex turn`, `Claude request` 같은 의미 단위로 재구성한다.
+- x축은 시간순, y축은 metric별(`tokens`, `KB`, `latency`)로 분리한다.
+- `tokens`는 stacked bar보다 참조 이미지 수준의 비교 가독성을 우선해 `multi-series line chart`를 기본으로 본다.
+- `KB`, `latency`도 동일한 time rail 위에서 line chart + trend overlay 구조로 맞춘다.
+- raw event list는 길게 늘이지 말고, spike와 직접 연결되는 핵심 row만 짧게 보여준다.
+- matrix 형태의 보조 수치는 축소하고, `총량`, `peak`, `slowest`, `span` 같은 고신호 수치만 전면에 둔다.
+
+### 이번 수정 작업 범위
+
+- `Codex` turn aggregation 재구현
+- `Claude` request aggregation 신규 구현
+- directory walker에 noise directory skip 추가
+- `F.Profiler`를 참조 이미지 수준의 판독성을 목표로 한 horizontal scrollable multi-series chart로 재구현
+- spike hotspot / concise event cards / compact raw rows 추가
+- parser/UI 회귀 방지 테스트 추가
+
+### 이번 수정 이후 남는 후속 과제
+
+- 실제 Gemini session fixture 확보 및 parser 구현
+- chart hover/crosshair 세밀화
+- 선택 구간 zoom/filter UI 추가
+- series visibility toggle, highlighted focus range, percentile guide line 추가
+- data/latency chart에도 endpoint marker와 trend overlay를 일관되게 적용
+- raw event list와 chart hotspot 간 양방향 selection sync 추가
+- archive manifest에 통계 요약 추가
+- parse warning, partial parse 원인, skipped directory 이유를 UI에 더 구체적으로 노출
+- 모바일 폭과 좁은 panel 폭에서의 axis tick density 최적화
+- 접근성 보강: 색상 외 마커/텍스트 대체, keyboard focus 이동, screen-reader용 summary 문구 추가

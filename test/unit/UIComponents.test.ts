@@ -5,6 +5,8 @@ import { vscode } from '../../src/webview/ui/vscodeApi';
 import { AgentLayer } from '../../src/webview/ui/components/AgentLayer';
 import { FigmaLayer } from '../../src/webview/ui/components/FigmaLayer';
 import { LogLayer } from '../../src/webview/ui/components/LogLayer';
+import { ProfilerDetailLayer } from '../../src/webview/ui/components/ProfilerDetailLayer';
+import { ProfilerLayer } from '../../src/webview/ui/components/ProfilerLayer';
 import { PromptLayer } from '../../src/webview/ui/components/PromptLayer';
 
 suite('UI Components Consolidated', () => {
@@ -836,6 +838,185 @@ suite('UI Components Consolidated', () => {
       layer.onHostError('Generation already in progress');
       const notice = document.getElementById('prompt-notice');
       assert.ok(notice?.textContent?.includes('이미'));
+    });
+  });
+
+  suite('ProfilerDetailLayer', () => {
+    let layer: ProfilerDetailLayer;
+
+    setup(() => {
+      layer = new ProfilerDetailLayer();
+      document.getElementById('app')!.innerHTML = layer.render();
+      layer.mount();
+    });
+
+    test('renders timeline chart and switches metric mode', () => {
+      layer.onState({
+        status: 'ready',
+        sessionId: 'codex:test',
+        detail: {
+          summary: {
+            id: 'codex:test',
+            agent: 'codex',
+            filePath: '/tmp/session.jsonl',
+            fileName: 'session.jsonl',
+            modifiedAt: '2026-03-11T10:00:00.000Z',
+            fileSizeBytes: 4096,
+            totalInputTokens: 320,
+            totalOutputTokens: 140,
+            totalCachedTokens: 60,
+            totalTokens: 520,
+            requestCount: 2,
+            parseStatus: 'ok',
+            warnings: [],
+          },
+          metadata: {
+            sourceFormat: 'jsonl',
+          },
+          timeline: [
+            {
+              id: 'p1',
+              timestamp: '2026-03-11T10:00:00.000Z',
+              endTimestamp: '2026-03-11T10:00:03.000Z',
+              inputTokens: 100,
+              outputTokens: 40,
+              cachedTokens: 20,
+              totalTokens: 160,
+              payloadKb: 4.4,
+              latencyMs: 3000,
+              latencyPhase: 'response_completed',
+              eventType: 'turn',
+              label: 'T01',
+              detail: 'Inspect setup',
+              sourceEventId: 'raw-1',
+            },
+            {
+              id: 'p2',
+              timestamp: '2026-03-11T10:01:00.000Z',
+              endTimestamp: '2026-03-11T10:01:05.000Z',
+              inputTokens: 220,
+              outputTokens: 100,
+              cachedTokens: 40,
+              totalTokens: 360,
+              payloadKb: 7.8,
+              latencyMs: 5000,
+              latencyPhase: 'response_completed',
+              eventType: 'turn',
+              label: 'T02',
+              detail: 'Render profiler chart',
+              sourceEventId: 'raw-2',
+            },
+          ],
+          eventBubbles: [
+            {
+              id: 'bubble-1',
+              timestamp: '2026-03-11T10:01:05.000Z',
+              title: 'Turn completed',
+              detail: 'Render profiler chart',
+              rawEventId: 'raw-2',
+            },
+          ],
+          rawEvents: [
+            {
+              id: 'raw-1',
+              filePath: '/tmp/session.jsonl',
+              lineNumber: 4,
+              timestamp: '2026-03-11T10:00:03.000Z',
+              eventType: 'token_count',
+              summary: 'Token snapshot',
+              excerpt: '{"sample":1}',
+              payloadKb: 4.4,
+            },
+            {
+              id: 'raw-2',
+              filePath: '/tmp/session.jsonl',
+              lineNumber: 8,
+              timestamp: '2026-03-11T10:01:05.000Z',
+              eventType: 'task_complete',
+              summary: 'Turn completed',
+              excerpt: '{"sample":2}',
+              payloadKb: 7.8,
+            },
+          ],
+        },
+      });
+
+      assert.ok(
+        document.getElementById('profiler-detail-overview')?.textContent?.includes('jsonl'),
+      );
+      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Input'));
+      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Trend'));
+      assert.ok(
+        document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
+      );
+      assert.strictEqual(document.querySelectorAll('.profiler-focus-card').length, 2);
+
+      const dataButton = document.querySelector('[data-metric="data"]') as HTMLButtonElement;
+      dataButton.click();
+
+      assert.ok(
+        document.getElementById('profiler-chart-shell')?.textContent?.includes('Payload KB'),
+      );
+      assert.ok(document.querySelector('.profiler-chart-hotspot'));
+
+      const latencyButton = document.querySelector('[data-metric="latency"]') as HTMLButtonElement;
+      latencyButton.click();
+
+      assert.ok(
+        document.getElementById('profiler-chart-shell')?.textContent?.includes('Latency ms'),
+      );
+    });
+  });
+
+  suite('ProfilerLayer', () => {
+    let layer: ProfilerLayer;
+
+    setup(() => {
+      layer = new ProfilerLayer();
+      document.getElementById('app')!.innerHTML = layer.render();
+      layer.mount();
+    });
+
+    test('renders compact session rows with filename timestamp and size only', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:1',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 100,
+          totalOutputTokens: 40,
+          totalCachedTokens: 0,
+          totalTokens: 140,
+          totalFileSizeBytes: 56320,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:1',
+              agent: 'codex',
+              filePath: '/tmp/very-long-session-file-name.jsonl',
+              fileName: 'very-long-session-file-name.jsonl',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 56320,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const row = document.querySelector('.profiler-session-row') as HTMLButtonElement;
+      assert.ok(row);
+      assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
+      assert.ok(row.textContent?.includes('very-long-session...'));
+      assert.ok(row.textContent?.includes('2026-03-11'));
+      assert.ok(row.textContent?.includes('55.0 KB'));
+      assert.ok(!row.textContent?.includes('Unknown model'));
+      assert.ok(!row.textContent?.includes('In 100'));
+      assert.ok(!row.textContent?.includes('Out 40'));
     });
   });
 });
