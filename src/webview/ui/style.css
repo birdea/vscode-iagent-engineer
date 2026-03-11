@@ -280,7 +280,7 @@ textarea:disabled {
 
 .prompt-metric-card {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 4px;
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
@@ -293,12 +293,17 @@ textarea:disabled {
 }
 
 .prompt-metric-label {
-  font-size: 11px;
+  font-size: 0.5rem;
+  color: var(--vscode-descriptionForeground);
+}
+
+.prompt-metric-equals {
+  font-size: 0.5rem;
   color: var(--vscode-descriptionForeground);
 }
 
 .prompt-metric-value {
-  font-size: 1rem;
+  font-size: 0.5rem;
   font-weight: 700;
   color: var(--vscode-foreground);
 }

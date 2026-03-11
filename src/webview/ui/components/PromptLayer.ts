@@ -72,14 +72,17 @@ export class PromptLayer {
   <div class="prompt-metrics stack-gap-sm" id="token-estimate">
     <div class="prompt-metric-card">
       <span class="prompt-metric-label">${this.msg('prompt.metrics.data')}</span>
+      <span class="prompt-metric-equals">=</span>
       <strong class="prompt-metric-value" id="prompt-data-size">0.0KB</strong>
     </div>
     <div class="prompt-metric-card">
       <span class="prompt-metric-label">${this.msg('prompt.metrics.estimate')}</span>
+      <span class="prompt-metric-equals">=</span>
       <strong class="prompt-metric-value" id="prompt-estimated-tokens">~0 tok</strong>
     </div>
     <div class="prompt-metric-card">
       <span class="prompt-metric-label">${this.msg('prompt.metrics.max')}</span>
+      <span class="prompt-metric-equals">=</span>
       <strong class="prompt-metric-value" id="prompt-model-max-tokens">-</strong>
     </div>
   </div>
