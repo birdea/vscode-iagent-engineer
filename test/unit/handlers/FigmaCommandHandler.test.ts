@@ -232,6 +232,20 @@ suite('FigmaCommandHandler', () => {
     assert.ok(editorIntegration.openInEditor.calledOnce);
   });
 
+  test('fetchData opens multiline text results as readable plaintext', async () => {
+    mcpClient.getDesignContext.resolves('line1\\n\\tline2');
+
+    await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(
+      editorIntegration.openInEditor.calledWith(
+        'line1\n\tline2',
+        'plaintext',
+        'figma-design-data.txt',
+      ),
+    );
+  });
+
   test('fetchData stores raw input before MCP request', async () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
@@ -319,6 +333,20 @@ suite('FigmaCommandHandler', () => {
         data: { variables: [{ name: 'color.primary' }] },
         kind: 'variableDefs',
       }),
+    );
+  });
+
+  test('fetchMetadata prettifies JSON string results before opening editor', async () => {
+    mcpClient.getMetadata.resolves('{"layers":[{"id":"1","name":"Frame"}]}');
+
+    await handler.fetchMetadata('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(
+      editorIntegration.openInEditor.calledWith(
+        '{\n  "layers": [\n    {\n      "id": "1",\n      "name": "Frame"\n    }\n  ]\n}',
+        'json',
+        'figma-metadata.json',
+      ),
     );
   });
 

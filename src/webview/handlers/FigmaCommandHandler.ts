@@ -194,10 +194,11 @@ export class FigmaCommandHandler {
       try {
         const data = await this.mcpClient.getDesignContext(parsed.fileId, parsed.nodeId);
         this.stateManager.setLastMcpData(data);
+        const formatted = this.formatDataForEditor(data, 'figma-design-data.json');
         await this.editorIntegration.openInEditor(
-          JSON.stringify(data, null, 2),
-          'json',
-          'figma-design-data.json',
+          formatted.content,
+          formatted.language,
+          formatted.suggestedName,
         );
 
         this.post({ event: 'figma.dataResult', data, kind: 'designContext' });
@@ -218,10 +219,11 @@ export class FigmaCommandHandler {
         'figma',
         'MCP not connected - returning local URL parse result only. Connect to MCP for full Figma data.',
       );
+      const formatted = this.formatDataForEditor(parsed, 'figma-design-data.json');
       await this.editorIntegration.openInEditor(
-        JSON.stringify(parsed, null, 2),
-        'json',
-        'figma-design-data.json',
+        formatted.content,
+        formatted.language,
+        formatted.suggestedName,
       );
       this.post({ event: 'figma.dataResult', data: parsed, kind: 'parsedInput' });
     }
@@ -365,7 +367,12 @@ export class FigmaCommandHandler {
     try {
       const data = await options.fetcher(parsed.fileId, parsed.nodeId);
       this.stateManager.setLastMcpData(data);
-      await this.editorIntegration.openInEditor(JSON.stringify(data, null, 2), 'json', options.fileName);
+      const formatted = this.formatDataForEditor(data, options.fileName);
+      await this.editorIntegration.openInEditor(
+        formatted.content,
+        formatted.language,
+        formatted.suggestedName,
+      );
       this.post({ event: 'figma.dataResult', data, kind: options.kind });
     } catch (e) {
       const errMessage = toErrorMessage(e);
@@ -378,6 +385,60 @@ export class FigmaCommandHandler {
         source: 'figma',
         message: this.toFriendlyFetchMessage(errMessage),
       });
+    }
+  }
+
+  private formatDataForEditor(
+    data: unknown,
+    suggestedName: string,
+  ): { content: string; language: string; suggestedName: string } {
+    if (typeof data === 'string') {
+      const readableText = this.toReadableText(data);
+      const parsedJson = this.tryParseJson(readableText);
+      if (parsedJson !== undefined) {
+        return {
+          content: JSON.stringify(parsedJson, null, 2),
+          language: 'json',
+          suggestedName,
+        };
+      }
+
+      return {
+        content: readableText,
+        language: 'plaintext',
+        suggestedName: suggestedName.replace(/\.json$/i, '.txt'),
+      };
+    }
+
+    return {
+      content: JSON.stringify(data, null, 2),
+      language: 'json',
+      suggestedName,
+    };
+  }
+
+  private toReadableText(value: string): string {
+    return value
+      .replace(/\r\n/g, '\n')
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\"/g, '"');
+  }
+
+  private tryParseJson(value: string): unknown | undefined {
+    const trimmed = value.trim();
+    if (
+      !(trimmed.startsWith('{') && trimmed.endsWith('}')) &&
+      !(trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return undefined;
     }
   }
 }
