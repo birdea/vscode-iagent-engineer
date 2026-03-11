@@ -6,6 +6,9 @@ export const VIEW_IDS = {
   SETUP: 'iagent-engineer.setup',
   PROMPT: 'iagent-engineer.prompt',
   LOG: 'iagent-engineer.log',
+  PROFILER: 'iagent-engineer.profiler',
+  LOG: 'iagent-engineer.log',
+  PROFILER_DETAIL: 'iagent-engineer.profiler-detail',
 } as const;
 
 export const COMMANDS = {
@@ -25,6 +28,12 @@ export const CONFIG_KEYS = {
   DEEPSEEK_MODELS: 'iagent-engineer.deepseekModels',
   QWEN_MODELS: 'iagent-engineer.qwenModels',
   OPENROUTER_MODELS: 'iagent-engineer.openrouterModels',
+  PROFILER_CLAUDE_SEARCH_ROOTS: 'iagent-engineer.profiler.claudeSearchRoots',
+  PROFILER_CODEX_SEARCH_ROOTS: 'iagent-engineer.profiler.codexSearchRoots',
+  PROFILER_GEMINI_SEARCH_ROOTS: 'iagent-engineer.profiler.geminiSearchRoots',
+  PROFILER_MAX_FILES_PER_AGENT: 'iagent-engineer.profiler.maxFilesPerAgent',
+  PROFILER_MAX_FILE_SIZE_MB: 'iagent-engineer.profiler.maxFileSizeMB',
+  PROFILER_ARCHIVE_PRESERVE_STRUCTURE: 'iagent-engineer.profiler.archivePreserveStructure',
 } as const;
 
 export const SECRET_KEYS = {

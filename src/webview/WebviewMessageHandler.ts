@@ -10,6 +10,9 @@ import { FigmaCommandHandler } from './handlers/FigmaCommandHandler';
 import { AgentCommandHandler } from './handlers/AgentCommandHandler';
 import { PromptCommandHandler } from './handlers/PromptCommandHandler';
 import { StateManager } from '../state/StateManager';
+import { ProfilerStateManager } from '../profiler/ProfilerStateManager';
+import { ProfilerService } from '../profiler/ProfilerService';
+import { ProfilerCommandHandler } from './handlers/ProfilerCommandHandler';
 import { UiLocale } from '../i18n';
 import { toErrorMessage } from '../errors';
 
@@ -21,6 +24,7 @@ export class WebviewMessageHandler {
   private figmaHandler: FigmaCommandHandler;
   private agentHandler: AgentCommandHandler;
   private promptHandler: PromptCommandHandler;
+  private profilerHandler?: ProfilerCommandHandler;
 
   constructor(
     private webview: vscode.Webview,
@@ -30,6 +34,8 @@ export class WebviewMessageHandler {
     private stateManager: StateManager,
     extensionVersion: string,
     locale: UiLocale,
+    profilerStateManager?: ProfilerStateManager,
+    profilerService?: ProfilerService,
   ) {
     this.mcpClient = new McpClient(mcpEndpoint, {
       name: 'iagent-engineer',
@@ -57,6 +63,14 @@ export class WebviewMessageHandler {
       stateManager,
       locale,
     );
+    if (profilerStateManager && profilerService) {
+      this.profilerHandler = new ProfilerCommandHandler(
+        webview,
+        profilerStateManager,
+        profilerService,
+        this.editorIntegration,
+      );
+    }
   }
 
   private post(msg: HostToWebviewMessage) {
@@ -148,6 +162,21 @@ export class WebviewMessageHandler {
         case 'editor.saveFile':
           await this.promptHandler.saveFile(msg.code, msg.filename);
           break;
+        case 'profiler.getState':
+          this.profilerHandler?.postCurrentState();
+          break;
+        case 'profiler.scan':
+          await this.profilerHandler?.scan();
+          break;
+        case 'profiler.selectSession':
+          await this.profilerHandler?.selectSession(msg.id, msg.agent);
+          break;
+        case 'profiler.archiveAll':
+          await this.profilerHandler?.archiveAll();
+          break;
+        case 'profiler.openSource':
+          await this.profilerHandler?.openSource(msg.filePath, msg.lineNumber);
+          break;
       }
     } catch (e) {
       const message = toErrorMessage(e);
@@ -165,6 +194,7 @@ export class WebviewMessageHandler {
       command.startsWith('editor.')
     )
       return 'prompt';
+    if (command.startsWith('profiler.')) return 'profiler';
     return 'system';
   }
 

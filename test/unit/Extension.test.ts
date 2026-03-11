@@ -116,7 +116,7 @@ suite('Extension Comprehensive', () => {
     await activate(mockContext);
     await deactivate();
 
-    assert.strictEqual((SidebarProvider.prototype.dispose as any).callCount, 3);
+    assert.strictEqual((SidebarProvider.prototype.dispose as any).callCount, 5);
     assert.ok(outputChannel.dispose.calledOnce);
   });
 });

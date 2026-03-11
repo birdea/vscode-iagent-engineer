@@ -6,6 +6,8 @@ import { DEFAULT_MCP_ENDPOINT, CONFIG_KEYS, getSecretStorageKey } from '../const
 import { RemoteFigmaAuthService } from '../figma/RemoteFigmaAuthService';
 import { WebviewToHostMessage } from '../types';
 import { StateManager } from '../state/StateManager';
+import { ProfilerStateManager } from '../profiler/ProfilerStateManager';
+import { ProfilerService } from '../profiler/ProfilerService';
 import { resolveLocale } from '../i18n';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -13,6 +15,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private handler?: WebviewMessageHandler;
   private logSubscription?: vscode.Disposable;
   private stateSubscription?: vscode.Disposable;
+  private profilerOverviewSubscription?: vscode.Disposable;
+  private profilerDetailSubscription?: vscode.Disposable;
   private messageSubscription?: vscode.Disposable;
   private viewDisposeSubscription?: vscode.Disposable;
 
@@ -24,6 +28,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     private readonly stateManager: StateManager,
     private readonly remoteAuthService: RemoteFigmaAuthService,
     private readonly onLog?: (entry: import('../types').LogEntry) => void,
+    private readonly profilerStateManager?: ProfilerStateManager,
+    private readonly profilerService?: ProfilerService,
   ) {}
 
   resolveWebviewView(
@@ -53,6 +59,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       this.stateManager,
       this.context.extension.packageJSON.version,
       locale,
+      this.profilerStateManager,
+      this.profilerService,
     );
 
     if (this.onLog) {
@@ -68,6 +76,28 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         void this.postAgentState(agent, model);
       });
       void this.postAgentState(this.stateManager.getAgent(), this.stateManager.getModel());
+    }
+
+    if (this.section === 'profiler' && this.profilerStateManager) {
+      this.profilerOverviewSubscription?.dispose();
+      this.profilerOverviewSubscription = this.profilerStateManager.onOverviewChange((state) => {
+        this.postMessage({ event: 'profiler.state', state });
+      });
+      this.postMessage({
+        event: 'profiler.state',
+        state: this.profilerStateManager.getOverviewState(),
+      });
+    }
+
+    if (this.section === 'profiler-detail' && this.profilerStateManager) {
+      this.profilerDetailSubscription?.dispose();
+      this.profilerDetailSubscription = this.profilerStateManager.onDetailChange((state) => {
+        this.postMessage({ event: 'profiler.detailState', state });
+      });
+      this.postMessage({
+        event: 'profiler.detailState',
+        state: this.profilerStateManager.getDetailState(),
+      });
     }
 
     this.viewDisposeSubscription?.dispose();
@@ -142,6 +172,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     this.stateSubscription?.dispose();
     this.stateSubscription = undefined;
+
+    this.profilerOverviewSubscription?.dispose();
+    this.profilerOverviewSubscription = undefined;
+
+    this.profilerDetailSubscription?.dispose();
+    this.profilerDetailSubscription = undefined;
 
     this.messageSubscription?.dispose();
     this.messageSubscription = undefined;

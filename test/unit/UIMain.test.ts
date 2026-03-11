@@ -6,7 +6,7 @@ import { installDom } from './helpers/dom';
 suite('UI Main Initialization', () => {
   let dom: JSDOM;
 
-  const sections = ['setup', 'prompt', 'log'];
+  const sections = ['setup', 'prompt', 'log', 'profiler', 'profiler-detail'];
 
   function setupDom(section: string) {
     dom = installDom(section).dom;
@@ -91,6 +91,44 @@ suite('UI Main Initialization', () => {
       entry: { id: '1', timestamp: '', level: 'info', layer: 'system', message: 'hi' },
     });
     dispatch({ event: 'log.clear' });
+    dispatch({ event: 'unknown.event' });
+  });
+
+  test('profiler section — all message branches', () => {
+    setupDom('profiler');
+    MainModule.init();
+
+    dispatch({
+      event: 'profiler.state',
+      state: {
+        status: 'ready',
+        selectedAgent: 'codex',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 10,
+          totalOutputTokens: 20,
+          totalCachedTokens: 0,
+          totalTokens: 30,
+          totalFileSizeBytes: 1024,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [],
+          gemini: [],
+        },
+      },
+    });
+    dispatch({ event: 'profiler.archiveResult', result: { targetPath: '/tmp/x', fileCount: 1 } });
+    dispatch({ event: 'error', source: 'profiler', message: 'profiler error' });
+    dispatch({ event: 'unknown.event' });
+  });
+
+  test('profiler detail section — all message branches', () => {
+    setupDom('profiler-detail');
+    MainModule.init();
+
+    dispatch({ event: 'profiler.detailState', state: { status: 'loading', message: '로딩중..' } });
+    dispatch({ event: 'error', source: 'profiler', message: 'detail error' });
     dispatch({ event: 'unknown.event' });
   });
 

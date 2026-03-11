@@ -1,12 +1,15 @@
 // Agent types
 export type AgentType = 'gemini' | 'claude' | 'deepseek' | 'qwen' | 'openrouter';
+export type ProfilerAgentType = 'claude' | 'codex' | 'gemini';
 export type ConnectionMode = 'local' | 'remote';
 export type OutputFormat = 'html' | 'tsx' | 'vue' | 'tailwind';
 export type LogLevel = 'info' | 'warn' | 'error' | 'success';
-export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'system';
+export type LayerType = 'figma' | 'agent' | 'prompt' | 'editor' | 'profiler' | 'system';
 export type PreviewTarget = 'panel' | 'browser';
 export type FigmaDataResultKind = 'designContext' | 'parsedInput' | 'metadata' | 'variableDefs';
 export type PromptMcpDataKind = 'designContext' | 'metadata';
+export type ProfilerStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type ProfilerMetricType = 'tokens' | 'data' | 'latency';
 
 // Log entry
 export interface LogEntry {
@@ -84,6 +87,106 @@ export interface RemoteAuthSession {
   expiresAt?: number;
 }
 
+export interface ProfilerAggregate {
+  totalSessions: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCachedTokens: number;
+  totalTokens: number;
+  totalFileSizeBytes: number;
+}
+
+export interface SessionSummary {
+  id: string;
+  agent: ProfilerAgentType;
+  filePath: string;
+  fileName: string;
+  title?: string;
+  modifiedAt: string;
+  startedAt?: string;
+  endedAt?: string;
+  fileSizeBytes: number;
+  model?: string;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
+  totalCachedTokens?: number;
+  totalTokens?: number;
+  requestCount?: number;
+  parseStatus: 'ok' | 'partial' | 'unsupported' | 'error';
+  warnings: string[];
+}
+
+export interface SessionRawEventRef {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  timestamp?: string;
+  eventType: string;
+  summary: string;
+  excerpt: string;
+  payloadKb?: number;
+}
+
+export interface SessionTimelinePoint {
+  id: string;
+  timestamp: string;
+  endTimestamp?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  totalTokens?: number;
+  maxTokens?: number;
+  payloadKb?: number;
+  latencyMs?: number;
+  latencyPhase?: 'response_received' | 'response_completed';
+  eventType: string;
+  label?: string;
+  detail?: string;
+  sourceEventId?: string;
+}
+
+export interface SessionEventBubble {
+  id: string;
+  timestamp: string;
+  title: string;
+  detail: string;
+  rawEventId: string;
+}
+
+export interface SessionDetail {
+  summary: SessionSummary;
+  metadata: {
+    sessionId?: string;
+    cwd?: string;
+    provider?: string;
+    sourceFormat: string;
+  };
+  timeline: SessionTimelinePoint[];
+  eventBubbles: SessionEventBubble[];
+  rawEvents: SessionRawEventRef[];
+}
+
+export interface ProfilerOverviewState {
+  status: ProfilerStatus;
+  message?: string;
+  selectedAgent: ProfilerAgentType;
+  selectedSessionId?: string;
+  aggregate: ProfilerAggregate;
+  sessionsByAgent: Record<ProfilerAgentType, SessionSummary[]>;
+}
+
+export interface ProfilerDetailState {
+  status: ProfilerStatus;
+  message?: string;
+  sessionId?: string;
+  detail?: SessionDetail;
+}
+
+export interface ProfilerArchiveResult {
+  targetPath: string;
+  fileCount: number;
+}
+
 // Webview → Host messages
 export type WebviewToHostMessage =
   | { command: 'figma.connect'; mode?: ConnectionMode }
@@ -112,7 +215,12 @@ export type WebviewToHostMessage =
   | { command: 'preview.openBrowser'; code?: string; format?: OutputFormat }
   | { command: 'editor.openGeneratedResult' }
   | { command: 'editor.open'; code: string; language?: string }
-  | { command: 'editor.saveFile'; code: string; filename: string };
+  | { command: 'editor.saveFile'; code: string; filename: string }
+  | { command: 'profiler.getState' }
+  | { command: 'profiler.scan' }
+  | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
+  | { command: 'profiler.archiveAll' }
+  | { command: 'profiler.openSource'; filePath: string; lineNumber?: number };
 
 // Host → Webview messages
 export type HostToWebviewMessage =
@@ -143,4 +251,7 @@ export type HostToWebviewMessage =
   | { event: 'prompt.error'; message: string; code?: 'cancelled' | 'failed' }
   | { event: 'log.append'; entry: LogEntry }
   | { event: 'log.clear' }
+  | { event: 'profiler.state'; state: ProfilerOverviewState }
+  | { event: 'profiler.detailState'; state: ProfilerDetailState }
+  | { event: 'profiler.archiveResult'; result: ProfilerArchiveResult }
   | { event: 'error'; source: LayerType; message: string };

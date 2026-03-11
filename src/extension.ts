@@ -6,6 +6,8 @@ import { COMMANDS, VIEW_IDS, getSecretStorageKey } from './constants';
 import { RemoteFigmaAuthService } from './figma/RemoteFigmaAuthService';
 import { AgentType } from './types';
 import { StateManager } from './state/StateManager';
+import { ProfilerStateManager } from './profiler/ProfilerStateManager';
+import { ProfilerService } from './profiler/ProfilerService';
 import { resolveLocale, t } from './i18n';
 
 let outputChannelRef: vscode.OutputChannel | undefined;
@@ -17,6 +19,8 @@ export async function activate(context: vscode.ExtensionContext) {
   outputChannelRef = outputChannel;
   Logger.initialize(outputChannel);
   const stateManager = new StateManager();
+  const profilerStateManager = new ProfilerStateManager();
+  const profilerService = new ProfilerService();
   const remoteAuthService = new RemoteFigmaAuthService(context.secrets);
 
   // Load saved API keys at activation
@@ -52,8 +56,38 @@ export async function activate(context: vscode.ExtensionContext) {
     stateManager,
     remoteAuthService,
     (entry) => logProvider.postMessage({ event: 'log.append', entry }),
+    profilerStateManager,
+    profilerService,
   );
-  sidebarProviders = [setupProvider, promptProvider, logProvider];
+  const profilerProvider = new SidebarProvider(
+    VIEW_IDS.PROFILER,
+    'profiler',
+    context.extensionUri,
+    context,
+    stateManager,
+    remoteAuthService,
+    undefined,
+    profilerStateManager,
+    profilerService,
+  );
+  const profilerDetailProvider = new SidebarProvider(
+    VIEW_IDS.PROFILER_DETAIL,
+    'profiler-detail',
+    context.extensionUri,
+    context,
+    stateManager,
+    remoteAuthService,
+    undefined,
+    profilerStateManager,
+    profilerService,
+  );
+  sidebarProviders = [
+    setupProvider,
+    promptProvider,
+    profilerProvider,
+    logProvider,
+    profilerDetailProvider,
+  ];
 
   context.subscriptions.push(
     vscode.window.registerUriHandler({
@@ -77,7 +111,13 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(VIEW_IDS.PROMPT, promptProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.window.registerWebviewViewProvider(VIEW_IDS.PROFILER, profilerProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     vscode.window.registerWebviewViewProvider(VIEW_IDS.LOG, logProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.window.registerWebviewViewProvider(VIEW_IDS.PROFILER_DETAIL, profilerDetailProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );

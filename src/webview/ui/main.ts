@@ -2,6 +2,8 @@ import { FigmaLayer } from './components/FigmaLayer';
 import { AgentLayer } from './components/AgentLayer';
 import { PromptLayer } from './components/PromptLayer';
 import { LogLayer } from './components/LogLayer';
+import { ProfilerLayer } from './components/ProfilerLayer';
+import { ProfilerDetailLayer } from './components/ProfilerDetailLayer';
 import { HostToWebviewMessage } from '../../types';
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -131,6 +133,65 @@ export function init() {
             break;
           case 'log.clear':
             layer.clear();
+            break;
+        }
+      });
+      break;
+    }
+    case 'profiler': {
+      const layer = new ProfilerLayer();
+      app.innerHTML = layer.render();
+      layer.mount();
+      bindMessageHandler((msg) => {
+        switch (msg.event) {
+          case 'profiler.state':
+            layer.onState(msg.state);
+            break;
+          case 'profiler.archiveResult':
+            layer.onArchiveResult(msg.result);
+            break;
+          case 'error':
+            if (msg.source === 'profiler' || msg.source === 'system') {
+              layer.onState({
+                status: 'error',
+                message: msg.message,
+                selectedAgent: 'codex',
+                aggregate: {
+                  totalSessions: 0,
+                  totalInputTokens: 0,
+                  totalOutputTokens: 0,
+                  totalCachedTokens: 0,
+                  totalTokens: 0,
+                  totalFileSizeBytes: 0,
+                },
+                sessionsByAgent: {
+                  claude: [],
+                  codex: [],
+                  gemini: [],
+                },
+              });
+            }
+            break;
+        }
+      });
+      break;
+    }
+    case 'profiler-detail': {
+      const layer = new ProfilerDetailLayer();
+      app.innerHTML = layer.render();
+      layer.mount();
+      bindMessageHandler((msg) => {
+        switch (msg.event) {
+          case 'profiler.detailState':
+            layer.onState(msg.state);
+            break;
+          case 'error':
+            if (msg.source === 'profiler' || msg.source === 'system') {
+              layer.onState({
+                status: 'error',
+                message: msg.message,
+              });
+            }
             break;
         }
       });

@@ -39,7 +39,9 @@
     }
   ],
   "activationEvents": [
-    "onView:iagent-engineer.setup"
+    "onView:iagent-engineer.setup",
+    "onView:iagent-engineer.profiler",
+    "onView:iagent-engineer.profiler-detail"
   ],
   "icon": "resources/icon.png",
   "main": "./dist/extension.js",
@@ -49,6 +51,13 @@
         {
           "id": "iagent-engineer",
           "title": "%viewsContainer.title%",
+          "icon": "resources/icon-activity.png"
+        }
+      ],
+      "panel": [
+        {
+          "id": "iagent-engineer-profiler-panel",
+          "title": "%viewsContainer.profilerPanel.title%",
           "icon": "resources/icon-activity.png"
         }
       ]
@@ -67,8 +76,20 @@
         },
         {
           "type": "webview",
+          "id": "iagent-engineer.profiler",
+          "name": "%view.profiler.name%"
+        },
+        {
+          "type": "webview",
           "id": "iagent-engineer.log",
           "name": "%view.log.name%"
+        }
+      ],
+      "iagent-engineer-profiler-panel": [
+        {
+          "type": "webview",
+          "id": "iagent-engineer.profiler-detail",
+          "name": "%view.profilerDetail.name%"
         }
       ]
     },
@@ -177,6 +198,46 @@
           "type": "boolean",
           "default": false,
           "description": "%configuration.openFetchedDataInEditor.description%"
+        },
+        "iagent-engineer.claudeModels": {
+        "iagent-engineer.profiler.claudeSearchRoots": {
+          "type": "array",
+          "default": [],
+          "description": "%configuration.profiler.claudeSearchRoots.description%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "iagent-engineer.profiler.codexSearchRoots": {
+          "type": "array",
+          "default": [],
+          "description": "%configuration.profiler.codexSearchRoots.description%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "iagent-engineer.profiler.geminiSearchRoots": {
+          "type": "array",
+          "default": [],
+          "description": "%configuration.profiler.geminiSearchRoots.description%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "iagent-engineer.profiler.maxFilesPerAgent": {
+          "type": "number",
+          "default": 500,
+          "description": "%configuration.profiler.maxFilesPerAgent.description%"
+        },
+        "iagent-engineer.profiler.maxFileSizeMB": {
+          "type": "number",
+          "default": 20,
+          "description": "%configuration.profiler.maxFileSizeMB.description%"
+        },
+        "iagent-engineer.profiler.archivePreserveStructure": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.profiler.archivePreserveStructure.description%"
         },
         "iagent-engineer.claudeModels": {
           "type": "array",
