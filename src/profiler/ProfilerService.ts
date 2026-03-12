@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as readline from 'readline';
 import * as vscode from 'vscode';
 import { CONFIG_KEYS } from '../constants';
 import { getProfilerAgentDescriptor } from './ProfilerCatalog';
@@ -124,6 +125,7 @@ interface ClaudeRequestDraft {
 
 const DEFAULT_MAX_FILES_PER_AGENT = 500;
 const DEFAULT_MAX_FILE_SIZE_MB = 20;
+const SESSION_SUMMARY_CONCURRENCY = 8;
 const SKIP_DIRECTORY_NAMES = new Set([
   '.git',
   'node_modules',
@@ -169,7 +171,11 @@ export class ProfilerService {
 
     for (const agent of ['claude', 'codex', 'gemini'] as const) {
       const files = await this.discoverFiles(agent);
-      const summaries = await Promise.all(files.map((file) => this.summarizeFile(file)));
+      const summaries = await this.mapWithConcurrency(
+        files,
+        SESSION_SUMMARY_CONCURRENCY,
+        async (file) => this.summarizeFile(file),
+      );
       sessionsByAgent[agent] = summaries.sort((a, b) =>
         (b.startedAt ?? b.modifiedAt).localeCompare(a.startedAt ?? a.modifiedAt),
       );
@@ -1085,38 +1091,74 @@ export class ProfilerService {
   }
 
   private async parseJsonLinesFile(filePath: string): Promise<ParsedFileResult> {
-    const content = await fs.promises.readFile(filePath, 'utf8');
     const warnings: string[] = [];
     const records: ParsedRecord[] = [];
-
-    content.split(/\r?\n/).forEach((line, index) => {
-      if (!line.trim()) {
-        return;
-      }
-
-      try {
-        const data = JSON.parse(line) as Record<string, unknown>;
-        records.push({
-          lineNumber: index + 1,
-          raw: line,
-          data,
-          timestamp:
-            (typeof data.timestamp === 'string' ? data.timestamp : undefined) ??
-            this.readString(data.payload, 'timestamp') ??
-            undefined,
-          recordType: typeof data.type === 'string' ? data.type : 'unknown',
-          payloadType: this.readString(data, 'payload', 'type') ?? undefined,
-          payloadKb: Buffer.byteLength(line, 'utf8') / 1024,
-        });
-      } catch {
-        warnings.push(`Line ${index + 1} could not be parsed as JSON.`);
-      }
+    const input = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const reader = readline.createInterface({
+      input,
+      crlfDelay: Infinity,
     });
+
+    let index = 0;
+    try {
+      for await (const line of reader) {
+        index += 1;
+        if (!line.trim()) {
+          continue;
+        }
+
+        try {
+          const data = JSON.parse(line) as Record<string, unknown>;
+          records.push({
+            lineNumber: index,
+            raw: line,
+            data,
+            timestamp:
+              (typeof data.timestamp === 'string' ? data.timestamp : undefined) ??
+              this.readString(data.payload, 'timestamp') ??
+              undefined,
+            recordType: typeof data.type === 'string' ? data.type : 'unknown',
+            payloadType: this.readString(data, 'payload', 'type') ?? undefined,
+            payloadKb: Buffer.byteLength(line, 'utf8') / 1024,
+          });
+        } catch {
+          warnings.push(`Line ${index} could not be parsed as JSON.`);
+        }
+      }
+    } finally {
+      reader.close();
+      input.destroy();
+    }
 
     return {
       records,
       warnings,
     };
+  }
+
+  private async mapWithConcurrency<T, TResult>(
+    items: T[],
+    concurrency: number,
+    mapper: (item: T, index: number) => Promise<TResult>,
+  ): Promise<TResult[]> {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const limit = Math.max(1, Math.min(concurrency, items.length));
+    const results = new Array<TResult>(items.length);
+    let nextIndex = 0;
+
+    const worker = async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      }
+    };
+
+    await Promise.all(Array.from({ length: limit }, () => worker()));
+    return results;
   }
 
   private async parseGeminiFile(filePath: string): Promise<ParsedGeminiFile> {

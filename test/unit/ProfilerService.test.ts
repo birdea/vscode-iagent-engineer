@@ -183,4 +183,42 @@ suite('ProfilerService', () => {
     assert.strictEqual(second.summary.totalTokens, 320);
     assert.strictEqual(second.detail.timeline[1].detail, 'Second prompt');
   });
+
+  test('scan limits concurrent session summarization per agent', async () => {
+    const service = new ProfilerService() as any;
+    const files = Array.from({ length: 12 }, (_, index) => ({
+      agent: 'codex',
+      filePath: `/tmp/session-${index}.jsonl`,
+      stat: { mtimeMs: 12 - index },
+    }));
+
+    sandbox.stub(service, 'getDefaultRoots').returns([]);
+    sandbox.stub(service, 'discoverFiles').callsFake(async (agent: string) => {
+      return agent === 'codex' ? files : [];
+    });
+
+    let active = 0;
+    let maxActive = 0;
+    sandbox.stub(service, 'summarizeFile').callsFake(async (file: any) => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      active -= 1;
+      return {
+        id: file.filePath,
+        agent: file.agent,
+        filePath: file.filePath,
+        fileName: path.basename(file.filePath),
+        modifiedAt: new Date().toISOString(),
+        fileSizeBytes: 128,
+        parseStatus: 'ok',
+        warnings: [],
+      };
+    });
+
+    const overview = await service.scan();
+
+    assert.strictEqual(overview.sessionsByAgent.codex.length, 12);
+    assert.ok(maxActive <= 8, `expected max concurrency <= 8, received ${maxActive}`);
+  });
 });
