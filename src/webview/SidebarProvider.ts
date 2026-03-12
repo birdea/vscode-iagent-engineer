@@ -6,6 +6,7 @@ import { DEFAULT_MCP_ENDPOINT, CONFIG_KEYS, getSecretStorageKey } from '../const
 import { RemoteFigmaAuthService } from '../figma/RemoteFigmaAuthService';
 import { WebviewToHostMessage } from '../types';
 import { StateManager } from '../state/StateManager';
+import { ProfilerLiveMonitor } from '../profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from '../profiler/ProfilerStateManager';
 import { ProfilerService } from '../profiler/ProfilerService';
 import { resolveLocale } from '../i18n';
@@ -30,6 +31,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     private readonly onLog?: (entry: import('../types').LogEntry) => void,
     private readonly profilerStateManager?: ProfilerStateManager,
     private readonly profilerService?: ProfilerService,
+    private readonly profilerLiveMonitor?: ProfilerLiveMonitor,
   ) {}
 
   resolveWebviewView(
@@ -61,6 +63,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       locale,
       this.profilerStateManager,
       this.profilerService,
+      this.profilerLiveMonitor,
     );
 
     if (this.onLog) {

@@ -2,18 +2,20 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import { ProfilerLiveMonitor } from '../../../src/profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from '../../../src/profiler/ProfilerStateManager';
 import { ProfilerCommandHandler } from '../../../src/webview/handlers/ProfilerCommandHandler';
 
 suite('ProfilerCommandHandler', () => {
   let sandbox: sinon.SinonSandbox;
-  let webview: { postMessage: sinon.SinonSpy };
   let profilerStateManager: ProfilerStateManager;
   let profilerService: any;
   let editorIntegration: any;
-  let handler: ProfilerCommandHandler;
+  let liveMonitor: ProfilerLiveMonitor;
+  let overviewHandler: ProfilerCommandHandler;
+  let detailHandler: ProfilerCommandHandler;
 
-  const summary = {
+  const liveSummary = {
     id: 'codex:live',
     agent: 'codex' as const,
     filePath: '/tmp/live-session.jsonl',
@@ -27,8 +29,8 @@ suite('ProfilerCommandHandler', () => {
     warnings: [],
   };
 
-  const detail = {
-    summary,
+  const liveDetail = {
+    summary: liveSummary,
     metadata: {
       sourceFormat: 'jsonl',
       provider: 'openai',
@@ -49,82 +51,153 @@ suite('ProfilerCommandHandler', () => {
     rawEvents: [],
   };
 
+  const manualDetail = {
+    summary: {
+      id: 'claude:manual',
+      agent: 'claude' as const,
+      filePath: '/tmp/manual-session.jsonl',
+      fileName: 'manual-session.jsonl',
+      modifiedAt: '2026-03-11T10:03:05.000Z',
+      startedAt: '2026-03-11T10:02:00.000Z',
+      fileSizeBytes: 2048,
+      totalTokens: 220,
+      requestCount: 1,
+      parseStatus: 'ok' as const,
+      warnings: [],
+    },
+    metadata: {
+      sourceFormat: 'jsonl',
+      provider: 'anthropic',
+      cwd: '/tmp/manual-project',
+    },
+    timeline: [
+      {
+        id: 'request-1',
+        timestamp: '2026-03-11T10:02:00.000Z',
+        endTimestamp: '2026-03-11T10:03:05.000Z',
+        totalTokens: 220,
+        eventType: 'turn',
+        label: 'R01',
+        detail: 'Manual selection',
+      },
+    ],
+    eventBubbles: [],
+    rawEvents: [],
+  };
+
   setup(() => {
     sandbox = sinon.createSandbox();
-    webview = { postMessage: sandbox.spy() };
     profilerStateManager = new ProfilerStateManager();
     profilerService = {
-      getLatestSessionSummary: sandbox.stub().resolves(summary),
+      getLatestSessionSummary: sandbox.stub().resolves(liveSummary),
       refreshSessionDetail: sandbox.stub().resolves({
-        summary,
-        detail,
+        summary: liveSummary,
+        detail: liveDetail,
         stat: { size: 1024, mtimeMs: 10 },
       }),
-      getDetail: sandbox.stub().resolves(detail),
+      getDetail: sandbox.stub().resolves(manualDetail),
       scan: sandbox.stub(),
       archiveAll: sandbox.stub(),
     };
     editorIntegration = {
       openFileAtLine: sandbox.stub().resolves(),
     };
-    handler = new ProfilerCommandHandler(
-      webview as any,
+    liveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
+    overviewHandler = new ProfilerCommandHandler(
+      { postMessage: sandbox.spy() } as any,
       profilerStateManager,
       profilerService,
       editorIntegration,
+      liveMonitor,
+    );
+    detailHandler = new ProfilerCommandHandler(
+      { postMessage: sandbox.spy() } as any,
+      profilerStateManager,
+      profilerService,
+      editorIntegration,
+      liveMonitor,
     );
     sandbox.stub(fs.promises, 'stat').resolves({ size: 1024, mtimeMs: 10 } as fs.Stats);
     (vscode.commands.executeCommand as sinon.SinonStub).resetHistory();
   });
 
   teardown(() => {
-    handler.dispose();
+    liveMonitor.dispose();
     sandbox.restore();
   });
 
-  test('startLiveData attaches the latest session and updates detail state', async () => {
-    await handler.startLiveData();
+  test('stop from the detail pane stops live monitoring started in the overview pane', async () => {
+    await overviewHandler.startLiveData();
 
-    const state = profilerStateManager.getDetailState();
-    assert.strictEqual(state.status, 'ready');
-    assert.strictEqual(state.detail?.summary.fileName, 'live-session.jsonl');
-    assert.strictEqual(state.live?.active, true);
-    assert.strictEqual(state.live?.status, 'streaming');
-    assert.ok(state.live?.messages.some((entry) => entry.message === 'Live chart initialized'));
-    assert.ok(
-      (vscode.commands.executeCommand as sinon.SinonStub).calledWith(
-        'workbench.view.extension.iagent-engineer-profiler-panel',
-      ),
-    );
-  });
-
-  test('live polling refreshes the chart when the session file changes', async () => {
-    const clock = sandbox.useFakeTimers();
-    (fs.promises.stat as sinon.SinonStub)
-      .onFirstCall()
-      .resolves({ size: 1024, mtimeMs: 10 } as fs.Stats)
-      .onSecondCall()
-      .resolves({ size: 2048, mtimeMs: 20 } as fs.Stats);
-
-    await handler.startLiveData();
-    await clock.tickAsync(1500);
-
-    assert.strictEqual(profilerService.refreshSessionDetail.callCount, 2);
-    assert.ok(
-      profilerStateManager
-        .getDetailState()
-        .live?.messages.some((entry) => entry.message === 'Live session updated'),
-    );
-  });
-
-  test('stopLiveData clears active live state and keeps the current detail visible', async () => {
-    await handler.startLiveData();
-
-    handler.stopLiveData();
+    detailHandler.stopLiveData();
 
     const state = profilerStateManager.getDetailState();
     assert.strictEqual(state.detail?.summary.id, 'codex:live');
     assert.strictEqual(state.live?.active, false);
     assert.strictEqual(state.live?.status, 'stopped');
+  });
+
+  test('disposing the originating handler does not tear down shared live monitoring', async () => {
+    await overviewHandler.startLiveData();
+
+    overviewHandler.dispose();
+
+    const state = profilerStateManager.getDetailState();
+    assert.strictEqual(state.live?.active, true);
+    assert.strictEqual(state.live?.status, 'streaming');
+  });
+
+  test('stale live refresh cannot overwrite a manually selected session', async () => {
+    const clock = sandbox.useFakeTimers();
+    let resolveRefresh: ((value: unknown) => void) | undefined;
+    const pendingRefresh = new Promise((resolve) => {
+      resolveRefresh = resolve;
+    });
+
+    (fs.promises.stat as sinon.SinonStub)
+      .onFirstCall()
+      .resolves({ size: 1024, mtimeMs: 10 } as fs.Stats)
+      .onSecondCall()
+      .resolves({ size: 2048, mtimeMs: 20 } as fs.Stats);
+    profilerService.refreshSessionDetail = sandbox.stub();
+    profilerService.refreshSessionDetail
+      .onFirstCall()
+      .resolves({ summary: liveSummary, detail: liveDetail, stat: { size: 1024, mtimeMs: 10 } })
+      .onSecondCall()
+      .returns(pendingRefresh);
+
+    liveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
+    overviewHandler = new ProfilerCommandHandler(
+      { postMessage: sandbox.spy() } as any,
+      profilerStateManager,
+      profilerService,
+      editorIntegration,
+      liveMonitor,
+    );
+    detailHandler = new ProfilerCommandHandler(
+      { postMessage: sandbox.spy() } as any,
+      profilerStateManager,
+      profilerService,
+      editorIntegration,
+      liveMonitor,
+    );
+
+    await overviewHandler.startLiveData();
+    await clock.tickAsync(1500);
+
+    await detailHandler.selectSession('claude:manual', 'claude');
+    resolveRefresh?.({
+      summary: liveSummary,
+      detail: liveDetail,
+      stat: { size: 2048, mtimeMs: 20 },
+    });
+    await clock.tickAsync(0);
+
+    const detailState = profilerStateManager.getDetailState();
+    const overviewState = profilerStateManager.getOverviewState();
+    assert.strictEqual(detailState.sessionId, 'claude:manual');
+    assert.strictEqual(detailState.detail?.summary.id, 'claude:manual');
+    assert.strictEqual(detailState.live?.active, false);
+    assert.strictEqual(overviewState.selectedSessionId, 'claude:manual');
   });
 });
