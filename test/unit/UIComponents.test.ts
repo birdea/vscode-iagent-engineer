@@ -953,9 +953,11 @@ suite('UI Components Consolidated', () => {
       const chartShell = document.getElementById('profiler-chart-shell');
       const viewer = document.querySelector('.profiler-detail-viewer');
       const secondary = document.querySelector('.profiler-detail-secondary');
+      const axisRail = document.querySelector('.profiler-chart-axis-rail');
       assert.ok(chartShell?.textContent?.includes('Input'));
       assert.ok(chartShell?.textContent?.includes('Trend'));
       assert.strictEqual(viewer?.nextElementSibling, secondary);
+      assert.ok(axisRail);
       assert.ok(
         document.getElementById('profiler-bubble-list')?.textContent?.includes('Turn completed'),
       );

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { scaleLinear, scaleTime } from '@visx/scale';
 import { LinePath, Bar } from '@visx/shape';
-import { AxisBottom, AxisRight } from '@visx/axis';
+import { AxisBottom, AxisLeft } from '@visx/axis';
 import { GridRows } from '@visx/grid';
 import { Group } from '@visx/group';
 import {
@@ -42,7 +42,8 @@ interface ProfilerChartProps {
 }
 
 const CHART_HEIGHT = 252;
-const PADDING = { top: 18, right: 56, bottom: 34, left: 18 };
+const AXIS_RAIL_WIDTH = 60;
+const PADDING = { top: 18, right: 18, bottom: 34, left: 18 };
 const PIXELS_PER_MINUTE = 14;
 const MIN_WIDTH = 640;
 const MIN_POINT_SPACING = 72;
@@ -267,6 +268,8 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   const seriesDefs = useMemo(() => buildSeriesDefs(metric, timeline), [metric, timeline]);
 
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(MIN_WIDTH);
   const [tooltip, setTooltip] = useState<{
     x: number;
     point: SessionTimelinePoint;
@@ -313,17 +316,36 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     [minTime, maxTime, plotWidth],
   );
 
+  const visibleWindow = useMemo(() => {
+    const effectiveViewportWidth = Math.max(1, viewportWidth);
+    const leftEdge = scrollLeft + PADDING.left;
+    const rightEdge = scrollLeft + effectiveViewportWidth - PADDING.right;
+    return {
+      leftEdge,
+      rightEdge,
+    };
+  }, [scrollLeft, viewportWidth]);
+
   const maxValue = useMemo(() => {
+    const visibleIndexes = timeline
+      .map((point, index) => {
+        const x = xScale(new Date(point.timestamp)) ?? PADDING.left;
+        return { index, x };
+      })
+      .filter(({ x }) => x >= visibleWindow.leftEdge && x <= visibleWindow.rightEdge)
+      .map(({ index }) => index);
+
+    const candidateIndexes = visibleIndexes.length > 0 ? visibleIndexes : timeline.map((_, i) => i);
     let max = 1;
     for (const s of seriesDefs) {
       if (hiddenSeries.has(s.key)) continue;
-      for (let i = 0; i < timeline.length; i++) {
+      for (const i of candidateIndexes) {
         const v = s.getValue(timeline[i], i);
         if (v > max) max = v;
       }
     }
     return max;
-  }, [seriesDefs, timeline, hiddenSeries]);
+  }, [hiddenSeries, seriesDefs, timeline, visibleWindow.leftEdge, visibleWindow.rightEdge, xScale]);
 
   const yScale = useMemo(
     () =>
@@ -407,10 +429,31 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
 
   // Scroll to end on mount
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      const nextViewportWidth = Math.max(scrollElement.clientWidth || 0, MIN_WIDTH);
+      setViewportWidth(nextViewportWidth);
+      scrollElement.scrollLeft = scrollElement.scrollWidth;
+      setScrollLeft(scrollElement.scrollLeft);
     }
   }, [chartWidth]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) {
+        return;
+      }
+      setViewportWidth(Math.max(scrollElement.clientWidth || 0, MIN_WIDTH));
+      setScrollLeft(scrollElement.scrollLeft);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   if (timeline.length === 0) {
     return (
@@ -450,134 +493,15 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
           ))}
         </div>
       </div>
-      <div
-        className="profiler-chart-scroll"
-        ref={scrollRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTooltip(null)}
-      >
-        <div className="profiler-chart-inner" style={{ width: chartWidth }}>
+      <div className="profiler-chart-viewport">
+        <div className="profiler-chart-axis-rail" aria-hidden="true">
           <svg
-            viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
-            className="profiler-chart-svg"
-            aria-label={getMetricTitle(metric)}
+            viewBox={`0 0 ${AXIS_RAIL_WIDTH} ${CHART_HEIGHT}`}
+            className="profiler-chart-axis-svg"
           >
-            {/* Background frame */}
-            <rect
-              x={PADDING.left}
-              y={PADDING.top}
-              width={plotWidth}
-              height={plotHeight}
-              className="profiler-chart-frame"
-              rx={14}
-              ry={14}
-            />
-
-            {/* Grid rows */}
-            <GridRows
+            <AxisLeft
               scale={yScale}
-              width={plotWidth}
-              left={PADDING.left}
-              numTicks={4}
-              stroke="var(--vscode-panel-border, #333)"
-              strokeOpacity={0.72}
-              strokeDasharray="3 8"
-            />
-
-            {/* Bar chart layer: each timeline point gets a bar */}
-            <Group>
-              {timeline.map((point, i) => {
-                const px = xScale(new Date(point.timestamp)) ?? PADDING.left;
-                const primaryValue =
-                  metric === 'data'
-                    ? (point.payloadKb ?? 0)
-                    : metric === 'latency'
-                      ? (point.latencyMs ?? 0)
-                      : (point.totalTokens ?? getTokenTotal(point));
-                const barHeight = Math.max(1, (primaryValue / Math.max(1, maxValue)) * plotHeight);
-                const barY = PADDING.top + plotHeight - barHeight;
-                const raw = findRawEvent(point);
-                const hasRawRef = !!raw;
-                return (
-                  <rect
-                    key={`bar-${point.id}`}
-                    x={px - BAR_WIDTH / 2}
-                    y={barY}
-                    width={BAR_WIDTH}
-                    height={barHeight}
-                    rx={2}
-                    className={`profiler-chart-bar ${hasRawRef ? 'profiler-chart-bar-clickable' : ''}`}
-                    fill={SERIES_COLORS.total}
-                    fillOpacity={0.12}
-                    stroke={SERIES_COLORS.total}
-                    strokeOpacity={0.25}
-                    strokeWidth={0.5}
-                    style={{ cursor: hasRawRef ? 'pointer' : 'default' }}
-                    onClick={() => handleBarClick(point)}
-                  />
-                );
-              })}
-            </Group>
-
-            {/* Area fill for first visible series */}
-            {visibleSeries.length > 0 && visibleSeries[0].points.length > 1 && (
-              <path
-                d={
-                  `M ${visibleSeries[0].points[0].x},${PADDING.top + plotHeight} ` +
-                  visibleSeries[0].points
-                    .map((p) => `L ${p.x.toFixed(2)},${p.y.toFixed(2)}`)
-                    .join(' ') +
-                  ` L ${visibleSeries[0].points[visibleSeries[0].points.length - 1].x},${PADDING.top + plotHeight} Z`
-                }
-                fill={visibleSeries[0].color}
-                opacity={0.08}
-              />
-            )}
-
-            {/* Line paths */}
-            {visibleSeries.map((s) => (
-              <LinePath
-                key={s.key}
-                data={s.points}
-                x={(d) => d.x}
-                y={(d) => d.y}
-                stroke={s.color}
-                strokeWidth={s.lineWidth}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={s.opacity}
-              />
-            ))}
-
-            {/* Endpoint markers */}
-            {visibleSeries.map((s) => {
-              const last = s.points[s.points.length - 1];
-              if (!last) return null;
-              return (
-                <MarkerIcon
-                  key={`marker-${s.key}`}
-                  shape={s.marker}
-                  color={s.color}
-                  x={last.x}
-                  y={last.y}
-                  size={7.5}
-                />
-              );
-            })}
-
-            {/* Baseline */}
-            <line
-              x1={PADDING.left}
-              y1={PADDING.top + plotHeight}
-              x2={PADDING.left + plotWidth}
-              y2={PADDING.top + plotHeight}
-              className="profiler-chart-baseline"
-            />
-
-            {/* Right Y-axis */}
-            <AxisRight
-              scale={yScale}
-              left={PADDING.left + plotWidth + 4}
+              left={AXIS_RAIL_WIDTH - 8}
               numTicks={4}
               tickFormat={(v) => formatAxisValue(v as number, metric)}
               stroke="transparent"
@@ -585,103 +509,237 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
               tickLabelProps={{
                 fill: 'var(--vscode-descriptionForeground, #888)',
                 fontSize: 9,
-                textAnchor: 'start',
-                dx: 4,
+                textAnchor: 'end',
+                dx: '-0.35em',
               }}
             />
+          </svg>
+        </div>
+        <div
+          className="profiler-chart-scroll"
+          ref={scrollRef}
+          onScroll={(event) => {
+            const target = event.currentTarget;
+            setScrollLeft(target.scrollLeft);
+            setViewportWidth(Math.max(target.clientWidth || 0, MIN_WIDTH));
+          }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <div className="profiler-chart-inner" style={{ width: chartWidth }}>
+            <svg
+              viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
+              className="profiler-chart-svg"
+              aria-label={getMetricTitle(metric)}
+            >
+              {/* Background frame */}
+              <rect
+                x={PADDING.left}
+                y={PADDING.top}
+                width={plotWidth}
+                height={plotHeight}
+                className="profiler-chart-frame"
+                rx={14}
+                ry={14}
+              />
 
-            {/* Bottom X-axis */}
-            <AxisBottom
-              scale={xScale}
-              top={CHART_HEIGHT - PADDING.bottom + 4}
-              numTicks={Math.min(8, Math.max(3, Math.floor(plotWidth / 120)))}
-              stroke="transparent"
-              tickStroke="transparent"
-              tickLabelProps={{
-                fill: 'var(--vscode-descriptionForeground, #888)',
-                fontSize: 9,
-                textAnchor: 'middle',
-              }}
-            />
+              {/* Grid rows */}
+              <GridRows
+                scale={yScale}
+                width={plotWidth}
+                left={PADDING.left}
+                numTicks={4}
+                stroke="var(--vscode-panel-border, #333)"
+                strokeOpacity={0.72}
+                strokeDasharray="3 8"
+              />
 
-            {/* Tooltip crosshair */}
-            {tooltip && (
+              {/* Bar chart layer: each timeline point gets a bar */}
               <Group>
-                <line
-                  x1={tooltip.x}
-                  y1={PADDING.top}
-                  x2={tooltip.x}
-                  y2={PADDING.top + plotHeight}
-                  stroke="var(--vscode-focusBorder, #007acc)"
-                  strokeWidth={1}
-                  strokeDasharray="4 4"
-                  opacity={0.6}
-                />
-                {visibleSeries.map((s) => {
-                  const pt = s.points[tooltip.index];
-                  if (!pt) return null;
+                {timeline.map((point, i) => {
+                  const px = xScale(new Date(point.timestamp)) ?? PADDING.left;
+                  const primaryValue =
+                    metric === 'data'
+                      ? (point.payloadKb ?? 0)
+                      : metric === 'latency'
+                        ? (point.latencyMs ?? 0)
+                        : (point.totalTokens ?? getTokenTotal(point));
+                  const barHeight = Math.max(
+                    1,
+                    (primaryValue / Math.max(1, maxValue)) * plotHeight,
+                  );
+                  const barY = PADDING.top + plotHeight - barHeight;
+                  const raw = findRawEvent(point);
+                  const hasRawRef = !!raw;
                   return (
-                    <circle
-                      key={`tt-${s.key}`}
-                      cx={pt.x}
-                      cy={pt.y}
-                      r={4}
-                      fill={s.color}
-                      stroke="white"
-                      strokeWidth={1.5}
+                    <rect
+                      key={`bar-${point.id}`}
+                      x={px - BAR_WIDTH / 2}
+                      y={barY}
+                      width={BAR_WIDTH}
+                      height={barHeight}
+                      rx={2}
+                      className={`profiler-chart-bar ${hasRawRef ? 'profiler-chart-bar-clickable' : ''}`}
+                      fill={SERIES_COLORS.total}
+                      fillOpacity={0.12}
+                      stroke={SERIES_COLORS.total}
+                      strokeOpacity={0.25}
+                      strokeWidth={0.5}
+                      style={{ cursor: hasRawRef ? 'pointer' : 'default' }}
+                      onClick={() => handleBarClick(point)}
                     />
                   );
                 })}
               </Group>
-            )}
 
-            {/* Invisible overlay preserves a stable hit area for chart hover */}
-            <rect
-              x={PADDING.left}
-              y={PADDING.top}
-              width={plotWidth}
-              height={plotHeight}
-              fill="transparent"
-            />
-          </svg>
+              {/* Area fill for first visible series */}
+              {visibleSeries.length > 0 && visibleSeries[0].points.length > 1 && (
+                <path
+                  d={
+                    `M ${visibleSeries[0].points[0].x},${PADDING.top + plotHeight} ` +
+                    visibleSeries[0].points
+                      .map((p) => `L ${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+                      .join(' ') +
+                    ` L ${visibleSeries[0].points[visibleSeries[0].points.length - 1].x},${PADDING.top + plotHeight} Z`
+                  }
+                  fill={visibleSeries[0].color}
+                  opacity={0.08}
+                />
+              )}
 
-          {/* Tooltip card */}
-          {tooltip && (
-            <button
-              type="button"
-              className={`profiler-chart-tooltip ${tooltipRawEvent ? 'profiler-chart-tooltip-action' : ''}`}
-              style={{
-                left: tooltipLeft,
-                top: 8,
-                transform: 'translateX(-50%)',
-              }}
-              onClick={() => {
-                if (tooltipRawEvent) {
-                  onOpenSource(tooltipRawEvent.filePath, tooltipRawEvent.lineNumber);
+              {/* Line paths */}
+              {visibleSeries.map((s) => (
+                <LinePath
+                  key={s.key}
+                  data={s.points}
+                  x={(d) => d.x}
+                  y={(d) => d.y}
+                  stroke={s.color}
+                  strokeWidth={s.lineWidth}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={s.opacity}
+                />
+              ))}
+
+              {/* Endpoint markers */}
+              {visibleSeries.map((s) => {
+                const last = s.points[s.points.length - 1];
+                if (!last) return null;
+                return (
+                  <MarkerIcon
+                    key={`marker-${s.key}`}
+                    shape={s.marker}
+                    color={s.color}
+                    x={last.x}
+                    y={last.y}
+                    size={7.5}
+                  />
+                );
+              })}
+
+              {/* Baseline */}
+              <line
+                x1={PADDING.left}
+                y1={PADDING.top + plotHeight}
+                x2={PADDING.left + plotWidth}
+                y2={PADDING.top + plotHeight}
+                className="profiler-chart-baseline"
+              />
+
+              {/* Bottom X-axis */}
+              <AxisBottom
+                scale={xScale}
+                top={CHART_HEIGHT - PADDING.bottom + 4}
+                numTicks={Math.min(8, Math.max(3, Math.floor(plotWidth / 120)))}
+                stroke="transparent"
+                tickStroke="transparent"
+                tickLabelProps={{
+                  fill: 'var(--vscode-descriptionForeground, #888)',
+                  fontSize: 9,
+                  textAnchor: 'middle',
+                }}
+              />
+
+              {/* Tooltip crosshair */}
+              {tooltip && (
+                <Group>
+                  <line
+                    x1={tooltip.x}
+                    y1={PADDING.top}
+                    x2={tooltip.x}
+                    y2={PADDING.top + plotHeight}
+                    stroke="var(--vscode-focusBorder, #007acc)"
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                    opacity={0.6}
+                  />
+                  {visibleSeries.map((s) => {
+                    const pt = s.points[tooltip.index];
+                    if (!pt) return null;
+                    return (
+                      <circle
+                        key={`tt-${s.key}`}
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={4}
+                        fill={s.color}
+                        stroke="white"
+                        strokeWidth={1.5}
+                      />
+                    );
+                  })}
+                </Group>
+              )}
+
+              {/* Invisible overlay preserves a stable hit area for chart hover */}
+              <rect
+                x={PADDING.left}
+                y={PADDING.top}
+                width={plotWidth}
+                height={plotHeight}
+                fill="transparent"
+              />
+            </svg>
+
+            {/* Tooltip card */}
+            {tooltip && (
+              <button
+                type="button"
+                className={`profiler-chart-tooltip ${tooltipRawEvent ? 'profiler-chart-tooltip-action' : ''}`}
+                style={{
+                  left: tooltipLeft,
+                  top: 8,
+                  transform: 'translateX(-50%)',
+                }}
+                onClick={() => {
+                  if (tooltipRawEvent) {
+                    onOpenSource(tooltipRawEvent.filePath, tooltipRawEvent.lineNumber);
+                  }
+                }}
+                disabled={!tooltipRawEvent}
+                title={
+                  tooltipRawEvent
+                    ? `Open source line ${tooltipRawEvent.lineNumber}`
+                    : 'No source line linked to this sample'
                 }
-              }}
-              disabled={!tooltipRawEvent}
-              title={
-                tooltipRawEvent
-                  ? `Open source line ${tooltipRawEvent.lineNumber}`
-                  : 'No source line linked to this sample'
-              }
-            >
-              <div className="profiler-tooltip-time">
-                {new Date(tooltip.point.timestamp).toLocaleString()}
-              </div>
-              <div className="profiler-tooltip-data">
-                {visibleSeries.map((s) => (
-                  <span key={s.key} className="profiler-tooltip-data-item">
-                    <span style={{ color: s.color }}>{s.label}</span>
-                    <strong>
-                      {formatAxisValue(s.getValue(tooltip.point, tooltip.index), metric)}
-                    </strong>
-                  </span>
-                ))}
-              </div>
-            </button>
-          )}
+              >
+                <div className="profiler-tooltip-time">
+                  {new Date(tooltip.point.timestamp).toLocaleString()}
+                </div>
+                <div className="profiler-tooltip-data">
+                  {visibleSeries.map((s) => (
+                    <span key={s.key} className="profiler-tooltip-data-item">
+                      <span style={{ color: s.color }}>{s.label}</span>
+                      <strong>
+                        {formatAxisValue(s.getValue(tooltip.point, tooltip.index), metric)}
+                      </strong>
+                    </span>
+                  ))}
+                </div>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
