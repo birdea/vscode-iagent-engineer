@@ -8,6 +8,7 @@ coverage/**
 src/**
 test/**
 out/**
+workers/**
 .prettier*
 .gitignore
 .DS_Store
@@ -16,11 +17,14 @@ eslint.config.js
 tsconfig.json
 esbuild.config.js
 CONTRIBUTING.md
+CODE_REVIEW.md
+DEVPLAN*.md
 images/README.md
 mock-server.log
 mock-server.pid
 NEW_CODE_REVIEW.md
 docs/**
+node_modules/**
 *.vsix
 **/*.map
 **/*.ts

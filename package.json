@@ -444,7 +444,7 @@
     "test:unit": "mocha --ui tdd --require tsx --require test/unit/globalSetup.ts \"test/unit/**/*.test.ts\"",
     "test:e2e": "mocha --ui tdd --timeout 15000 --require tsx --require test/unit/globalSetup.ts \"test/e2e/**/*.test.ts\"",
     "test:coverage": "c8 --all --check-coverage --branches 81 --src \"src\" --exclude \"src/types.ts\" --exclude \"test/**\" --reporter text --reporter html npm run test:all",
-    "package": "vsce package",
+    "package": "vsce package --no-dependencies",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0"
   },
   "devDependencies": {
