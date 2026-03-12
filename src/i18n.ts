@@ -259,7 +259,8 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'figma.warn.enterDataForScreenshot': '스크린샷을 위해 MCP 데이터를 먼저 입력하세요.',
     'figma.warn.enterSourceDataUrl': 'Source Data URL을 먼저 입력하세요.',
     'figma.warn.connectBeforeSourceData': 'Source Data는 MCP 연결 후에만 가능합니다.',
-    'figma.warn.sourceDataRemoteUnavailable': 'Source Data curl 다운로드는 local MCP 모드에서만 가능합니다.',
+    'figma.warn.sourceDataRemoteUnavailable':
+      'Source Data curl 다운로드는 local MCP 모드에서만 가능합니다.',
     'figma.warn.connectBeforeMetadata': '메타데이터는 MCP 연결 후에만 가능합니다.',
     'figma.warn.connectBeforeVariableDefs': '변수 정의는 MCP 연결 후에만 가능합니다.',
     'figma.warn.connectBeforeScreenshot': '스크린샷은 MCP 연결 후에만 가능합니다.',

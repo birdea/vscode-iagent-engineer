@@ -57,28 +57,24 @@ suite('FigmaCommandHandler', () => {
       openBinaryAsset: sandbox.stub().resolves(),
     };
     sourceDataService = {
-      fetch: sandbox
-        .stub()
-        .resolves({
+      fetch: sandbox.stub().resolves({
+        assetKey: 'http://localhost:3845/assets/test.svg',
+        url: 'http://localhost:3845/assets/test.svg',
+        contentType: 'image/svg+xml',
+        mode: 'image',
+        suggestedName: 'test.svg',
+        thumbnailDataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+      }),
+      fetchAll: sandbox.stub().resolves([
+        {
           assetKey: 'http://localhost:3845/assets/test.svg',
           url: 'http://localhost:3845/assets/test.svg',
           contentType: 'image/svg+xml',
           mode: 'image',
           suggestedName: 'test.svg',
           thumbnailDataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
-        }),
-      fetchAll: sandbox
-        .stub()
-        .resolves([
-          {
-            assetKey: 'http://localhost:3845/assets/test.svg',
-            url: 'http://localhost:3845/assets/test.svg',
-            contentType: 'image/svg+xml',
-            mode: 'image',
-            suggestedName: 'test.svg',
-            thumbnailDataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
-          },
-        ]),
+        },
+      ]),
       toThumbnail: sandbox.stub().returns({
         assetKey: 'http://localhost:3845/assets/test.svg',
         url: 'http://localhost:3845/assets/test.svg',

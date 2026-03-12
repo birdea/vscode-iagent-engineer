@@ -355,9 +355,12 @@ textarea:disabled {
 .source-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  width: 116px;
-  min-width: 116px;
+  flex: 0 0 66px;
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 55%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--vscode-editor-background) 88%, transparent);
@@ -368,12 +371,17 @@ textarea:disabled {
 
 .source-card:hover {
   border-color: var(--vscode-focusBorder);
-  background: color-mix(in srgb, var(--vscode-button-background) 10%, var(--vscode-editor-background));
+  background: color-mix(
+    in srgb,
+    var(--vscode-button-background) 10%,
+    var(--vscode-editor-background)
+  );
 }
 
 .source-card-thumb {
-  width: 100px;
-  height: 100px;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -393,6 +401,7 @@ textarea:disabled {
 }
 
 .source-card-label {
+  width: 100%;
   font-size: 11px;
   line-height: 1.35;
   color: var(--vscode-descriptionForeground);

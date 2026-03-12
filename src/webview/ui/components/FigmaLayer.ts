@@ -314,16 +314,27 @@ export class FigmaLayer {
       button.type = 'button';
       button.className = 'source-card';
       button.title = `${image.suggestedName}\n${this.msg('figma.sourceDataOpenAsset')}`;
+      button.style.flex = '0 0 66px';
+      button.style.width = '66px';
+      button.style.minWidth = '66px';
+      button.style.maxWidth = '66px';
       button.addEventListener('click', () => {
         vscode.postMessage({ command: 'figma.openSourceDataAsset', assetKey: image.assetKey });
       });
 
       const frame = document.createElement('span');
       frame.className = 'source-card-thumb';
+      frame.style.flex = '0 0 50px';
+      frame.style.width = '50px';
+      frame.style.height = '50px';
       const img = document.createElement('img');
       img.className = 'source-card-image';
       img.src = image.thumbnailDataUrl;
       img.alt = image.suggestedName;
+      img.width = 50;
+      img.height = 50;
+      img.style.width = '50px';
+      img.style.height = '50px';
       frame.appendChild(img);
 
       const label = document.createElement('span');

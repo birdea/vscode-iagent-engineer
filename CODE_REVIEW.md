@@ -127,4 +127,3 @@
 2. `openFetchedDataInEditor` 실제 반영
 3. metadata / variable definitions 상태 분리
 4. remote OAuth state 검증 추가
-

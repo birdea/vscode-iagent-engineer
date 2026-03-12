@@ -29,7 +29,7 @@ type CurlExecutionResult = {
 export type CurlRunner = (url: string) => Promise<CurlExecutionResult>;
 export type DelayRunner = (ms: number) => Promise<void>;
 
-const SOURCE_DATA_NEXT_REQUEST_DELAY_MS = 100;
+const SOURCE_DATA_NEXT_REQUEST_DELAY_MS = 1000;
 
 export class SourceDataService {
   constructor(
@@ -321,6 +321,9 @@ function extensionFromMimeType(contentType: string): string {
 }
 
 function sanitizeFileName(value: string): string {
-  const sanitized = value.replace(/[<>:"/\\|?*\x00-\x1F]+/g, '-').replace(/-+/g, '-').trim();
+  const sanitized = value
+    .replace(/[<>:"/\\|?*\x00-\x1F]+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
   return sanitized || 'source-data';
 }

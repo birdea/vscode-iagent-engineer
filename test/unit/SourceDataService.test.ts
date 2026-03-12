@@ -49,7 +49,12 @@ suite('SourceDataService', () => {
 
     assert.strictEqual(result.mode, 'image');
     assert.ok(result.thumbnailDataUrl?.startsWith('data:image/png;base64,'));
-    assert.ok(editorIntegration.openBinaryInEditor.calledWithMatch(sinon.match.instanceOf(Buffer), 'test.png'));
+    assert.ok(
+      editorIntegration.openBinaryInEditor.calledWithMatch(
+        sinon.match.instanceOf(Buffer),
+        'test.png',
+      ),
+    );
   });
 
   test('fetch rejects invalid URLs before running curl', async () => {
@@ -89,7 +94,9 @@ suite('SourceDataService', () => {
     });
     const service = new SourceDataService(editorIntegration as any, 'ko', runCurl);
 
-    await service.fetch('"http://localhost:3845/assets/0df81d5aafb5e86cfba280b95634bb0e3aae8dd4.png";');
+    await service.fetch(
+      '"http://localhost:3845/assets/0df81d5aafb5e86cfba280b95634bb0e3aae8dd4.png";',
+    );
 
     assert.ok(
       runCurl.calledWith(
@@ -121,8 +128,14 @@ const imgRectangle2147234812 = "http://localhost:3845/assets/0df81d5aafb5e86cfba
 `);
 
     assert.strictEqual(results.length, 2);
-    assert.strictEqual(runCurl.firstCall.args[0], 'http://localhost:3845/assets/2f7490d7d35be15248ac4e5527cf2bf2f900ae81.svg');
-    assert.strictEqual(runCurl.secondCall.args[0], 'http://localhost:3845/assets/0df81d5aafb5e86cfba280b95634bb0e3aae8dd4.png');
+    assert.strictEqual(
+      runCurl.firstCall.args[0],
+      'http://localhost:3845/assets/2f7490d7d35be15248ac4e5527cf2bf2f900ae81.svg',
+    );
+    assert.strictEqual(
+      runCurl.secondCall.args[0],
+      'http://localhost:3845/assets/0df81d5aafb5e86cfba280b95634bb0e3aae8dd4.png',
+    );
     assert.strictEqual(delay.callCount, 1);
     assert.strictEqual(delay.firstCall.args[0], 1000);
     assert.strictEqual(editorIntegration.openBinaryInEditor.callCount, 2);

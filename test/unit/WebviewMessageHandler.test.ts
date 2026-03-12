@@ -98,7 +98,10 @@ suite('WebviewMessageHandler Comprehensive', () => {
     const fetchSourceDataStub = sandbox
       .stub((handler as any).figmaHandler, 'fetchSourceData')
       .resolves();
-    await handler.handle({ command: 'figma.fetchSourceData', url: 'http://localhost:3845/assets/test.svg' });
+    await handler.handle({
+      command: 'figma.fetchSourceData',
+      url: 'http://localhost:3845/assets/test.svg',
+    });
     assert.ok(fetchSourceDataStub.calledWith('http://localhost:3845/assets/test.svg'));
   });
 
