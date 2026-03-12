@@ -392,13 +392,21 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.listModels with key', async () => {
+    const persistentAgent = {
+      setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
+      listModels: sandbox.stub().resolves([{ id: 'should-not-be-used' }]),
+    };
     const mockAgent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       listModels: sandbox.stub().resolves([{ id: 'm1' }]),
     };
-    sandbox.stub(AgentFactory, 'getAgent').returns(mockAgent as any);
+    sandbox.stub(AgentFactory, 'getAgent').returns(persistentAgent as any);
+    sandbox.stub(AgentFactory, 'createEphemeralAgent').returns(mockAgent as any);
     await handler.handle({ command: 'agent.listModels', agent: 'gemini', key: 'temp-key' });
     assert.ok(mockAgent.setApiKey.calledWith('temp-key'));
+    assert.ok(persistentAgent.setApiKey.notCalled);
     assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.modelsResult' }));
   });
 

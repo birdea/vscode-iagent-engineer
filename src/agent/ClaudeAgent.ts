@@ -81,6 +81,12 @@ export class ClaudeAgent extends BaseAgent {
     Logger.info('agent', 'Claude API key updated');
   }
 
+  async clearApiKey(): Promise<void> {
+    await super.clearApiKey();
+    this.client = null;
+    Logger.info('agent', 'Claude API key cleared');
+  }
+
   async listModels(): Promise<ModelInfo[]> {
     const configuredModels = vscode.workspace
       .getConfiguration()

@@ -42,6 +42,14 @@ export class GeminiAgent extends BaseAgent {
     Logger.info('agent', 'Gemini API key updated');
   }
 
+  async clearApiKey(): Promise<void> {
+    await super.clearApiKey();
+    this.client = null;
+    this.modelsCache = null;
+    this.modelsCacheExpiry = 0;
+    Logger.info('agent', 'Gemini API key cleared');
+  }
+
   async listModels(): Promise<ModelInfo[]> {
     this.ensureApiKey();
 

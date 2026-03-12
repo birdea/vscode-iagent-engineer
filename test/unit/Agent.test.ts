@@ -36,6 +36,14 @@ suite('Agent Management', () => {
     assert.notStrictEqual(g1, g2);
   });
 
+  test('AgentFactory.createEphemeralAgent returns a fresh instance', () => {
+    const singleton = AgentFactory.getAgent('gemini');
+    const ephemeral = AgentFactory.createEphemeralAgent('gemini');
+
+    assert.ok(ephemeral instanceof GeminiAgent);
+    assert.notStrictEqual(singleton, ephemeral);
+  });
+
   test('BaseAgent setApiKey', async () => {
     class MockAgent extends BaseAgent {
       readonly type = 'gemini' as any;
@@ -62,6 +70,10 @@ suite('Agent Management', () => {
     await agent.setApiKey('test-key');
     assert.strictEqual(agent.getApiKey(), 'test-key');
     assert.doesNotThrow(() => agent.check());
+
+    await agent.clearApiKey();
+    assert.strictEqual(agent.getApiKey(), '');
+    assert.throws(() => agent.check(), /No API key set/);
   });
 });
 

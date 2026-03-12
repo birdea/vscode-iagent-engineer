@@ -47,10 +47,13 @@ export class PromptCommandHandler {
 
     const agent = payload.agent ?? this.stateManager.getAgent();
     const model = payload.model ?? this.stateManager.getModel();
+    const runtimeAgent = AgentFactory.getAgent(agent);
 
     const key = await this.context.secrets.get(getSecretStorageKey(agent));
     if (key) {
-      await AgentFactory.getAgent(agent).setApiKey(key);
+      await runtimeAgent.setApiKey(key);
+    } else {
+      await runtimeAgent.clearApiKey();
     }
 
     const requestedScreenshot =
@@ -92,10 +95,7 @@ export class PromptCommandHandler {
 
     try {
       this.post({ event: 'prompt.streaming', progress });
-      const gen = AgentFactory.getAgent(agent).generateCode(
-        resolvedPayload,
-        this.abortController.signal,
-      );
+      const gen = runtimeAgent.generateCode(resolvedPayload, this.abortController.signal);
       this.postPromptLog('info', 'agent', 'Request sent to AI agent');
       for await (const chunk of gen) {
         if (this.abortController.signal.aborted) {

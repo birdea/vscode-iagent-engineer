@@ -94,6 +94,7 @@ suite('AgentCommandHandler', () => {
   test('getModelInfoHelp applies saved key before loading model info', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       getModelInfo: sandbox.stub().resolves({ id: 'm1' }),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
@@ -109,6 +110,7 @@ suite('AgentCommandHandler', () => {
   test('getModelInfoHelp skips setApiKey when no saved key exists', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       getModelInfo: sandbox.stub().resolves({ id: 'm1' }),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
@@ -119,11 +121,13 @@ suite('AgentCommandHandler', () => {
     await handler.getModelInfoHelp('gemini', 'm1');
 
     assert.ok(agent.setApiKey.notCalled);
+    assert.ok(agent.clearApiKey.calledOnce);
   });
 
   test('getModelInfoHelp writes JSON document and opens it', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       getModelInfo: sandbox.stub().resolves({
         id: 'model-a',
         description: 'demo',
@@ -153,6 +157,7 @@ suite('AgentCommandHandler', () => {
   test('getModelInfoHelp swallows model info errors', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       getModelInfo: sandbox.stub().rejects(new Error('boom')),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
@@ -165,6 +170,7 @@ suite('AgentCommandHandler', () => {
   test('setApiKey stores secret and updates agent', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
 
@@ -242,12 +248,17 @@ suite('AgentCommandHandler', () => {
   });
 
   test('clearSettings removes secret and resets defaults', async () => {
+    const agent = {
+      clearApiKey: sandbox.stub().resolves(),
+    };
+    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
     stateManager.setAgent('claude');
     stateManager.setModel('model-x');
 
     await handler.clearSettings('claude');
 
     assert.ok(context.secrets.delete.calledWith('iagent-engineer.claudeApiKey'));
+    assert.ok(agent.clearApiKey.calledOnce);
     assert.strictEqual(stateManager.getAgent(), 'gemini');
     assert.strictEqual(stateManager.getModel(), '');
     assert.ok(
@@ -255,16 +266,24 @@ suite('AgentCommandHandler', () => {
     );
   });
 
-  test('listModels uses runtime key when provided', async () => {
-    const agent = {
+  test('listModels uses runtime key on an ephemeral agent when provided', async () => {
+    const persistentAgent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
+      listModels: sandbox.stub().resolves([{ id: 'should-not-be-used' }]),
+    };
+    const ephemeralAgent = {
+      setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       listModels: sandbox.stub().resolves([{ id: 'm1' }]),
     };
-    sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
+    sandbox.stub(AgentFactory, 'getAgent').returns(persistentAgent as any);
+    sandbox.stub(AgentFactory, 'createEphemeralAgent').returns(ephemeralAgent as any);
 
     await handler.listModels('gemini', ' temporary ');
 
-    assert.ok(agent.setApiKey.calledWith('temporary'));
+    assert.ok(ephemeralAgent.setApiKey.calledWith('temporary'));
+    assert.ok(persistentAgent.setApiKey.notCalled);
     assert.ok(
       webview.postMessage.calledWithMatch({ event: 'agent.modelsResult', models: [{ id: 'm1' }] }),
     );
@@ -273,6 +292,7 @@ suite('AgentCommandHandler', () => {
   test('listModels falls back to saved key when runtime key is missing', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       listModels: sandbox.stub().resolves([{ id: 'm2' }]),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
@@ -285,6 +305,7 @@ suite('AgentCommandHandler', () => {
   test('listModels skips setApiKey when no keys are available', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       listModels: sandbox.stub().resolves([]),
     };
     sandbox.stub(AgentFactory, 'getAgent').returns(agent as any);
@@ -293,6 +314,7 @@ suite('AgentCommandHandler', () => {
     await handler.listModels('claude');
 
     assert.ok(agent.setApiKey.notCalled);
+    assert.ok(agent.clearApiKey.calledOnce);
     assert.ok(webview.postMessage.calledWithMatch({ event: 'agent.modelsResult', models: [] }));
   });
 });
