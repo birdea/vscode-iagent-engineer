@@ -1011,8 +1011,11 @@ a:hover {
 }
 
 .profiler-session-file {
+  display: block;
+  width: 100%;
   font-size: 11px;
   font-weight: 500;
+  color: var(--vscode-foreground);
   text-align: left;
   min-width: 0;
   overflow: hidden;
@@ -1026,6 +1029,8 @@ a:hover {
   align-items: center;
   gap: 8px;
   flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .profiler-session-stamp,

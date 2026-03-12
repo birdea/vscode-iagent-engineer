@@ -1250,6 +1250,44 @@ suite('UI Components Consolidated', () => {
       assert.ok(row.textContent?.includes('OUT 0K'));
     });
 
+    test('falls back to the session path basename when fileName is blank', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:2',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 1024,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:2',
+              agent: 'codex',
+              filePath: '/tmp/fallback-session-name.jsonl',
+              fileName: '   ',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const fileCell = document.querySelector('.profiler-session-file') as HTMLElement | null;
+
+      assert.ok(fileCell);
+      assert.strictEqual(fileCell.textContent, 'fallback-session-name.jsonl');
+      assert.strictEqual(fileCell.getAttribute('title'), 'fallback-session-name.jsonl');
+    });
+
     test('see livedata button posts startLiveData command', () => {
       document.getElementById('profiler-see-livedata')?.click();
 
