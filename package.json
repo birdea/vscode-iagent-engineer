@@ -451,8 +451,8 @@
   "devDependencies": {
     "@types/jsdom": "^28.0.0",
     "@types/node": "^25.3.5",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
     "@types/sinon": "^21.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
@@ -490,8 +490,8 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "@vscode/codicons": "^0.0.44",
     "esbuild": "^0.27.3",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^7.1.5",
     "vue": "^3.5.22"
   },
