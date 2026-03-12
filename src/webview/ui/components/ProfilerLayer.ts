@@ -7,17 +7,17 @@ import {
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 
-type SortField = 'name' | 'time' | 'size';
+type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
 
 /* Official-style AI agent icons */
 const AGENT_ICONS: Record<ProfilerAgentType, string> = {
-  /* Anthropic Claude: calligraphic quill / feather mark */
-  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15.58 3.71c-.56-.1-1.34.16-2.04.74C12.32 5.5 11.2 7.5 10.5 9.5c-.42 1.17-.7 2.4-.82 3.42-.23-.6-.52-1.25-.9-1.88C7.88 9.5 6.52 8.1 4.92 7.68c-.54-.14-1.1 0-1.42.42-.32.42-.32 1 .04 1.4 1.14 1.28 2.2 2.96 2.82 4.56.6 1.56.82 3.04.42 4.1-.18.46-.06.98.3 1.3.36.32.88.38 1.3.14 1.72-.96 3.02-2.42 3.86-4.04.82-1.58 1.24-3.34 1.38-4.82a17 17 0 0 0-.02-3.12c.48-.56 1.04-1.08 1.6-1.44.74-.48 1.4-.62 1.82-.36.3.18.5.56.5 1.18 0 1.04-.42 2.56-1.28 4.18a.75.75 0 1 0 1.32.72c.96-1.78 1.46-3.54 1.46-4.9 0-1.1-.38-2-.1.14-2.64-.72-.64-.2-1.2-.14-1.64.14z"/></svg>`,
-  /* OpenAI Codex: hexagonal logo */
-  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 1.62l7 3.88v2.13l-7 3.88-7-3.88V7.5l7-3.88zM5 11.13l7 3.88 7-3.88v2.37l-7 3.88-7-3.88v-2.37z"/></svg>`,
-  /* Google Gemini: four-point sparkle star */
-  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a1 1 0 0 1 1 .88C13.28 6.56 15.2 9.6 18.12 11a1 1 0 0 1 0 1.78c-2.78 1.48-4.76 4.56-5.12 8.34a1 1 0 0 1-2 0c-.36-3.78-2.34-6.86-5.12-8.34a1 1 0 0 1 0-1.78C8.8 9.6 10.72 6.56 11 2.88A1 1 0 0 1 12 2z"/></svg>`,
+  /* Anthropic Claude: stylised "A" triangle (matches Anthropic brand mark) */
+  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L22 20H2L12 3ZM12 7.5L5.5 18.5H18.5L12 7.5Z"/></svg>`,
+  /* OpenAI: stylised hexagon bloom (matches OpenAI logo shape) */
+  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M21.4 8.6a5.1 5.1 0 0 0-.44-4.18 5.2 5.2 0 0 0-5.6-2.49A5.2 5.2 0 0 0 11.48 0a5.2 5.2 0 0 0-4.96 3.6 5.2 5.2 0 0 0-3.47 2.53 5.2 5.2 0 0 0 .64 6.1 5.2 5.2 0 0 0 .44 4.18 5.2 5.2 0 0 0 5.6 2.49A5.2 5.2 0 0 0 13.52 21a5.2 5.2 0 0 0 4.96-3.6 5.2 5.2 0 0 0 3.47-2.53 5.2 5.2 0 0 0-.55-6.27ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>`,
+  /* Google Gemini: four-point star sparkle (matches Gemini brand mark) */
+  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 7 9 10 2 12C9 14 12 17 12 22C12 17 15 14 22 12C15 10 12 7 12 2Z"/></svg>`,
 };
 
 const EMPTY_STATE: ProfilerOverviewState = {
@@ -242,7 +242,8 @@ export class ProfilerLayer {
     return `<div class="profiler-sort-header">
 <button class="profiler-sort-btn${active('name')}" data-sort="name">Name${arrow('name')}</button>
 <button class="profiler-sort-btn${active('time')}" data-sort="time">Time${arrow('time')}</button>
-<span class="profiler-sort-label">Tokens</span>
+<button class="profiler-sort-btn${active('tin')}" data-sort="tin">tin${arrow('tin')}</button>
+<button class="profiler-sort-btn${active('tout')}" data-sort="tout">tout${arrow('tout')}</button>
 <button class="profiler-sort-btn${active('size')}" data-sort="size">Size${arrow('size')}</button>
 </div>`;
   }
@@ -269,6 +270,12 @@ export class ProfilerLayer {
           cmp = ta.localeCompare(tb);
           break;
         }
+        case 'tin':
+          cmp = (a.totalInputTokens ?? 0) - (b.totalInputTokens ?? 0);
+          break;
+        case 'tout':
+          cmp = (a.totalOutputTokens ?? 0) - (b.totalOutputTokens ?? 0);
+          break;
         case 'size':
           cmp = a.fileSizeBytes - b.fileSizeBytes;
           break;
