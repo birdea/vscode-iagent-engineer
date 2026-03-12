@@ -10,6 +10,12 @@ import { getDocumentLocale, UiLocale } from '../../../i18n';
 type SortField = 'name' | 'time' | 'size';
 type SortDirection = 'asc' | 'desc';
 
+const AGENT_ICONS: Record<ProfilerAgentType, string> = {
+  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.28 11.21L9.57 3.88C9.3 3.59 8.88 3.5 8.52 3.66C8.16 3.82 7.94 4.19 7.97 4.58L8.45 10.59L4.08 12.4C3.74 12.54 3.52 12.87 3.52 13.24C3.52 13.61 3.74 13.94 4.08 14.08L8.45 15.89L7.97 21.9C7.94 22.29 8.16 22.66 8.52 22.82C8.88 22.98 9.3 22.89 9.57 22.6L16.28 15.27C16.72 14.79 16.96 14.16 16.96 13.5V12.98C16.96 12.32 16.72 11.69 16.28 11.21Z" fill="currentColor"/><path d="M20.48 10.38L18.04 7.66C17.89 7.5 17.66 7.44 17.46 7.53C17.26 7.62 17.14 7.82 17.15 8.04L17.42 11.43L15 12.45C14.81 12.53 14.69 12.71 14.69 12.92C14.69 13.13 14.81 13.31 15 13.39L17.42 14.41L17.15 17.8C17.14 18.02 17.26 18.22 17.46 18.31C17.66 18.4 17.89 18.34 18.04 18.18L20.48 15.46C20.73 15.19 20.86 14.83 20.86 14.46V11.38C20.86 11.01 20.73 10.65 20.48 10.38Z" fill="currentColor" opacity="0.6"/></svg>`,
+  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor"/><line x1="12" y1="3" x2="12" y2="7" stroke="currentColor" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="7" y2="12" stroke="currentColor" stroke-width="2"/><line x1="17" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/></svg>`,
+  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 2 14.5 6.5 18 8.5C14.5 10.5 12 15 12 15C12 15 9.5 10.5 6 8.5C9.5 6.5 12 2 12 2Z" fill="currentColor"/><path d="M12 9C12 9 13.5 12 16 13.5C13.5 15 12 18 12 18C12 18 10.5 15 8 13.5C10.5 12 12 9 12 9Z" fill="currentColor" opacity="0.6" transform="translate(0, 4)"/></svg>`,
+};
+
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
   selectedAgent: 'codex',
@@ -48,7 +54,7 @@ const MESSAGES: Record<
 > = {
   en: {
     title: 'Agent Session Profiler',
-    scan: 'Start Analysis',
+    scan: 'See OldData',
     live: 'See LiveData',
     archive: 'Archive All',
     loading: '로딩중..',
@@ -62,7 +68,7 @@ const MESSAGES: Record<
   },
   ko: {
     title: 'Agent 세션 프로파일러',
-    scan: 'Start Analysis',
+    scan: 'See OldData',
     live: 'See LiveData',
     archive: 'Archive All',
     loading: '로딩중..',
@@ -92,12 +98,10 @@ export class ProfilerLayer {
     </div>
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
-  <div class="btn-row profiler-toolbar profiler-toolbar-live">
+  <div class="btn-row profiler-toolbar profiler-toolbar-inline">
     <button class="secondary" id="profiler-see-livedata">${this.msg('live')}</button>
-  </div>
-  <div class="btn-row profiler-toolbar">
     <button class="primary" id="profiler-start-analysis">${this.msg('scan')}</button>
-    <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
+    <button class="primary" id="profiler-archive-all">${this.msg('archive')}</button>
   </div>
   <div class="notice ${this.notice ? 'info' : 'hidden'}" id="profiler-notice">${this.notice}</div>
   <div class="profiler-tab-row" id="profiler-tab-row"></div>
@@ -219,7 +223,8 @@ export class ProfilerLayer {
       .map((agent) => {
         const isActive = this.state.selectedAgent === agent;
         const count = this.state.sessionsByAgent[agent].length;
-        return `<button class="profiler-tab ${isActive ? 'active' : ''}" data-agent="${agent}">${agent.toUpperCase()} <span>${count}</span></button>`;
+        const icon = AGENT_ICONS[agent];
+        return `<button class="profiler-tab-item ${isActive ? 'active' : ''}" data-agent="${agent}">${icon}<span class="profiler-tab-label">${agent.toUpperCase()}</span><span class="profiler-tab-count">${count}</span></button>`;
       })
       .join('');
   }
