@@ -1,0 +1,435 @@
+{
+  "name": "figma-mcp-helper",
+  "displayName": "Figma MCP Helper",
+  "description": "Figma MCP + AI Agent code generation for VSCode",
+  "version": "0.6.2",
+  "publisher": "bd-creative",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/birdea/vscode-figma-mcp-helper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/birdea/vscode-figma-mcp-helper/issues"
+  },
+  "homepage": "https://github.com/birdea/vscode-figma-mcp-helper#readme",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=20.0.0"
+  },
+  "categories": [
+    "AI",
+    "Machine Learning"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://github.com/birdea/vscode-figma-mcp-helper/actions/workflows/ci.yml/badge.svg",
+      "href": "https://github.com/birdea/vscode-figma-mcp-helper/actions",
+      "description": "Build Status"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "images/screenshot-2.png",
+      "label": "Figma MCP Helper — Setup & Code Generation"
+    }
+  ],
+  "activationEvents": [
+    "onView:figma-mcp-helper.setup"
+  ],
+  "icon": "resources/icon.png",
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "figma-mcp-helper",
+          "title": "%viewsContainer.title%",
+          "icon": "resources/icon-activity.png"
+        }
+      ]
+    },
+    "views": {
+      "figma-mcp-helper": [
+        {
+          "type": "webview",
+          "id": "figma-mcp-helper.setup",
+          "name": "%view.setup.name%"
+        },
+        {
+          "type": "webview",
+          "id": "figma-mcp-helper.prompt",
+          "name": "%view.prompt.name%"
+        },
+        {
+          "type": "webview",
+          "id": "figma-mcp-helper.log",
+          "name": "%view.log.name%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "figma-mcp-helper.connect",
+        "title": "%command.connect.title%",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "figma-mcp-helper.generate",
+        "title": "%command.generate.title%"
+      },
+      {
+        "command": "figma-mcp-helper.prompt.generate",
+        "title": "%command.promptGenerate.title%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "figma-mcp-helper.log.clear",
+        "title": "%command.logClear.title%",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "figma-mcp-helper.log.copy",
+        "title": "%command.logCopy.title%",
+        "icon": "$(copy)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "figma-mcp-helper.connect",
+          "when": "view == figma-mcp-helper.setup",
+          "group": "navigation@1"
+        },
+        {
+          "command": "figma-mcp-helper.prompt.generate",
+          "when": "view == figma-mcp-helper.prompt",
+          "group": "navigation@1"
+        },
+        {
+          "command": "figma-mcp-helper.log.clear",
+          "when": "view == figma-mcp-helper.log",
+          "group": "navigation@1"
+        },
+        {
+          "command": "figma-mcp-helper.log.copy",
+          "when": "view == figma-mcp-helper.log",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%configuration.title%",
+      "properties": {
+        "figma-mcp-helper.defaultAgent": {
+          "type": "string",
+          "enum": [
+            "gemini",
+            "claude",
+            "deepseek",
+            "qwen",
+            "openrouter"
+          ],
+          "enumDescriptions": [
+            "Google Gemini",
+            "Anthropic Claude",
+            "DeepSeek",
+            "Alibaba Qwen",
+            "OpenRouter"
+          ],
+          "default": "gemini",
+          "description": "%configuration.defaultAgent.description%"
+        },
+        "figma-mcp-helper.defaultModel": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.defaultModel.description%"
+        },
+        "figma-mcp-helper.mcpConnectionMode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "remote"
+          ],
+          "default": "local",
+          "description": "%configuration.mcpConnectionMode.description%"
+        },
+        "figma-mcp-helper.mcpEndpoint": {
+          "type": "string",
+          "default": "http://127.0.0.1:3845/mcp",
+          "description": "%configuration.mcpEndpoint.description%"
+        },
+        "figma-mcp-helper.remoteMcpEndpoint": {
+          "type": "string",
+          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev",
+          "description": "%configuration.remoteMcpEndpoint.description%"
+        },
+        "figma-mcp-helper.remoteMcpAuthUrl": {
+          "type": "string",
+          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev/api/figma/oauth/start",
+          "description": "%configuration.remoteMcpAuthUrl.description%"
+        },
+        "figma-mcp-helper.openFetchedDataInEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.openFetchedDataInEditor.description%"
+        },
+        "figma-mcp-helper.claudeModels": {
+          "type": "array",
+          "default": [
+            {
+              "id": "claude-opus-4-6",
+              "name": "Claude Opus 4.6",
+              "description": "Most capable Claude",
+              "inputTokenLimit": 200000,
+              "outputTokenLimit": 32768
+            },
+            {
+              "id": "claude-sonnet-4-6",
+              "name": "Claude Sonnet 4.6",
+              "description": "Latest Claude Sonnet",
+              "inputTokenLimit": 200000,
+              "outputTokenLimit": 8192
+            },
+            {
+              "id": "claude-haiku-4-5-20251001",
+              "name": "Claude Haiku 4.5",
+              "description": "Fast and efficient",
+              "inputTokenLimit": 200000,
+              "outputTokenLimit": 8192
+            }
+          ],
+          "description": "%configuration.claudeModels.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "inputTokenLimit": {
+                "type": "number"
+              },
+              "outputTokenLimit": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "figma-mcp-helper.deepseekModels": {
+          "type": "array",
+          "default": [
+            {
+              "id": "deepseek-coder",
+              "name": "DeepSeek Coder",
+              "description": "Best for coding",
+              "inputTokenLimit": 64000,
+              "outputTokenLimit": 4096
+            },
+            {
+              "id": "deepseek-chat",
+              "name": "DeepSeek Chat",
+              "description": "General purpose",
+              "inputTokenLimit": 64000,
+              "outputTokenLimit": 4096
+            }
+          ],
+          "description": "%configuration.deepseekModels.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "inputTokenLimit": {
+                "type": "number"
+              },
+              "outputTokenLimit": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "figma-mcp-helper.qwenModels": {
+          "type": "array",
+          "default": [
+            {
+              "id": "qwen-plus",
+              "name": "Qwen Plus",
+              "description": "Balanced performance",
+              "inputTokenLimit": 32000,
+              "outputTokenLimit": 2048
+            },
+            {
+              "id": "qwen-turbo",
+              "name": "Qwen Turbo",
+              "description": "Fast and efficient",
+              "inputTokenLimit": 32000,
+              "outputTokenLimit": 2048
+            }
+          ],
+          "description": "%configuration.qwenModels.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "inputTokenLimit": {
+                "type": "number"
+              },
+              "outputTokenLimit": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "figma-mcp-helper.openrouterModels": {
+          "type": "array",
+          "default": [
+            {
+              "id": "google/gemini-2.0-flash-001",
+              "name": "Gemini 2.0 Flash (via OpenRouter)",
+              "inputTokenLimit": 1000000,
+              "outputTokenLimit": 8192
+            },
+            {
+              "id": "anthropic/claude-3.5-sonnet",
+              "name": "Claude 3.5 Sonnet (via OpenRouter)",
+              "inputTokenLimit": 200000,
+              "outputTokenLimit": 8192
+            },
+            {
+              "id": "deepseek/deepseek-chat",
+              "name": "DeepSeek Chat (via OpenRouter)",
+              "description": "Current DeepSeek chat model on OpenRouter with strong coding performance",
+              "inputTokenLimit": 64000,
+              "outputTokenLimit": 4096
+            }
+          ],
+          "description": "%configuration.openrouterModels.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "inputTokenLimit": {
+                "type": "number"
+              },
+              "outputTokenLimit": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "prepare": "simple-git-hooks",
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.config.js --production",
+    "watch": "node esbuild.config.js --watch",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier . --write",
+    "format:staged": "pretty-quick --staged",
+    "format:check": "prettier . --check",
+    "test": "npm run test:unit",
+    "test:all": "npm run test:unit",
+    "test:unit": "mocha --ui tdd --require tsx --require test/unit/globalSetup.ts \"test/unit/**/*.test.ts\"",
+    "test:e2e": "mocha --ui tdd --timeout 15000 --require tsx --require test/unit/globalSetup.ts \"test/e2e/**/*.test.ts\"",
+    "test:coverage": "c8 --all --check-coverage --branches 81 --src \"src\" --exclude \"src/types.ts\" --exclude \"test/**\" --reporter text --reporter html npm run test:all",
+    "package": "vsce package",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.0",
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/sinon": "^21.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^3.7.1",
+    "c8": "^11.0.0",
+    "conventional-changelog": "^7.2.0",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^28.1.0",
+    "mocha": "^11.7.5",
+    "module-alias": "^2.3.4",
+    "nock": "^14.0.11",
+    "prettier": "^3.8.1",
+    "pretty-quick": "^4.2.2",
+    "serialize-javascript": "^7.0.4",
+    "simple-git-hooks": "^2.13.1",
+    "sinon": "^21.0.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@google/generative-ai": "^0.24.1",
+    "@vitejs/plugin-react": "^5.1.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vscode/codicons": "^0.0.44",
+    "esbuild": "^0.27.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vite": "^7.1.5",
+    "vue": "^3.5.22"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.4"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npm run format:staged"
+  }
+}

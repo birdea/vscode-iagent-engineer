@@ -1,0 +1,23 @@
+{
+  "viewsContainer.title": "Figma MCP Helper",
+  "view.setup.name": "설정",
+  "view.prompt.name": "프롬프트",
+  "view.log.name": "로그",
+  "command.connect.title": "MCP 연결",
+  "command.generate.title": "Figma MCP Helper: 코드 생성",
+  "command.promptGenerate.title": "코드 생성",
+  "command.logClear.title": "로그 비우기",
+  "command.logCopy.title": "로그 복사",
+  "configuration.title": "Figma MCP Helper",
+  "configuration.defaultAgent.description": "기본으로 사용할 AI 에이전트",
+  "configuration.defaultModel.description": "선택한 에이전트의 기본 모델 ID (Agent 패널과 동기화됨)",
+  "configuration.mcpConnectionMode.description": "설정 화면에서 기본으로 사용할 연결 방식 (local Desktop MCP 또는 계획 중인 remote auth 기반 모드)",
+  "configuration.mcpEndpoint.description": "Figma MCP 서버 엔드포인트",
+  "configuration.remoteMcpEndpoint.description": "인증 완료 후 계획 중인 remote auth 기반 모드에서 사용할 엔드포인트",
+  "configuration.remoteMcpAuthUrl.description": "계획 중인 remote 모드에서 Auth Login 액션이 여는 인증 URL",
+  "configuration.openFetchedDataInEditor.description": "레거시 호환용 설정입니다. 현재 가져온 MCP JSON은 기본적으로 VS Code 에디터에서 열립니다",
+  "configuration.claudeModels.description": "Agent 패널에서 사용하는 Claude 모델 카탈로그",
+  "configuration.deepseekModels.description": "Agent 패널에서 사용하는 DeepSeek 모델 카탈로그",
+  "configuration.qwenModels.description": "Agent 패널에서 사용하는 Qwen 모델 카탈로그",
+  "configuration.openrouterModels.description": "Agent 패널에서 사용하는 OpenRouter 모델 카탈로그"
+}

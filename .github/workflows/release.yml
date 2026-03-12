@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: 'Choose whether to only build a VSIX artifact or publish a tagged release'
+        required: true
+        default: package-only
+        type: choice
+        options:
+          - package-only
+          - tagged-release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: linux-x64
+          - runner: windows-latest
+            target: win32-x64
+          - runner: macos-latest
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x64
+
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate tagged release mode
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_mode == 'tagged-release'
+        run: |
+          if [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
+            echo "tagged-release mode requires selecting a v* tag ref." >&2
+            exit 1
+          fi
+
+      - name: Compute package metadata
+        id: package_meta
+        shell: bash
+        run: |
+          safe_ref_name="$(printf '%s' "${GITHUB_REF_NAME}" | tr '/:@ ' '-' | tr -cd 'A-Za-z0-9._-')"
+          if [[ -z "${safe_ref_name}" ]]; then
+            safe_ref_name="manual"
+          fi
+          target_safe_name="$(printf '%s' "${{ matrix.target }}" | tr '/:@ ' '-' | tr -cd 'A-Za-z0-9._-')"
+          echo "safe_ref_name=${safe_ref_name}" >> "${GITHUB_OUTPUT}"
+          echo "target_safe_name=${target_safe_name}" >> "${GITHUB_OUTPUT}"
+          echo "vsix_name=figma-mcp-helper-${safe_ref_name}-${target_safe_name}.vsix" >> "${GITHUB_OUTPUT}"
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Build VSIX
+        run: npx vsce package --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vsix-${{ steps.package_meta.outputs.target_safe_name }}
+          path: ${{ steps.package_meta.outputs.vsix_name }}
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
+    steps:
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/**/*.vsix
+
+  marketplace-publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target:
+          - linux-x64
+          - win32-x64
+          - darwin-arm64
+          - darwin-x64
+
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: vsix-${{ matrix.target }}
+          path: release-assets
+
+      - name: Resolve VSIX path
+        id: vsix
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release-assets/*.vsix)
+          if [[ "${#files[@]}" -ne 1 ]]; then
+            echo "Expected exactly one VSIX for target ${{ matrix.target }}, found ${#files[@]}." >&2
+            exit 1
+          fi
+          echo "path=${files[0]}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish to VS Code Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --packagePath "${{ steps.vsix.outputs.path }}"

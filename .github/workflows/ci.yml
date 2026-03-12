@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node-version: 20
+            run-format-check: true
+            run-lint: true
+            run-coverage: true
+          - node-version: 22
+            run-format-check: false
+            run-lint: false
+            run-coverage: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Format check
+        if: matrix.run-format-check
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            diff_base="${{ github.event.pull_request.base.sha }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            diff_base="${{ github.event.before }}"
+          else
+            diff_base=""
+          fi
+
+          if [[ -z "${diff_base}" || "${diff_base}" == "0000000000000000000000000000000000000000" ]]; then
+            echo "No diff base available; skipping format check."
+            exit 0
+          fi
+
+          mapfile -t changed_files < <(git diff --name-only "${diff_base}" "${GITHUB_SHA}")
+
+          if [[ ${#changed_files[@]} -eq 0 ]]; then
+            echo "No changed files to format-check."
+            exit 0
+          fi
+
+          printf '%s\n' "${changed_files[@]}" | xargs npx prettier --check --ignore-unknown
+
+      - name: Lint
+        if: matrix.run-lint
+        run: npm run lint
+
+      - name: Test with coverage
+        if: matrix.run-coverage
+        run: npm run test:coverage
+
+      - name: Test
+        if: ${{ !matrix.run-coverage }}
+        run: npm test
+
+      - name: Upload coverage artifact
+        if: always() && matrix.run-coverage
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-node-${{ matrix.node-version }}
+          path: coverage
+          if-no-files-found: ignore
