@@ -10,10 +10,14 @@ import { getDocumentLocale, UiLocale } from '../../../i18n';
 type SortField = 'name' | 'time' | 'size';
 type SortDirection = 'asc' | 'desc';
 
+/* Official-style AI agent icons */
 const AGENT_ICONS: Record<ProfilerAgentType, string> = {
-  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.28 11.21L9.57 3.88C9.3 3.59 8.88 3.5 8.52 3.66C8.16 3.82 7.94 4.19 7.97 4.58L8.45 10.59L4.08 12.4C3.74 12.54 3.52 12.87 3.52 13.24C3.52 13.61 3.74 13.94 4.08 14.08L8.45 15.89L7.97 21.9C7.94 22.29 8.16 22.66 8.52 22.82C8.88 22.98 9.3 22.89 9.57 22.6L16.28 15.27C16.72 14.79 16.96 14.16 16.96 13.5V12.98C16.96 12.32 16.72 11.69 16.28 11.21Z" fill="currentColor"/><path d="M20.48 10.38L18.04 7.66C17.89 7.5 17.66 7.44 17.46 7.53C17.26 7.62 17.14 7.82 17.15 8.04L17.42 11.43L15 12.45C14.81 12.53 14.69 12.71 14.69 12.92C14.69 13.13 14.81 13.31 15 13.39L17.42 14.41L17.15 17.8C17.14 18.02 17.26 18.22 17.46 18.31C17.66 18.4 17.89 18.34 18.04 18.18L20.48 15.46C20.73 15.19 20.86 14.83 20.86 14.46V11.38C20.86 11.01 20.73 10.65 20.48 10.38Z" fill="currentColor" opacity="0.6"/></svg>`,
-  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor"/><line x1="12" y1="3" x2="12" y2="7" stroke="currentColor" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="7" y2="12" stroke="currentColor" stroke-width="2"/><line x1="17" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/></svg>`,
-  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 2 14.5 6.5 18 8.5C14.5 10.5 12 15 12 15C12 15 9.5 10.5 6 8.5C9.5 6.5 12 2 12 2Z" fill="currentColor"/><path d="M12 9C12 9 13.5 12 16 13.5C13.5 15 12 18 12 18C12 18 10.5 15 8 13.5C10.5 12 12 9 12 9Z" fill="currentColor" opacity="0.6" transform="translate(0, 4)"/></svg>`,
+  /* Anthropic Claude: calligraphic quill / feather mark */
+  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15.58 3.71c-.56-.1-1.34.16-2.04.74C12.32 5.5 11.2 7.5 10.5 9.5c-.42 1.17-.7 2.4-.82 3.42-.23-.6-.52-1.25-.9-1.88C7.88 9.5 6.52 8.1 4.92 7.68c-.54-.14-1.1 0-1.42.42-.32.42-.32 1 .04 1.4 1.14 1.28 2.2 2.96 2.82 4.56.6 1.56.82 3.04.42 4.1-.18.46-.06.98.3 1.3.36.32.88.38 1.3.14 1.72-.96 3.02-2.42 3.86-4.04.82-1.58 1.24-3.34 1.38-4.82a17 17 0 0 0-.02-3.12c.48-.56 1.04-1.08 1.6-1.44.74-.48 1.4-.62 1.82-.36.3.18.5.56.5 1.18 0 1.04-.42 2.56-1.28 4.18a.75.75 0 1 0 1.32.72c.96-1.78 1.46-3.54 1.46-4.9 0-1.1-.38-2-.1.14-2.64-.72-.64-.2-1.2-.14-1.64.14z"/></svg>`,
+  /* OpenAI Codex: hexagonal logo */
+  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 1.62l7 3.88v2.13l-7 3.88-7-3.88V7.5l7-3.88zM5 11.13l7 3.88 7-3.88v2.37l-7 3.88-7-3.88v-2.37z"/></svg>`,
+  /* Google Gemini: four-point sparkle star */
+  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a1 1 0 0 1 1 .88C13.28 6.56 15.2 9.6 18.12 11a1 1 0 0 1 0 1.78c-2.78 1.48-4.76 4.56-5.12 8.34a1 1 0 0 1-2 0c-.36-3.78-2.34-6.86-5.12-8.34a1 1 0 0 1 0-1.78C8.8 9.6 10.72 6.56 11 2.88A1 1 0 0 1 12 2z"/></svg>`,
 };
 
 const EMPTY_STATE: ProfilerOverviewState = {
@@ -235,10 +239,12 @@ export class ProfilerLayer {
       return this.sortDirection === 'asc' ? ' ↑' : ' ↓';
     };
     const active = (field: SortField) => (this.sortField === field ? ' active' : '');
-    return `
-<button class="profiler-sort-btn profiler-sort-btn-name${active('name')}" data-sort="name">Name${arrow('name')}</button>
-<button class="profiler-sort-btn profiler-sort-btn-time${active('time')}" data-sort="time">Time${arrow('time')}</button>
-<button class="profiler-sort-btn profiler-sort-btn-size${active('size')}" data-sort="size">Size${arrow('size')}</button>`;
+    return `<div class="profiler-sort-header">
+<button class="profiler-sort-btn${active('name')}" data-sort="name">Name${arrow('name')}</button>
+<button class="profiler-sort-btn${active('time')}" data-sort="time">Time${arrow('time')}</button>
+<span class="profiler-sort-label">Tokens</span>
+<button class="profiler-sort-btn${active('size')}" data-sort="size">Size${arrow('size')}</button>
+</div>`;
   }
 
   private renderSessionList(): string {
@@ -276,6 +282,8 @@ export class ProfilerLayer {
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
     const timestamp = session.startedAt ?? session.modifiedAt;
+    const inK = this.formatTokensK(session.totalInputTokens);
+    const outK = this.formatTokensK(session.totalOutputTokens);
     return `
 <button
   class="profiler-session-row ${isSelected ? 'selected' : ''}"
@@ -284,8 +292,11 @@ export class ProfilerLayer {
   title="${this.escapeAttr(session.filePath)}"
 >
   <span class="profiler-session-file" title="${this.escapeAttr(session.fileName)}">${this.escapeHtml(session.fileName)}</span>
-  <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
-  <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
+  <span class="profiler-session-meta">
+    <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
+    <span class="profiler-session-tokens">IN ${inK} · OUT ${outK}</span>
+    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
+  </span>
 </button>`;
   }
 
@@ -311,6 +322,16 @@ export class ProfilerLayer {
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
+  }
+
+  private formatTokensK(value?: number): string {
+    if (!value || !Number.isFinite(value) || value <= 0) {
+      return '0K';
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return `${(value / 1000).toFixed(1)}K`;
   }
 
   private formatBytes(bytes: number): string {

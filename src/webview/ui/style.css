@@ -900,11 +900,15 @@ a:hover {
 }
 
 .profiler-sort-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 4px 12px;
-  align-items: center;
   min-width: 0;
+}
+
+.profiler-sort-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border) 50%, transparent);
 }
 
 .profiler-sort-btn {
@@ -912,11 +916,18 @@ a:hover {
   background: none;
   color: var(--vscode-descriptionForeground);
   font-size: 10px;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
   min-width: 0;
+  min-height: auto;
+}
+
+.profiler-sort-btn:first-child {
+  flex: 1;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .profiler-sort-btn:hover {
@@ -929,13 +940,11 @@ a:hover {
   font-weight: 600;
 }
 
-.profiler-sort-btn-name {
-  justify-self: start;
-}
-
-.profiler-sort-btn-time,
-.profiler-sort-btn-size {
-  justify-self: end;
+.profiler-sort-label {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  padding: 2px 4px;
 }
 
 .profiler-list {
@@ -954,10 +963,9 @@ a:hover {
   background: none;
   color: var(--vscode-foreground);
   padding: 6px 8px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 2px 12px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -1012,22 +1020,33 @@ a:hover {
   line-height: 1.35;
 }
 
+.profiler-session-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
 .profiler-session-stamp,
+.profiler-session-tokens,
 .profiler-session-size {
   color: var(--vscode-descriptionForeground);
   font-size: 10px;
   white-space: nowrap;
-  justify-self: end;
+}
+
+.profiler-session-tokens {
+  opacity: 0.85;
+}
+
+.profiler-session-size {
+  margin-left: auto;
 }
 
 .profiler-raw-meta,
 .profiler-bubble-card span {
   color: var(--vscode-descriptionForeground);
   font-size: 10px;
-}
-
-.profiler-session-size {
-  text-align: right;
 }
 
 .profiler-empty,
@@ -1512,25 +1531,8 @@ a:hover {
 }
 
 @media (max-width: 560px) {
-  .profiler-sort-bar,
-  .profiler-session-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px 10px;
-  }
-
-  .profiler-sort-btn-name,
-  .profiler-session-file {
-    grid-column: 1 / -1;
-  }
-
-  .profiler-sort-btn-time,
-  .profiler-session-stamp {
-    justify-self: start;
-  }
-
-  .profiler-sort-btn-size,
-  .profiler-session-size {
-    justify-self: end;
+  .profiler-session-meta {
+    flex-wrap: wrap;
   }
 }
 
