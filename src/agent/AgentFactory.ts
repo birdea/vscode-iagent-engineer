@@ -18,6 +18,10 @@ export class AgentFactory {
     return created;
   }
 
+  static createEphemeralAgent(type: AgentType): IAgent {
+    return this.createAgent(type);
+  }
+
   private static createAgent(type: AgentType): IAgent {
     switch (type) {
       case 'gemini':

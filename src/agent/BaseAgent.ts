@@ -3,6 +3,7 @@ import { AgentType, ModelInfo, PromptPayload } from '../types';
 export interface IAgent {
   readonly type: AgentType;
   setApiKey(key: string): Promise<void>;
+  clearApiKey(): Promise<void>;
   listModels(): Promise<ModelInfo[]>;
   getModelInfo(modelId: string): Promise<ModelInfo>;
   generateCode(payload: PromptPayload, signal?: AbortSignal): AsyncGenerator<string>;
@@ -14,6 +15,10 @@ export abstract class BaseAgent implements IAgent {
 
   async setApiKey(key: string): Promise<void> {
     this.apiKey = key;
+  }
+
+  async clearApiKey(): Promise<void> {
+    this.apiKey = '';
   }
 
   abstract listModels(): Promise<ModelInfo[]>;

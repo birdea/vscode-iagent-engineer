@@ -114,6 +114,7 @@ suite('PromptCommandHandler', () => {
   test('generate skips setApiKey when no secret exists', async () => {
     const agent = {
       setApiKey: sandbox.stub().resolves(),
+      clearApiKey: sandbox.stub().resolves(),
       generateCode: async function* () {
         yield 'chunk';
       },
@@ -124,6 +125,7 @@ suite('PromptCommandHandler', () => {
     await handler.generate({ outputFormat: 'tsx' });
 
     assert.ok(agent.setApiKey.notCalled);
+    assert.ok(agent.clearApiKey.calledOnce);
   });
 
   test('generate uses state MCP data when payload does not include it', async () => {

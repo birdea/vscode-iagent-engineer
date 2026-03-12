@@ -51,12 +51,15 @@ export class AgentCommandHandler {
 
   async getModelInfoHelp(agent: AgentType, modelId: string) {
     try {
+      const runtimeAgent = AgentFactory.getAgent(agent);
       const key = await this.context.secrets.get(getSecretStorageKey(agent));
       if (key) {
-        await AgentFactory.getAgent(agent).setApiKey(key);
+        await runtimeAgent.setApiKey(key);
+      } else {
+        await runtimeAgent.clearApiKey();
       }
 
-      const modelInfo = await AgentFactory.getAgent(agent).getModelInfo(modelId);
+      const modelInfo = await runtimeAgent.getModelInfo(modelId);
       const doc = await vscode.workspace.openTextDocument({
         language: 'json',
         content: JSON.stringify(this.toModelInfoDocument(agent, modelId, modelInfo), null, 2),
@@ -96,6 +99,7 @@ export class AgentCommandHandler {
 
   async clearSettings(agent: AgentType) {
     await this.context.secrets.delete(getSecretStorageKey(agent));
+    await AgentFactory.getAgent(agent).clearApiKey();
 
     this.stateManager.resetAgentState();
     await this.context.globalState.update(CONFIG_KEYS.DEFAULT_AGENT, 'gemini');
@@ -107,14 +111,22 @@ export class AgentCommandHandler {
   async listModels(agent: AgentType, key?: string) {
     const runtimeKey = key?.trim();
     if (runtimeKey) {
-      await AgentFactory.getAgent(agent).setApiKey(runtimeKey);
-    } else {
-      const savedKey = await this.context.secrets.get(getSecretStorageKey(agent));
-      if (savedKey) {
-        await AgentFactory.getAgent(agent).setApiKey(savedKey);
-      }
+      const ephemeralAgent = AgentFactory.createEphemeralAgent(agent);
+      await ephemeralAgent.setApiKey(runtimeKey);
+      const models = await ephemeralAgent.listModels();
+      this.post({ event: 'agent.modelsResult', models });
+      return;
     }
-    const models = await AgentFactory.getAgent(agent).listModels();
+
+    const persistentAgent = AgentFactory.getAgent(agent);
+    const savedKey = await this.context.secrets.get(getSecretStorageKey(agent));
+    if (savedKey) {
+      await persistentAgent.setApiKey(savedKey);
+    } else {
+      await persistentAgent.clearApiKey();
+    }
+
+    const models = await persistentAgent.listModels();
     this.post({ event: 'agent.modelsResult', models });
   }
 
