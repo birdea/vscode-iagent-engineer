@@ -58,7 +58,7 @@ export class ProfilerCommandHandler {
     Logger.info('profiler', 'Profiler session selected', `${agent}:${id}`);
     try {
       await vscode.commands.executeCommand(
-        'workbench.view.extension.figma-mcp-helper-profiler-panel',
+        'workbench.view.extension.iagent-engineer-profiler-panel',
       );
     } catch {
       // Ignore focus errors; detail updates are still pushed to the panel state.

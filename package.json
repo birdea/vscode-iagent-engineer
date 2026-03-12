@@ -199,7 +199,6 @@
           "default": false,
           "description": "%configuration.openFetchedDataInEditor.description%"
         },
-        "iagent-engineer.claudeModels": {
         "iagent-engineer.profiler.claudeSearchRoots": {
           "type": "array",
           "default": [],

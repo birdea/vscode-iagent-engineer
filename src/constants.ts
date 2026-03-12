@@ -7,7 +7,6 @@ export const VIEW_IDS = {
   PROMPT: 'iagent-engineer.prompt',
   LOG: 'iagent-engineer.log',
   PROFILER: 'iagent-engineer.profiler',
-  LOG: 'iagent-engineer.log',
   PROFILER_DETAIL: 'iagent-engineer.profiler-detail',
 } as const;
 
