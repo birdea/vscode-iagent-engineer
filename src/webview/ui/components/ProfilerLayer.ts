@@ -289,6 +289,7 @@ export class ProfilerLayer {
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
     const timestamp = session.startedAt ?? session.modifiedAt;
+    const fileName = this.getDisplayFileName(session);
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
     return `
@@ -298,7 +299,7 @@ export class ProfilerLayer {
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
-  <span class="profiler-session-file" title="${this.escapeAttr(session.fileName)}">${this.escapeHtml(session.fileName)}</span>
+  <span class="profiler-session-file" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
   <span class="profiler-session-meta">
     <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
     <span class="profiler-session-tokens">IN ${inK} · OUT ${outK}</span>
@@ -353,6 +354,17 @@ export class ProfilerLayer {
 
   private formatNumber(value: number): string {
     return Number.isFinite(value) ? value.toLocaleString() : '0';
+  }
+
+  private getDisplayFileName(session: SessionSummary): string {
+    const fileName = session.fileName?.trim();
+    if (fileName) {
+      return fileName;
+    }
+
+    const normalizedPath = session.filePath.replace(/\\/g, '/');
+    const fallback = normalizedPath.split('/').pop()?.trim();
+    return fallback || 'session';
   }
 
   private truncate(value: string, length: number): string {
