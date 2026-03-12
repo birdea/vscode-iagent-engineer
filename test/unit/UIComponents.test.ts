@@ -1004,6 +1004,85 @@ suite('UI Components Consolidated', () => {
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
 
+    test('updates the chart when live detail grows in place', async () => {
+      const { act } = await import('react');
+      const detail = createProfilerDetail();
+
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail,
+          live: {
+            active: true,
+            status: 'streaming',
+            messages: [],
+          },
+        });
+      });
+
+      const chartShell = document.getElementById('profiler-chart-shell');
+      assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 2);
+
+      detail.timeline.push({
+        id: 'p3',
+        timestamp: '2026-03-11T10:02:00.000Z',
+        endTimestamp: '2026-03-11T10:02:06.000Z',
+        inputTokens: 260,
+        outputTokens: 120,
+        cachedTokens: 40,
+        totalTokens: 420,
+        payloadKb: 9.6,
+        latencyMs: 6000,
+        latencyPhase: 'response_completed',
+        eventType: 'turn',
+        label: 'T03',
+        detail: 'Stream new live point',
+        sourceEventId: 'raw-3',
+      });
+      detail.rawEvents.push({
+        id: 'raw-3',
+        filePath: '/tmp/session.jsonl',
+        lineNumber: 12,
+        timestamp: '2026-03-11T10:02:06.000Z',
+        eventType: 'task_complete',
+        summary: 'Live turn completed',
+        excerpt: '{"sample":3}',
+        payloadKb: 9.6,
+      });
+
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail,
+          live: {
+            active: true,
+            status: 'streaming',
+            updatedAt: '2026-03-11T10:02:06.000Z',
+            messages: [
+              {
+                id: 'live-2',
+                timestamp: '2026-03-11T10:02:06.000Z',
+                level: 'info',
+                layer: 'profiler',
+                message: 'Live session updated',
+                detail: '3 timeline points · 3 events',
+              },
+            ],
+          },
+        });
+      });
+
+      assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 3);
+      assert.ok(chartShell?.textContent?.includes('3 samples'));
+      assert.ok(
+        document
+          .getElementById('profiler-live-feed')
+          ?.textContent?.includes('3 timeline points · 3 events'),
+      );
+    });
+
     test('tooltip stays visible inside chart bounds and opens the linked raw event on click', async () => {
       const { act } = await import('react');
       act(() => {
