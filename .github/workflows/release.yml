@@ -80,7 +80,7 @@ jobs:
         run: npm test
 
       - name: Build VSIX
-        run: npx vsce package --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
+        run: npx vsce package --no-dependencies --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
@@ -111,7 +111,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.publish_mode == 'verify-artifacts'
     steps:
       - name: Download VSIX artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: release-assets
 
