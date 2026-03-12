@@ -90,6 +90,7 @@ export class ProfilerDetailLayer {
     }
 
     if (this.state.status === 'loading') {
+      this.unmountChart();
       overview.innerHTML = '';
       chartShell.innerHTML = this.renderLoadingState();
       bubbleList.innerHTML = '';
@@ -99,10 +100,7 @@ export class ProfilerDetailLayer {
 
     if (this.state.status !== 'ready' || !this.state.detail) {
       overview.innerHTML = '';
-      if (this.chartRoot) {
-        this.chartRoot.unmount();
-        this.chartRoot = null;
-      }
+      this.unmountChart();
       chartShell.innerHTML = '';
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
@@ -118,6 +116,7 @@ export class ProfilerDetailLayer {
 
   private mountChart(container: HTMLElement, detail: SessionDetail) {
     if (!this.chartRoot) {
+      container.innerHTML = '';
       this.chartRoot = createRoot(container);
     }
     this.chartRoot.render(
@@ -129,6 +128,14 @@ export class ProfilerDetailLayer {
         },
       }),
     );
+  }
+
+  private unmountChart() {
+    if (!this.chartRoot) {
+      return;
+    }
+    this.chartRoot.unmount();
+    this.chartRoot = null;
   }
 
   private renderOverview(detail: SessionDetail): string {
