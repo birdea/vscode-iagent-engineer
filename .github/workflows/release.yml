@@ -95,7 +95,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.publish_mode == 'tagged-release')
     steps:
       - name: Download VSIX artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: release-assets
 
@@ -122,7 +122,7 @@ jobs:
 
     steps:
       - name: Download VSIX artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: vsix-${{ matrix.target }}
           path: release-assets
