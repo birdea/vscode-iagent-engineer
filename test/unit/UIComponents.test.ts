@@ -956,7 +956,9 @@ suite('UI Components Consolidated', () => {
       assert.ok(chartShell?.textContent?.includes('Input'));
       assert.ok(chartShell?.textContent?.includes('Trend'));
       assert.strictEqual(viewer?.nextElementSibling, secondary);
-      assert.ok(document.getElementById('profiler-bubble-list')?.textContent?.includes('Turn completed'));
+      assert.ok(
+        document.getElementById('profiler-bubble-list')?.textContent?.includes('Turn completed'),
+      );
       assert.ok(
         document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
       );
@@ -1034,9 +1036,9 @@ suite('UI Components Consolidated', () => {
         );
       });
 
-      const tooltip = document.querySelector('.profiler-chart-tooltip-action') as
-        | HTMLButtonElement
-        | null;
+      const tooltip = document.querySelector(
+        '.profiler-chart-tooltip-action',
+      ) as HTMLButtonElement | null;
       assert.ok(tooltip);
       assert.strictEqual(tooltip?.style.top, '8px');
       assert.ok(tooltip?.querySelector('.profiler-tooltip-time')?.textContent);
@@ -1055,6 +1057,51 @@ suite('UI Components Consolidated', () => {
           lineNumber: 8,
         }),
       );
+    });
+
+    test('renders live updates and allows stopping live mode', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+          live: {
+            active: true,
+            status: 'streaming',
+            agent: 'codex',
+            filePath: '/tmp/session.jsonl',
+            fileName: 'session.jsonl',
+            startedAt: '2026-03-11T10:00:00.000Z',
+            updatedAt: '2026-03-11T10:01:05.000Z',
+            messages: [
+              {
+                id: 'live-1',
+                timestamp: '2026-03-11T10:01:05.000Z',
+                level: 'info',
+                layer: 'profiler',
+                message: 'Live session updated',
+                detail: '2 timeline points · 2 events',
+              },
+            ],
+          },
+        });
+      });
+
+      assert.ok(
+        document
+          .getElementById('profiler-live-feed')
+          ?.textContent?.includes('Live session updated'),
+      );
+      assert.ok(
+        document
+          .getElementById('profiler-detail-overview')
+          ?.textContent?.includes('LiveData active'),
+      );
+
+      (document.querySelector('[data-profiler-live-stop]') as HTMLButtonElement | null)?.click();
+
+      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.stopLiveData' }));
     });
   });
 
@@ -1102,8 +1149,8 @@ suite('UI Components Consolidated', () => {
       const fileCell = row?.querySelector('.profiler-session-file') as HTMLElement | null;
       const stampCell = row?.querySelector('.profiler-session-stamp') as HTMLElement | null;
       const sizeCell = row?.querySelector('.profiler-session-size') as HTMLElement | null;
-      const sortButtons = Array.from(document.querySelectorAll('.profiler-sort-btn')).map((button) =>
-        button.textContent?.trim(),
+      const sortButtons = Array.from(document.querySelectorAll('.profiler-sort-btn')).map(
+        (button) => button.textContent?.trim(),
       );
 
       assert.ok(row);
@@ -1120,6 +1167,12 @@ suite('UI Components Consolidated', () => {
       assert.ok(!row.textContent?.includes('Unknown model'));
       assert.ok(!row.textContent?.includes('In 100'));
       assert.ok(!row.textContent?.includes('Out 40'));
+    });
+
+    test('see livedata button posts startLiveData command', () => {
+      document.getElementById('profiler-see-livedata')?.click();
+
+      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.startLiveData' }));
     });
   });
 });

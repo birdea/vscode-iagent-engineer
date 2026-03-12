@@ -33,6 +33,7 @@ const MESSAGES: Record<
   Record<
     | 'title'
     | 'scan'
+    | 'live'
     | 'archive'
     | 'loading'
     | 'empty'
@@ -48,6 +49,7 @@ const MESSAGES: Record<
   en: {
     title: 'Agent Session Profiler',
     scan: 'Start Analysis',
+    live: 'See LiveData',
     archive: 'Archive All',
     loading: '로딩중..',
     empty: 'No sessions found.',
@@ -61,6 +63,7 @@ const MESSAGES: Record<
   ko: {
     title: 'Agent 세션 프로파일러',
     scan: 'Start Analysis',
+    live: 'See LiveData',
     archive: 'Archive All',
     loading: '로딩중..',
     empty: '검색된 세션이 없습니다.',
@@ -89,6 +92,9 @@ export class ProfilerLayer {
     </div>
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
+  <div class="btn-row profiler-toolbar profiler-toolbar-live">
+    <button class="secondary" id="profiler-see-livedata">${this.msg('live')}</button>
+  </div>
   <div class="btn-row profiler-toolbar">
     <button class="primary" id="profiler-start-analysis">${this.msg('scan')}</button>
     <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
@@ -101,6 +107,9 @@ export class ProfilerLayer {
   }
 
   mount() {
+    document
+      .getElementById('profiler-see-livedata')
+      ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.startLiveData' }));
     document
       .getElementById('profiler-start-analysis')
       ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.scan' }));
@@ -176,6 +185,7 @@ export class ProfilerLayer {
     const startButton = document.getElementById(
       'profiler-start-analysis',
     ) as HTMLButtonElement | null;
+    const liveButton = document.getElementById('profiler-see-livedata') as HTMLButtonElement | null;
     const archiveButton = document.getElementById(
       'profiler-archive-all',
     ) as HTMLButtonElement | null;
@@ -185,6 +195,7 @@ export class ProfilerLayer {
     const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
+    if (liveButton) liveButton.disabled = loading;
     if (startButton) startButton.disabled = loading;
     if (archiveButton) archiveButton.disabled = loading || this.state.aggregate.totalSessions === 0;
     if (badge) badge.innerHTML = this.renderStatusBadge();

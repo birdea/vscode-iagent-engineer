@@ -168,6 +168,12 @@ export class WebviewMessageHandler {
         case 'profiler.scan':
           await this.profilerHandler?.scan();
           break;
+        case 'profiler.startLiveData':
+          await this.profilerHandler?.startLiveData();
+          break;
+        case 'profiler.stopLiveData':
+          this.profilerHandler?.stopLiveData();
+          break;
         case 'profiler.selectSession':
           await this.profilerHandler?.selectSession(msg.id, msg.agent);
           break;
@@ -199,6 +205,7 @@ export class WebviewMessageHandler {
   }
 
   async dispose(): Promise<void> {
+    this.profilerHandler?.dispose();
     await this.editorIntegration.dispose();
     await this.screenshotService.cleanupTempFiles();
   }

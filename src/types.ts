@@ -10,6 +10,7 @@ export type FigmaDataResultKind = 'designContext' | 'parsedInput' | 'metadata' |
 export type PromptMcpDataKind = 'designContext' | 'metadata';
 export type ProfilerStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type ProfilerMetricType = 'tokens' | 'data' | 'latency';
+export type ProfilerLiveStatus = 'idle' | 'connecting' | 'streaming' | 'stopped' | 'error';
 
 // Log entry
 export interface LogEntry {
@@ -166,6 +167,17 @@ export interface SessionDetail {
   rawEvents: SessionRawEventRef[];
 }
 
+export interface ProfilerLiveState {
+  active: boolean;
+  status: ProfilerLiveStatus;
+  agent?: ProfilerAgentType;
+  filePath?: string;
+  fileName?: string;
+  startedAt?: string;
+  updatedAt?: string;
+  messages: LogEntry[];
+}
+
 export interface ProfilerOverviewState {
   status: ProfilerStatus;
   message?: string;
@@ -180,6 +192,7 @@ export interface ProfilerDetailState {
   message?: string;
   sessionId?: string;
   detail?: SessionDetail;
+  live?: ProfilerLiveState;
 }
 
 export interface ProfilerArchiveResult {
@@ -218,6 +231,8 @@ export type WebviewToHostMessage =
   | { command: 'editor.saveFile'; code: string; filename: string }
   | { command: 'profiler.getState' }
   | { command: 'profiler.scan' }
+  | { command: 'profiler.startLiveData' }
+  | { command: 'profiler.stopLiveData' }
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }
   | { command: 'profiler.openSource'; filePath: string; lineNumber?: number };

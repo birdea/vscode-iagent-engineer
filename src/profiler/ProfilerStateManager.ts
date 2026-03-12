@@ -31,6 +31,11 @@ function createEmptyOverview(): ProfilerOverviewState {
 function createEmptyDetail(): ProfilerDetailState {
   return {
     status: 'idle',
+    live: {
+      active: false,
+      status: 'idle',
+      messages: [],
+    },
   };
 }
 
@@ -77,6 +82,7 @@ export class ProfilerStateManager {
       sessionId,
       message,
       detail: undefined,
+      live: this.detailState.live,
     };
     this.emitDetail();
   }
@@ -91,6 +97,7 @@ export class ProfilerStateManager {
       status: 'ready',
       sessionId: detail.summary.id,
       detail,
+      live: this.detailState.live,
     };
     this.emitDetail();
   }
@@ -99,6 +106,11 @@ export class ProfilerStateManager {
     this.detailState = {
       status: 'idle',
       message,
+      live: {
+        active: false,
+        status: 'idle',
+        messages: [],
+      },
     };
     this.emitDetail();
   }

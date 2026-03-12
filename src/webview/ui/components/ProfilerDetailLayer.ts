@@ -30,6 +30,7 @@ export class ProfilerDetailLayer {
     <div class="profiler-chart-shell" id="profiler-chart-shell"></div>
   </div>
   <div class="profiler-detail-secondary">
+    <div class="profiler-live-feed" id="profiler-live-feed"></div>
     <div class="profiler-bubble-list" id="profiler-bubble-list"></div>
     <div class="profiler-raw-list" id="profiler-raw-list"></div>
   </div>
@@ -61,6 +62,14 @@ export class ProfilerDetailLayer {
       }
       this.openSource(button);
     });
+    document.getElementById('profiler-detail-overview')?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest<HTMLButtonElement>('[data-profiler-live-stop]');
+      if (!button) {
+        return;
+      }
+      vscode.postMessage({ command: 'profiler.stopLiveData' });
+    });
     vscode.postMessage({ command: 'profiler.getState' });
     this.renderDynamicContent();
   }
@@ -82,26 +91,33 @@ export class ProfilerDetailLayer {
   private renderDynamicContent() {
     const overview = document.getElementById('profiler-detail-overview');
     const chartShell = document.getElementById('profiler-chart-shell');
+    const liveFeed = document.getElementById('profiler-live-feed');
     const bubbleList = document.getElementById('profiler-bubble-list');
     const rawList = document.getElementById('profiler-raw-list');
 
-    if (!overview || !chartShell || !bubbleList || !rawList) {
+    if (!overview || !chartShell || !liveFeed || !bubbleList || !rawList) {
       return;
     }
 
     if (this.state.status === 'loading') {
       this.unmountChart();
-      overview.innerHTML = '';
+      overview.innerHTML = this.renderStatusPanel(this.state.message ?? '로딩중..');
       chartShell.innerHTML = this.renderLoadingState();
+      liveFeed.innerHTML = this.renderLiveFeed();
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
       return;
     }
 
     if (this.state.status !== 'ready' || !this.state.detail) {
-      overview.innerHTML = '';
+      overview.innerHTML = this.renderStatusPanel(
+        this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.',
+      );
       this.unmountChart();
-      chartShell.innerHTML = '';
+      chartShell.innerHTML = this.renderEmptyState(
+        this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.',
+      );
+      liveFeed.innerHTML = this.renderLiveFeed();
       bubbleList.innerHTML = '';
       rawList.innerHTML = '';
       return;
@@ -110,6 +126,7 @@ export class ProfilerDetailLayer {
     const detail = this.state.detail;
     overview.innerHTML = this.renderOverview(detail);
     this.mountChart(chartShell, detail);
+    liveFeed.innerHTML = this.renderLiveFeed();
     bubbleList.innerHTML = this.renderBubbleList(detail);
     rawList.innerHTML = this.renderRawList(detail);
   }
@@ -169,6 +186,7 @@ export class ProfilerDetailLayer {
     const topLatency = timeline.length
       ? [...timeline].sort((a, b) => (b.latencyMs ?? 0) - (a.latencyMs ?? 0))[0]
       : undefined;
+    const live = this.state.live;
 
     return `
 <div class="profiler-overview-panel">
@@ -179,6 +197,7 @@ export class ProfilerDetailLayer {
       <p title="${this.escapeAttr(summary.filePath)}">${this.escapeHtml(this.compactPath(summary.filePath, 6))}</p>
     </div>
     <div class="profiler-meta-inline">
+      ${live?.status && live.status !== 'idle' ? this.metaPill('Live', live.status.toUpperCase()) : ''}
       ${this.metaPill('Timestamp', start ? this.formatStamp(start) : '-')}
       ${this.metaPill('Range', start && end ? `${this.formatClock(start)} -> ${this.formatClock(end)}` : '-')}
       ${this.metaPill('Source', detail.metadata.sourceFormat)}
@@ -187,6 +206,7 @@ export class ProfilerDetailLayer {
       ${this.metaPill('Workspace', detail.metadata.cwd ? this.compactPath(detail.metadata.cwd, 5) : '-')}
     </div>
   </div>
+  ${this.renderLiveStatusLine()}
   <div class="profiler-overview-board">
     ${this.summaryCell('Total', this.formatNumber(summary.totalTokens ?? 0))}
     ${this.summaryCell('Turns', this.formatNumber(summary.requestCount ?? timeline.length))}
@@ -198,6 +218,32 @@ export class ProfilerDetailLayer {
     ${this.summaryCell('Largest payload', topPayload ? this.formatMetricValue(topPayload.payloadKb ?? 0, 'data') : '-')}
     ${this.summaryCell('Slowest request', topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-')}
   </div>
+</div>`;
+  }
+
+  private renderLiveStatusLine(): string {
+    const live = this.state.live;
+    if (!live || (live.status === 'idle' && live.messages.length === 0)) {
+      return '';
+    }
+
+    const connectedText = live.filePath
+      ? `${live.agent?.toUpperCase() ?? 'LIVE'} · ${this.escapeHtml(this.compactPath(live.filePath, 6))}`
+      : 'Watching the latest session candidate';
+    const updatedText = live.updatedAt ? this.formatTime(live.updatedAt) : '-';
+
+    return `
+<div class="profiler-live-status-row">
+  <div class="profiler-live-status-copy">
+    <strong>${live.active ? 'LiveData active' : 'LiveData idle'}</strong>
+    <span>${connectedText}</span>
+    <span>Last sync ${updatedText}</span>
+  </div>
+  ${
+    live.active
+      ? '<button class="secondary profiler-live-stop" data-profiler-live-stop="true">Stop LiveData</button>'
+      : ''
+  }
 </div>`;
   }
 
@@ -259,6 +305,45 @@ export class ProfilerDetailLayer {
   <div class="profiler-spinner"></div>
   <div>로딩중..</div>
 </div>`;
+  }
+
+  private renderEmptyState(message: string): string {
+    return `<div class="profiler-empty-chart">${this.escapeHtml(message)}</div>`;
+  }
+
+  private renderStatusPanel(message: string): string {
+    return `
+<div class="profiler-overview-panel">
+  ${this.renderLiveStatusLine()}
+  <div class="profiler-empty-chart">${this.escapeHtml(message)}</div>
+</div>`;
+  }
+
+  private renderLiveFeed(): string {
+    const messages = this.state.live?.messages ?? [];
+    const body =
+      messages.length === 0
+        ? '<div class="profiler-empty">Live updates will appear here.</div>'
+        : messages
+            .slice()
+            .reverse()
+            .map(
+              (entry) => `
+<div class="profiler-live-row ${entry.level}">
+  <div class="profiler-live-row-top">
+    <strong>${this.escapeHtml(entry.message)}</strong>
+    <span>${this.escapeHtml(this.formatTime(entry.timestamp))}</span>
+  </div>
+  ${entry.detail ? `<p>${this.escapeHtml(this.truncate(entry.detail, 180))}</p>` : ''}
+</div>`,
+            )
+            .join('');
+
+    return `
+<section class="profiler-side-section">
+  <div class="profiler-section-label">Live updates</div>
+  <div class="profiler-live-list">${body}</div>
+</section>`;
   }
 
   private getOrderedTimeline(timeline: SessionTimelinePoint[]): SessionTimelinePoint[] {
