@@ -1026,7 +1026,8 @@ a:hover {
 
 .profiler-detail-overview,
 .profiler-detail-viewer,
-.profiler-chart-shell {
+.profiler-chart-shell,
+.profiler-detail-secondary {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1035,8 +1036,8 @@ a:hover {
 }
 
 .profiler-detail-viewer {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -1265,7 +1266,13 @@ a:hover {
   line-height: 1.35;
 }
 
-.profiler-detail-rail,
+.profiler-detail-secondary {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 10px;
+}
+
 .profiler-bubble-list,
 .profiler-raw-list {
   display: flex;
@@ -1327,6 +1334,10 @@ a:hover {
   }
 
   .profiler-detail-viewer {
+    gap: 8px;
+  }
+
+  .profiler-detail-secondary {
     grid-template-columns: 1fr;
   }
 
@@ -1419,49 +1430,80 @@ a:hover {
 /* visx chart: tooltip */
 .profiler-chart-tooltip {
   position: absolute;
-  pointer-events: none;
   z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+  appearance: none;
+  text-align: left;
   background: var(--vscode-editorWidget-background, #1e1e1e);
   border: 1px solid var(--vscode-panel-border, #333);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  min-width: 120px;
+  min-width: min(360px, calc(100% - 24px));
+  max-width: min(420px, calc(100% - 24px));
+  color: var(--vscode-foreground, #ccc);
+  overflow: hidden;
 }
 
 .profiler-tooltip-time {
-  font-size: 9px;
-  color: var(--vscode-descriptionForeground, #888);
-  margin-bottom: 4px;
-}
-
-.profiler-tooltip-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
   font-size: 10px;
-  line-height: 1.6;
+  color: var(--vscode-descriptionForeground, #888);
+  line-height: 1.4;
+  white-space: nowrap;
+  padding: 8px 12px 7px;
 }
 
-.profiler-tooltip-row span {
+.profiler-tooltip-data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 7px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--vscode-panel-border, #333) 88%, transparent);
+}
+
+.profiler-tooltip-data-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profiler-tooltip-data-item span {
   font-weight: 600;
 }
 
-.profiler-tooltip-row strong {
+.profiler-tooltip-data-item strong {
   color: var(--vscode-foreground, #ccc);
   font-variant-numeric: tabular-nums;
 }
 
-.profiler-tooltip-label {
-  margin-top: 4px;
-  font-size: 9px;
-  color: var(--vscode-descriptionForeground, #888);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
+.profiler-chart-tooltip:disabled {
+  cursor: default;
 }
+
+.profiler-chart-tooltip-action {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.profiler-chart-tooltip-action:hover {
+  border-color: color-mix(in srgb, var(--vscode-focusBorder, #007acc) 72%, transparent);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.profiler-chart-tooltip-action:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 1px;
+}
+
 
 @keyframes profiler-spin {
   from {

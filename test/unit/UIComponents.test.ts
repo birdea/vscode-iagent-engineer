@@ -951,8 +951,12 @@ suite('UI Components Consolidated', () => {
       );
       // visx React chart renders legend toggle buttons with series labels
       const chartShell = document.getElementById('profiler-chart-shell');
+      const viewer = document.querySelector('.profiler-detail-viewer');
+      const secondary = document.querySelector('.profiler-detail-secondary');
       assert.ok(chartShell?.textContent?.includes('Input'));
       assert.ok(chartShell?.textContent?.includes('Trend'));
+      assert.strictEqual(viewer?.nextElementSibling, secondary);
+      assert.ok(document.getElementById('profiler-bubble-list')?.textContent?.includes('Turn completed'));
       assert.ok(
         document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
       );
@@ -994,6 +998,63 @@ suite('UI Components Consolidated', () => {
       assert.ok(chartShell?.textContent?.includes('Input'));
       assert.ok(!chartShell?.textContent?.includes('로딩중'));
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
+    });
+
+    test('tooltip stays visible inside chart bounds and opens the linked raw event on click', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      const scroll = document.querySelector('.profiler-chart-scroll') as HTMLDivElement | null;
+      assert.ok(scroll);
+      sandbox.stub(scroll, 'getBoundingClientRect').returns({
+        left: 0,
+        top: 0,
+        right: 640,
+        bottom: 252,
+        width: 640,
+        height: 252,
+        x: 0,
+        y: 0,
+        toJSON: () => '',
+      } as DOMRect);
+
+      act(() => {
+        scroll.dispatchEvent(
+          new (global as any).window.MouseEvent('mousemove', {
+            bubbles: true,
+            clientX: 540,
+            clientY: 64,
+          }),
+        );
+      });
+
+      const tooltip = document.querySelector('.profiler-chart-tooltip-action') as
+        | HTMLButtonElement
+        | null;
+      assert.ok(tooltip);
+      assert.strictEqual(tooltip?.style.top, '8px');
+      assert.ok(tooltip?.querySelector('.profiler-tooltip-time')?.textContent);
+      assert.ok(tooltip?.querySelector('.profiler-tooltip-data')?.textContent?.includes('Input'));
+      assert.ok(tooltip?.querySelector('.profiler-tooltip-data')?.textContent?.includes('Trend'));
+      assert.ok(!tooltip?.textContent?.includes('Open source log at line 8'));
+
+      act(() => {
+        tooltip?.click();
+      });
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.openSource',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 8,
+        }),
+      );
     });
   });
 

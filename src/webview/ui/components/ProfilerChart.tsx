@@ -4,7 +4,6 @@ import { LinePath, Bar } from '@visx/shape';
 import { AxisBottom, AxisRight } from '@visx/axis';
 import { GridRows } from '@visx/grid';
 import { Group } from '@visx/group';
-import { localPoint } from '@visx/event';
 import {
   ProfilerMetricType,
   SessionDetail,
@@ -48,6 +47,8 @@ const PIXELS_PER_MINUTE = 14;
 const MIN_WIDTH = 640;
 const MIN_POINT_SPACING = 72;
 const BAR_WIDTH = 8;
+const TOOLTIP_MARGIN = 12;
+const TOOLTIP_APPROX_WIDTH = 380;
 
 function getTokenTotal(p: SessionTimelinePoint): number {
   return (p.inputTokens ?? 0) + (p.outputTokens ?? 0) + (p.cachedTokens ?? 0);
@@ -268,7 +269,6 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
   const [tooltip, setTooltip] = useState<{
     x: number;
-    y: number;
     point: SessionTimelinePoint;
     index: number;
   } | null>(null);
@@ -369,10 +369,17 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
 
   // Handle tooltip
   const handleMouseMove = useCallback(
-    (event: React.MouseEvent<SVGRectElement>) => {
-      const coords = localPoint(event);
-      if (!coords) return;
-      const x = coords.x;
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) {
+        return;
+      }
+      const bounds = scrollElement.getBoundingClientRect();
+      const x = scrollElement.scrollLeft + event.clientX - bounds.left;
+      if (x < PADDING.left || x > PADDING.left + plotWidth) {
+        setTooltip(null);
+        return;
+      }
       // Find closest point
       let closestIdx = 0;
       let closestDist = Infinity;
@@ -388,7 +395,6 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
         const px = xScale(new Date(timeline[closestIdx].timestamp)) ?? 0;
         setTooltip({
           x: px,
-          y: coords.y,
           point: timeline[closestIdx],
           index: closestIdx,
         });
@@ -396,7 +402,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
         setTooltip(null);
       }
     },
-    [timeline, xScale],
+    [plotWidth, timeline, xScale],
   );
 
   // Scroll to end on mount
@@ -413,6 +419,13 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   }
 
   const visibleSeries = seriesData.filter((s) => !hiddenSeries.has(s.key));
+  const tooltipRawEvent = tooltip ? findRawEvent(tooltip.point) : undefined;
+  const tooltipLeft = tooltip
+    ? Math.max(
+        TOOLTIP_MARGIN + TOOLTIP_APPROX_WIDTH / 2,
+        Math.min(chartWidth - TOOLTIP_MARGIN - TOOLTIP_APPROX_WIDTH / 2, tooltip.x),
+      )
+    : 0;
 
   return (
     <div className="profiler-chart-panel">
@@ -437,7 +450,12 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
           ))}
         </div>
       </div>
-      <div className="profiler-chart-scroll" ref={scrollRef}>
+      <div
+        className="profiler-chart-scroll"
+        ref={scrollRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setTooltip(null)}
+      >
         <div className="profiler-chart-inner" style={{ width: chartWidth }}>
           <svg
             viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
@@ -617,43 +635,52 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
               </Group>
             )}
 
-            {/* Invisible overlay for mouse events */}
+            {/* Invisible overlay preserves a stable hit area for chart hover */}
             <rect
               x={PADDING.left}
               y={PADDING.top}
               width={plotWidth}
               height={plotHeight}
               fill="transparent"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={() => setTooltip(null)}
             />
           </svg>
 
           {/* Tooltip card */}
           {tooltip && (
-            <div
-              className="profiler-chart-tooltip"
+            <button
+              type="button"
+              className={`profiler-chart-tooltip ${tooltipRawEvent ? 'profiler-chart-tooltip-action' : ''}`}
               style={{
-                left: tooltip.x,
-                top: PADDING.top - 4,
-                transform: 'translate(-50%, -100%)',
+                left: tooltipLeft,
+                top: 8,
+                transform: 'translateX(-50%)',
               }}
+              onClick={() => {
+                if (tooltipRawEvent) {
+                  onOpenSource(tooltipRawEvent.filePath, tooltipRawEvent.lineNumber);
+                }
+              }}
+              disabled={!tooltipRawEvent}
+              title={
+                tooltipRawEvent
+                  ? `Open source line ${tooltipRawEvent.lineNumber}`
+                  : 'No source line linked to this sample'
+              }
             >
               <div className="profiler-tooltip-time">
-                {new Date(tooltip.point.timestamp).toLocaleTimeString()}
+                {new Date(tooltip.point.timestamp).toLocaleString()}
               </div>
-              {visibleSeries.map((s) => (
-                <div key={s.key} className="profiler-tooltip-row">
-                  <span style={{ color: s.color }}>{s.label}</span>
-                  <strong>
-                    {formatAxisValue(s.getValue(tooltip.point, tooltip.index), metric)}
-                  </strong>
-                </div>
-              ))}
-              <div className="profiler-tooltip-label">
-                {tooltip.point.label ?? tooltip.point.eventType}
+              <div className="profiler-tooltip-data">
+                {visibleSeries.map((s) => (
+                  <span key={s.key} className="profiler-tooltip-data-item">
+                    <span style={{ color: s.color }}>{s.label}</span>
+                    <strong>
+                      {formatAxisValue(s.getValue(tooltip.point, tooltip.index), metric)}
+                    </strong>
+                  </span>
+                ))}
               </div>
-            </div>
+            </button>
           )}
         </div>
       </div>

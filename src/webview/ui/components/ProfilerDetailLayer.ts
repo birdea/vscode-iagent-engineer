@@ -28,10 +28,10 @@ export class ProfilerDetailLayer {
   <div class="profiler-detail-overview" id="profiler-detail-overview"></div>
   <div class="profiler-detail-viewer">
     <div class="profiler-chart-shell" id="profiler-chart-shell"></div>
-    <div class="profiler-detail-rail">
-      <div class="profiler-bubble-list" id="profiler-bubble-list"></div>
-      <div class="profiler-raw-list" id="profiler-raw-list"></div>
-    </div>
+  </div>
+  <div class="profiler-detail-secondary">
+    <div class="profiler-bubble-list" id="profiler-bubble-list"></div>
+    <div class="profiler-raw-list" id="profiler-raw-list"></div>
   </div>
 </section>`;
   }
