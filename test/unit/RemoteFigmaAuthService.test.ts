@@ -60,7 +60,7 @@ suite('RemoteFigmaAuthService', () => {
     );
   });
 
-  test('buildAuthUrl preserves an existing redirect uri', async () => {
+  test('buildAuthUrl overrides any existing redirect uri with the extension callback', async () => {
     const url = await service.buildAuthUrl(
       `https://example.com/oauth?vscode_redirect_uri=${encodeURIComponent('vscode://existing/callback')}`,
       'bd-creative.iagent-engineer',
@@ -68,7 +68,7 @@ suite('RemoteFigmaAuthService', () => {
     const parsed = new URL(url);
     assert.strictEqual(
       parsed.searchParams.get('vscode_redirect_uri'),
-      'vscode://existing/callback',
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth`,
     );
     assert.ok(parsed.searchParams.get('state'));
   });
@@ -85,7 +85,7 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=nonce-123&access_token=abc&refresh_token=ref&expires_in=60`,
     );
 
-    const session = await service.handleCallbackUri(uri);
+    const session = await service.handleCallbackUri(uri, 'bd-creative.iagent-engineer');
 
     assert.strictEqual(session.accessToken, 'abc');
     assert.strictEqual(session.refreshToken, 'ref');
@@ -106,7 +106,7 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth#state=nonce-123&access_token=abc&refresh_token=ref&expires_in=abc`,
     );
 
-    const session = await service.handleCallbackUri(uri);
+    const session = await service.handleCallbackUri(uri, 'bd-creative.iagent-engineer');
 
     assert.strictEqual(session.accessToken, 'abc');
     assert.strictEqual(session.refreshToken, 'ref');
@@ -119,7 +119,7 @@ suite('RemoteFigmaAuthService', () => {
     );
 
     await assert.rejects(
-      () => service.handleCallbackUri(uri),
+      () => service.handleCallbackUri(uri, 'bd-creative.iagent-engineer'),
       /did not match an active login attempt/,
     );
     assert.ok(secrets.store.notCalled);
@@ -137,9 +137,12 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=wrong-state&access_token=abc`,
     );
 
-    await assert.rejects(() => service.handleCallbackUri(uri), ValidationError);
+    await assert.rejects(
+      () => service.handleCallbackUri(uri, 'bd-creative.iagent-engineer'),
+      ValidationError,
+    );
     assert.ok(secrets.store.notCalled);
-    assert.ok(secrets.delete.notCalled);
+    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('handleCallbackUri rejects callbacks for a different callback uri', async () => {
@@ -154,8 +157,12 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://another-extension/figma-remote-auth?state=nonce-123&access_token=abc`,
     );
 
-    await assert.rejects(() => service.handleCallbackUri(uri), ValidationError);
+    await assert.rejects(
+      () => service.handleCallbackUri(uri, 'bd-creative.iagent-engineer'),
+      ValidationError,
+    );
     assert.ok(secrets.store.notCalled);
+    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('handleCallbackUri clears expired pending auth states', async () => {
@@ -171,7 +178,10 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=nonce-123&access_token=abc`,
     );
 
-    await assert.rejects(() => service.handleCallbackUri(uri), /login attempt expired/);
+    await assert.rejects(
+      () => service.handleCallbackUri(uri, 'bd-creative.iagent-engineer'),
+      /login attempt expired/,
+    );
     assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
     assert.ok(secrets.store.notCalled);
   });
@@ -188,8 +198,32 @@ suite('RemoteFigmaAuthService', () => {
       `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=nonce-123&refresh_token=ref`,
     );
 
-    await assert.rejects(() => service.handleCallbackUri(uri), ValidationError);
+    await assert.rejects(
+      () => service.handleCallbackUri(uri, 'bd-creative.iagent-engineer'),
+      ValidationError,
+    );
     assert.ok(secrets.store.notCalled);
+    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
+  });
+
+  test('handleCallbackUri rejects callbacks for the wrong extension id', async () => {
+    secrets.get.withArgs(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING).resolves(
+      JSON.stringify({
+        nonce: 'nonce-123',
+        callbackUri: `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth`,
+        createdAt: Date.now(),
+      }),
+    );
+    const uri = vscode.Uri.parse(
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=nonce-123&access_token=abc`,
+    );
+
+    await assert.rejects(
+      () => service.handleCallbackUri(uri, 'wrong.extension-id'),
+      ValidationError,
+    );
+    assert.ok(secrets.store.notCalled);
+    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('getSession returns null when secret is absent', async () => {
@@ -221,7 +255,8 @@ suite('RemoteFigmaAuthService', () => {
     const session = await service.getSession();
 
     assert.strictEqual(session, null);
-    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('getSession clears saved payloads without an access token', async () => {
@@ -230,7 +265,8 @@ suite('RemoteFigmaAuthService', () => {
     const session = await service.getSession();
 
     assert.strictEqual(session, null);
-    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('saveSession persists the serialized auth session', async () => {
@@ -247,13 +283,8 @@ suite('RemoteFigmaAuthService', () => {
   test('clearSession removes the stored auth session', async () => {
     await service.clearSession();
 
-    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
-  });
-
-  test('clearPendingAuthState removes the stored pending auth session', async () => {
-    await service.clearPendingAuthState();
-
-    assert.ok(secrets.delete.calledOnceWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH));
+    assert.ok(secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
   });
 
   test('hasUsableAccessToken returns false when no session is stored', async () => {

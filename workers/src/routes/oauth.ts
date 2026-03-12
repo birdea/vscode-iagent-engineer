@@ -21,6 +21,7 @@ interface OAuthStatePayload {
 }
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const AUTH_STATE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
 const ALLOWED_EDITOR_SCHEMES = new Set([
   'vscode:',
   'vscode-insiders:',
@@ -82,10 +83,11 @@ async function signState(payload: OAuthStatePayload, secret: string): Promise<st
 }
 
 async function verifyState(value: string, secret: string): Promise<OAuthStatePayload | null> {
-  const [encodedPayload, encodedSignature] = value.split('.');
-  if (!encodedPayload || !encodedSignature) {
+  const parts = value.split('.');
+  if (parts.length !== 2) {
     return null;
   }
+  const [encodedPayload, encodedSignature] = parts;
 
   const payloadText = decodeBase64Url(encodedPayload);
   const signatureText = decodeBase64Url(encodedSignature);
@@ -137,6 +139,9 @@ export async function handleOAuthStart(request: Request, env: Env): Promise<Resp
   if (!isValidVsCodeRedirectUri(vscodeRedirectUri)) {
     return new Response('Invalid vscode_redirect_uri', { status: 400 });
   }
+  if (!AUTH_STATE_PATTERN.test(stateNonce)) {
+    return new Response('Invalid state', { status: 400 });
+  }
 
   const redirect = new URL(FIGMA_AUTH_URL);
   redirect.searchParams.set('client_id', env.FIGMA_CLIENT_ID);
@@ -170,7 +175,8 @@ export async function handleOAuthCallback(request: Request, env: Env): Promise<R
     !decoded.nonce ||
     !decoded.issuedAt ||
     decoded.issuedAt + OAUTH_STATE_TTL_MS < Date.now() ||
-    !isValidVsCodeRedirectUri(decoded.vscodeRedirectUri)
+    !isValidVsCodeRedirectUri(decoded.vscodeRedirectUri) ||
+    !AUTH_STATE_PATTERN.test(decoded.nonce)
   ) {
     return new Response('Invalid OAuth callback payload', { status: 400 });
   }

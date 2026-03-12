@@ -86,7 +86,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         try {
-          await remoteAuthService.handleCallbackUri(uri);
+          await remoteAuthService.handleCallbackUri(uri, context.extension.id);
           vscode.window.showInformationMessage(t(locale, 'host.figma.remoteAuthCompleted'));
         } catch (error) {
           Logger.error('figma', `Remote auth callback failed: ${String(error)}`);

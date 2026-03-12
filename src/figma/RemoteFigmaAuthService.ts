@@ -40,7 +40,10 @@ export class RemoteFigmaAuthService {
   }
 
   async clearSession(): Promise<void> {
-    await this.secrets.delete(SECRET_KEYS.REMOTE_FIGMA_AUTH);
+    await Promise.all([
+      this.secrets.delete(SECRET_KEYS.REMOTE_FIGMA_AUTH),
+      this.clearPendingAuthState(),
+    ]);
   }
 
   async clearPendingAuthState(): Promise<void> {
@@ -79,8 +82,7 @@ export class RemoteFigmaAuthService {
 
   async buildAuthUrl(authUrl: string, extensionId: string): Promise<string> {
     const url = new URL(authUrl);
-    const callbackUri =
-      url.searchParams.get('vscode_redirect_uri') || this.buildCallbackUri(extensionId).toString();
+    const callbackUri = this.buildCallbackUri(extensionId).toString();
     const pendingState: PendingRemoteAuthState = {
       nonce: crypto.randomBytes(16).toString('hex'),
       callbackUri,
@@ -95,13 +97,14 @@ export class RemoteFigmaAuthService {
     return url.toString();
   }
 
-  async handleCallbackUri(uri: vscode.Uri): Promise<RemoteAuthSession> {
+  async handleCallbackUri(uri: vscode.Uri, extensionId: string): Promise<RemoteAuthSession> {
     const queryParams = new URLSearchParams(uri.query || '');
     const fragmentParams = new URLSearchParams((uri.fragment || '').replace(/^#/, ''));
     const getParam = (name: string) => queryParams.get(name) || fragmentParams.get(name);
 
     const state = getParam('state');
     const pendingState = await this.getPendingAuthState();
+    const expectedCallbackUri = this.buildCallbackUri(extensionId).toString();
     if (!pendingState) {
       throw new ValidationError('Remote auth callback did not match an active login attempt');
     }
@@ -111,11 +114,16 @@ export class RemoteFigmaAuthService {
       throw new ValidationError('Remote auth callback arrived after the login attempt expired');
     }
 
-    if (uri.toString().split(/[?#]/, 1)[0] !== pendingState.callbackUri) {
+    if (
+      pendingState.callbackUri !== expectedCallbackUri ||
+      uri.toString().split(/[?#]/, 1)[0] !== expectedCallbackUri
+    ) {
+      await this.clearPendingAuthState();
       throw new ValidationError('Remote auth callback URI did not match the initiated login flow');
     }
 
     if (!state || state !== pendingState.nonce) {
+      await this.clearPendingAuthState();
       throw new ValidationError(
         'Remote auth callback state did not match the initiated login flow',
       );
@@ -123,6 +131,7 @@ export class RemoteFigmaAuthService {
 
     const accessToken = getParam('access_token');
     if (!accessToken) {
+      await this.clearPendingAuthState();
       throw new ValidationError('Remote auth callback did not include access_token');
     }
 
