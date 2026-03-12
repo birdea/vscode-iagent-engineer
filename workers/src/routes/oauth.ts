@@ -16,7 +16,18 @@ interface RefreshRequest {
 
 interface OAuthStatePayload {
   vscodeRedirectUri: string;
+  nonce: string;
+  issuedAt: number;
 }
+
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const ALLOWED_EDITOR_SCHEMES = new Set([
+  'vscode:',
+  'vscode-insiders:',
+  'cursor:',
+  'windsurf:',
+  'vscodium:',
+]);
 
 function jsonResponse(data: unknown, status: number, cors: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {
@@ -29,15 +40,78 @@ function basicAuth(clientId: string, clientSecret: string): string {
   return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
 }
 
-function encodeState(payload: OAuthStatePayload): string {
-  return btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+function encodeBase64Url(value: string): string {
+  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function decodeState(value: string): OAuthStatePayload | null {
+function decodeBase64Url(value: string): string | null {
   try {
     const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
     const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
-    return JSON.parse(atob(padded)) as OAuthStatePayload;
+    return atob(padded);
+  } catch {
+    return null;
+  }
+}
+
+function isValidVsCodeRedirectUri(value: string): boolean {
+  try {
+    const uri = new URL(value);
+    return (
+      ALLOWED_EDITOR_SCHEMES.has(uri.protocol) &&
+      Boolean(uri.host) &&
+      uri.pathname === '/figma-remote-auth'
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function signState(payload: OAuthStatePayload, secret: string): Promise<string> {
+  const payloadText = JSON.stringify(payload);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadText));
+  const signatureText = String.fromCharCode(...new Uint8Array(signature));
+  return `${encodeBase64Url(payloadText)}.${encodeBase64Url(signatureText)}`;
+}
+
+async function verifyState(value: string, secret: string): Promise<OAuthStatePayload | null> {
+  const [encodedPayload, encodedSignature] = value.split('.');
+  if (!encodedPayload || !encodedSignature) {
+    return null;
+  }
+
+  const payloadText = decodeBase64Url(encodedPayload);
+  const signatureText = decodeBase64Url(encodedSignature);
+  if (!payloadText || !signatureText) {
+    return null;
+  }
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  const verified = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    Uint8Array.from(signatureText, (char) => char.charCodeAt(0)),
+    new TextEncoder().encode(payloadText),
+  );
+  if (!verified) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payloadText) as OAuthStatePayload;
   } catch {
     return null;
   }
@@ -51,10 +125,17 @@ function buildWorkerCallbackUrl(request: Request): string {
 export async function handleOAuthStart(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const vscodeRedirectUri = url.searchParams.get('vscode_redirect_uri');
+  const stateNonce = url.searchParams.get('state');
   const scope = url.searchParams.get('scope') || 'file_content:read,current_user:read';
 
   if (!vscodeRedirectUri) {
     return new Response('Missing vscode_redirect_uri', { status: 400 });
+  }
+  if (!stateNonce) {
+    return new Response('Missing state', { status: 400 });
+  }
+  if (!isValidVsCodeRedirectUri(vscodeRedirectUri)) {
+    return new Response('Invalid vscode_redirect_uri', { status: 400 });
   }
 
   const redirect = new URL(FIGMA_AUTH_URL);
@@ -62,7 +143,17 @@ export async function handleOAuthStart(request: Request, env: Env): Promise<Resp
   redirect.searchParams.set('redirect_uri', buildWorkerCallbackUrl(request));
   redirect.searchParams.set('scope', scope);
   redirect.searchParams.set('response_type', 'code');
-  redirect.searchParams.set('state', encodeState({ vscodeRedirectUri }));
+  redirect.searchParams.set(
+    'state',
+    await signState(
+      {
+        vscodeRedirectUri,
+        nonce: stateNonce,
+        issuedAt: Date.now(),
+      },
+      env.FIGMA_CLIENT_SECRET,
+    ),
+  );
 
   return Response.redirect(redirect.toString(), 302);
 }
@@ -71,9 +162,16 @@ export async function handleOAuthCallback(request: Request, env: Env): Promise<R
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
-  const decoded = state ? decodeState(state) : null;
+  const decoded = state ? await verifyState(state, env.FIGMA_CLIENT_SECRET) : null;
 
-  if (!code || !decoded?.vscodeRedirectUri) {
+  if (
+    !code ||
+    !decoded?.vscodeRedirectUri ||
+    !decoded.nonce ||
+    !decoded.issuedAt ||
+    decoded.issuedAt + OAUTH_STATE_TTL_MS < Date.now() ||
+    !isValidVsCodeRedirectUri(decoded.vscodeRedirectUri)
+  ) {
     return new Response('Invalid OAuth callback payload', { status: 400 });
   }
 
@@ -104,6 +202,7 @@ export async function handleOAuthCallback(request: Request, env: Env): Promise<R
   }
 
   const redirect = new URL(decoded.vscodeRedirectUri);
+  redirect.searchParams.set('state', decoded.nonce);
   redirect.searchParams.set('access_token', data.access_token);
   if (data.refresh_token) {
     redirect.searchParams.set('refresh_token', data.refresh_token);
