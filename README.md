@@ -4,11 +4,11 @@ Turn Figma screens into implementation-ready code inside VS Code.
 
 iagent engineer connects VS Code to a Figma Desktop MCP server, fetches design context from a Figma URL, and generates code with Gemini, Claude, DeepSeek, Qwen, or OpenRouter without leaving your editor.
 
-`v0.6.2` highlights:
+`v0.7.0` highlights:
 
 - Marketplace documentation now reflects the refreshed sidebar screenshot.
 - The repository includes a dedicated [`CODE_REVIEW.md`](CODE_REVIEW.md) summary for follow-up engineering work.
-- Release metadata has been aligned for the `v0.6.2` package update.
+- Release metadata has been aligned for the `v0.7.0` package update.
 
 ![iagent engineer screenshot](images/screenshot-2.png)
 

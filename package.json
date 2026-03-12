@@ -1,8 +1,8 @@
 {
   "name": "iagent-engineer",
   "displayName": "iagent engineer",
-  "description": "Figma MCP + AI Agent code generation for VSCode",
-  "version": "0.6.2",
+  "description": "iagent engineer for VSCode",
+  "version": "0.7.0",
   "publisher": "bd-creative",
   "license": "MIT",
   "repository": {
