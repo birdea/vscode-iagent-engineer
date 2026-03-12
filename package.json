@@ -1,7 +1,7 @@
 {
   "name": "iagent-engineer",
   "displayName": "iAgent Engineer",
-  "description": "iagent engineer for VSCode",
+  "description": "iAgent Engineer for VSCode",
   "version": "0.7.0",
   "publisher": "bd-creative",
   "license": "MIT",
@@ -35,7 +35,7 @@
   "screenshots": [
     {
       "path": "images/screenshot-3.png",
-      "label": "iagent engineer — Setup & Code Generation"
+      "label": "iAgent Engineer — Setup & Code Generation"
     }
   ],
   "activationEvents": [
