@@ -186,6 +186,9 @@ export class WebviewMessageHandler {
         case 'profiler.openSource':
           await this.profilerHandler?.openSource(msg.filePath, msg.lineNumber);
           break;
+        case 'profiler.openInfoDoc':
+          await this.profilerHandler?.openInfoDoc(msg.kind);
+          break;
       }
     } catch (e) {
       const message = toErrorMessage(e);

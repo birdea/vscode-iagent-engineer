@@ -853,51 +853,60 @@ a:hover {
   gap: 0;
 }
 
-.profiler-tab-item {
+.profiler-tab {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border: 0;
-  outline: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  min-height: 32px;
-  box-shadow: inset 0 -2px 0 transparent;
-  transition:
-    color 0.15s,
-    box-shadow 0.15s;
-}
-
-.profiler-tab-item:hover {
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
   color: var(--vscode-foreground);
-  background: color-mix(in srgb, var(--vscode-panel-border) 25%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  min-width: 0;
 }
 
-.profiler-tab-item.active {
+.profiler-tab:hover {
+  border-color: color-mix(in srgb, var(--vscode-focusBorder) 38%, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--vscode-editorWidget-background) 92%, transparent);
+}
+
+.profiler-tab.active {
   color: var(--vscode-foreground);
-  box-shadow: inset 0 -2px 0 var(--vscode-button-background);
-  font-weight: 600;
+  border-color: color-mix(in srgb, var(--vscode-focusBorder) 45%, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--vscode-button-background) 12%, var(--vscode-editor-background));
+  font-weight: 700;
 }
 
-.profiler-tab-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
+.profiler-tab-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
 .profiler-tab-label {
-  font-size: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-.profiler-tab-count {
-  opacity: 0.7;
-  font-size: 10px;
-  margin-left: 2px;
+.profiler-agent-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.profiler-agent-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.profiler-tab > span:last-child {
+  opacity: 0.8;
 }
 
 .profiler-sort-bar {
@@ -1181,6 +1190,31 @@ a:hover {
   align-items: start;
 }
 
+.profiler-overview-brand-row,
+.profiler-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profiler-agent-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.profiler-agent-brand strong {
+  margin-top: 1px;
+}
+
+.profiler-overview-kicker {
+  margin-top: 8px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .profiler-overview-identity span,
 .profiler-meta-pill strong {
   display: block;
@@ -1224,6 +1258,74 @@ a:hover {
   font-size: 10px;
   line-height: 1.2;
   background: color-mix(in srgb, var(--vscode-editor-background) 72%, transparent);
+}
+
+.profiler-summary-section-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profiler-insight-card,
+.profiler-insight-mini {
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 80%, transparent);
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 72%, transparent);
+}
+
+.profiler-insight-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+}
+
+.profiler-insight-note,
+.profiler-section-note,
+.profiler-insight-mini span {
+  margin-top: 4px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.profiler-insight-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.profiler-insight-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profiler-insight-field span {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profiler-insight-field strong {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--vscode-foreground);
+  word-break: break-word;
+}
+
+.profiler-insight-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profiler-insight-mini strong {
+  display: block;
+  font-size: 10px;
+  color: var(--vscode-foreground);
 }
 
 .profiler-chart-legend {
@@ -1439,6 +1541,25 @@ a:hover {
   gap: 8px;
 }
 
+.profiler-key-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profiler-key-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+}
+
+.profiler-key-group-title span {
+  color: var(--vscode-descriptionForeground);
+}
+
 .profiler-bubble-card p,
 .profiler-raw-row pre {
   margin-top: 6px;
@@ -1524,6 +1645,40 @@ a:hover {
   line-height: 1.4;
 }
 
+.profiler-raw-sortbar,
+.profiler-raw-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.profiler-inline-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  background: color-mix(in srgb, var(--vscode-editorWidget-background) 88%, transparent);
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.profiler-inline-tag.tone-accent,
+.tone-accent {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.profiler-inline-tag.tone-muted,
+.tone-muted {
+  color: var(--vscode-descriptionForeground);
+}
+
+.tone-default {
+  color: var(--vscode-foreground);
+}
+
 .profiler-spinner {
   width: 20px;
   height: 20px;
@@ -1541,6 +1696,11 @@ a:hover {
 
   .profiler-overview-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profiler-summary-section-grid,
+  .profiler-insight-mini-grid {
+    grid-template-columns: 1fr;
   }
 
   .profiler-detail-viewer {
@@ -1586,6 +1746,12 @@ a:hover {
   .profiler-chart-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .profiler-overview-brand-row,
+  .profiler-section-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .profiler-chart-legend {

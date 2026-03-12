@@ -12,6 +12,7 @@ export type PreviewOpenTarget = 'browser' | 'panel';
 export class EditorIntegration {
   private previewPanelService = new PreviewPanelService();
   private browserPreviewService: BrowserPreviewService;
+  private readonly extensionPath: string;
   private generatedDocumentUri: vscode.Uri | null = null;
   private generatedOutputFormat: OutputFormat | undefined;
   private generatedLanguage = 'plaintext';
@@ -19,8 +20,8 @@ export class EditorIntegration {
   private binaryAssetUris = new Map<string, vscode.Uri>();
 
   constructor(context?: Pick<vscode.ExtensionContext, 'extensionUri'>) {
-    const extensionPath = context?.extensionUri.fsPath ?? process.cwd();
-    this.browserPreviewService = new BrowserPreviewService(extensionPath);
+    this.extensionPath = context?.extensionUri.fsPath ?? process.cwd();
+    this.browserPreviewService = new BrowserPreviewService(this.extensionPath);
   }
 
   async openInEditor(code: string, language = 'plaintext', suggestedName?: string): Promise<void> {
@@ -99,6 +100,12 @@ export class EditorIntegration {
     editor.selection = new vscode.Selection(position, position);
     editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
     Logger.info('editor', `Opened profiler source (${filePath}:${lineNumber})`);
+  }
+
+  async openProfilerInfoDocument(kind: 'summary' | 'key-events') {
+    const fileName =
+      kind === 'summary' ? 'iprofiler-summary-data.md' : 'iprofiler-key-events-data.md';
+    await this.openFileAtLine(path.join(this.extensionPath, 'docs', fileName), 1);
   }
 
   async openPreviewPanel(

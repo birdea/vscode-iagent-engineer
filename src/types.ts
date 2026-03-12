@@ -11,6 +11,16 @@ export type PromptMcpDataKind = 'designContext' | 'metadata';
 export type ProfilerStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type ProfilerMetricType = 'tokens' | 'data' | 'latency';
 export type ProfilerLiveStatus = 'idle' | 'connecting' | 'streaming' | 'stopped' | 'error';
+export type SessionEventCategory =
+  | 'conversation'
+  | 'tool'
+  | 'usage'
+  | 'lifecycle'
+  | 'reasoning'
+  | 'checkpoint'
+  | 'storage'
+  | 'system'
+  | 'other';
 
 // Log entry
 export interface LogEntry {
@@ -123,9 +133,16 @@ export interface SessionRawEventRef {
   lineNumber: number;
   timestamp?: string;
   eventType: string;
+  category: SessionEventCategory;
   summary: string;
   excerpt: string;
+  messagePreview?: string;
   payloadKb?: number;
+  payloadBytes?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  totalTokens?: number;
 }
 
 export interface SessionTimelinePoint {
@@ -151,16 +168,36 @@ export interface SessionEventBubble {
   timestamp: string;
   title: string;
   detail: string;
+  category: SessionEventCategory;
   rawEventId: string;
+}
+
+export interface SessionInsightField {
+  label: string;
+  value: string;
+  tone?: 'default' | 'accent' | 'muted';
+}
+
+export interface SessionInsightSection {
+  id: string;
+  title: string;
+  description?: string;
+  fields: SessionInsightField[];
 }
 
 export interface SessionDetail {
   summary: SessionSummary;
   metadata: {
+    agentLabel: string;
+    vendorLabel: string;
     sessionId?: string;
     cwd?: string;
     provider?: string;
     sourceFormat: string;
+    storageLabel: string;
+    parserCoverage: string;
+    summarySections: SessionInsightSection[];
+    keyEventSections: SessionInsightSection[];
   };
   timeline: SessionTimelinePoint[];
   eventBubbles: SessionEventBubble[];
@@ -235,7 +272,8 @@ export type WebviewToHostMessage =
   | { command: 'profiler.stopLiveData' }
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }
-  | { command: 'profiler.openSource'; filePath: string; lineNumber?: number };
+  | { command: 'profiler.openSource'; filePath: string; lineNumber?: number }
+  | { command: 'profiler.openInfoDoc'; kind: 'summary' | 'key-events' };
 
 // Host → Webview messages
 export type HostToWebviewMessage =

@@ -4,21 +4,12 @@ import {
   SessionSummary,
   ProfilerAgentType,
 } from '../../../types';
+import { getProfilerAgentDescriptor } from '../../../profiler/ProfilerCatalog';
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 
 type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
-
-/* Official-style AI agent icons */
-const AGENT_ICONS: Record<ProfilerAgentType, string> = {
-  /* Anthropic Claude: stylised "A" triangle (matches Anthropic brand mark) */
-  claude: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L22 20H2L12 3ZM12 7.5L5.5 18.5H18.5L12 7.5Z"/></svg>`,
-  /* OpenAI: stylised hexagon bloom (matches OpenAI logo shape) */
-  codex: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M21.4 8.6a5.1 5.1 0 0 0-.44-4.18 5.2 5.2 0 0 0-5.6-2.49A5.2 5.2 0 0 0 11.48 0a5.2 5.2 0 0 0-4.96 3.6 5.2 5.2 0 0 0-3.47 2.53 5.2 5.2 0 0 0 .64 6.1 5.2 5.2 0 0 0 .44 4.18 5.2 5.2 0 0 0 5.6 2.49A5.2 5.2 0 0 0 13.52 21a5.2 5.2 0 0 0 4.96-3.6 5.2 5.2 0 0 0 3.47-2.53 5.2 5.2 0 0 0-.55-6.27ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>`,
-  /* Google Gemini: four-point star sparkle (matches Gemini brand mark) */
-  gemini: `<svg class="profiler-tab-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 7 9 10 2 12C9 14 12 17 12 22C12 17 15 14 22 12C15 10 12 7 12 2Z"/></svg>`,
-};
 
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
@@ -221,8 +212,14 @@ export class ProfilerLayer {
       .map((agent) => {
         const isActive = this.state.selectedAgent === agent;
         const count = this.state.sessionsByAgent[agent].length;
-        const icon = AGENT_ICONS[agent];
-        return `<button class="profiler-tab-item ${isActive ? 'active' : ''}" data-agent="${agent}">${icon}<span class="profiler-tab-label">${agent.toUpperCase()}</span><span class="profiler-tab-count">${count}</span></button>`;
+        const descriptor = getProfilerAgentDescriptor(agent);
+        return `<button class="profiler-tab ${isActive ? 'active' : ''}" data-agent="${agent}">
+  <span class="profiler-tab-brand">
+    <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconSvg}</span>
+    <span class="profiler-tab-label">${descriptor.label}</span>
+  </span>
+  <span>${count}</span>
+</button>`;
       })
       .join('');
   }
