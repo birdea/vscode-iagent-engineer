@@ -1264,6 +1264,42 @@ a:hover {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
 }
 
+.profiler-chart-viewport {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+}
+
+.profiler-chart-axis-rail {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 78%, transparent);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vscode-editorWidget-background) 90%, transparent),
+    color-mix(in srgb, var(--vscode-sideBar-background) 82%, transparent)
+  );
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--vscode-panel-border) 52%, transparent);
+}
+
+.profiler-chart-axis-svg {
+  display: block;
+  width: 60px;
+  height: 252px;
+}
+
+.profiler-chart-viewport .profiler-chart-scroll {
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+}
+
 .profiler-chart-inner {
   position: relative;
   min-height: 252px;
@@ -1498,6 +1534,14 @@ a:hover {
 
   .profiler-chart-focus {
     grid-template-columns: 1fr;
+  }
+
+  .profiler-chart-viewport {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .profiler-chart-axis-svg {
+    width: 52px;
   }
 }
 
