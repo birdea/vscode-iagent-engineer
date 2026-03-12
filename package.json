@@ -114,28 +114,7 @@
         "icon": "$(copy)"
       }
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "iagent-engineer.connect",
-          "when": "view == iagent-engineer.setup",
-          "group": "navigation@1"
-        },
-        {
-          "command": "iagent-engineer.prompt.generate",
-          "when": "view == iagent-engineer.prompt",
-          "group": "navigation@1"
-        },
-        {
-          "command": "iagent-engineer.log.clear",
-          "group": "navigation@1"
-        },
-        {
-          "command": "iagent-engineer.log.copy",
-          "group": "navigation@2"
-        }
-      ]
-    },
+    "menus": {},
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
