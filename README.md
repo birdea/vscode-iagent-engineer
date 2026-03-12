@@ -111,8 +111,7 @@ Common settings live under the `iagent-engineer.*` namespace.
 
 ```bash
 npm ci
-npm run build
-npm test
+npm run verify
 ```
 
 Useful scripts:
@@ -120,7 +119,13 @@ Useful scripts:
 - `npm run watch`
 - `npm run test:unit`
 - `npm run test:e2e`
+- `npm run verify`
+- `npm run verify:coverage`
 - `npm run package`
+
+Release checklist:
+
+- [docs/release-checklist.md](docs/release-checklist.md)
 
 ## Repository
 

@@ -21,7 +21,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release gate
+        run: npm run verify:coverage
+
   build:
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -75,9 +95,6 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Test
-        run: npm test
 
       - name: Build VSIX
         run: npx vsce package --no-dependencies --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
