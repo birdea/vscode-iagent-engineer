@@ -31,7 +31,7 @@ suite('OAuth worker routes', () => {
 
   test('handleOAuthStart rejects non-editor redirect uris', async () => {
     const request = new Request(
-      'https://workers.example.com/api/figma/oauth/start?vscode_redirect_uri=https%3A%2F%2Fevil.example.com%2Fcallback&state=pending-state',
+      'https://workers.example.com/api/figma/oauth/start?vscode_redirect_uri=https%3A%2F%2Fevil.example.com%2Fcallback&state=pendingstate123456',
     );
 
     const response = await handleOAuthStart(request, env);
@@ -43,7 +43,7 @@ suite('OAuth worker routes', () => {
   test('handleOAuthCallback redirects token payload back to the original editor callback', async () => {
     sandbox.stub(Date, 'now').returns(500_000);
     const startRequest = new Request(
-      'https://workers.example.com/api/figma/oauth/start?vscode_redirect_uri=vscode%3A%2F%2Fbd-creative.iagent-engineer%2Ffigma-remote-auth&state=pending-state',
+      'https://workers.example.com/api/figma/oauth/start?vscode_redirect_uri=vscode%3A%2F%2Fbd-creative.iagent-engineer%2Ffigma-remote-auth&state=pendingstate123456',
     );
     const startResponse = await handleOAuthStart(startRequest, env);
     const signedState = new URL(startResponse.headers.get('location') || '').searchParams.get(
@@ -77,7 +77,7 @@ suite('OAuth worker routes', () => {
       `${redirect.protocol}//${redirect.host}${redirect.pathname}`,
       'vscode://bd-creative.iagent-engineer/figma-remote-auth',
     );
-    assert.strictEqual(redirect.searchParams.get('state'), 'pending-state');
+    assert.strictEqual(redirect.searchParams.get('state'), 'pendingstate123456');
     assert.strictEqual(redirect.searchParams.get('access_token'), 'access-token');
     assert.strictEqual(redirect.searchParams.get('refresh_token'), 'refresh-token');
     assert.strictEqual(redirect.searchParams.get('expires_in'), '3600');
