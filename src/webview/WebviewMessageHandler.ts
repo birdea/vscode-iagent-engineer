@@ -10,6 +10,7 @@ import { FigmaCommandHandler } from './handlers/FigmaCommandHandler';
 import { AgentCommandHandler } from './handlers/AgentCommandHandler';
 import { PromptCommandHandler } from './handlers/PromptCommandHandler';
 import { StateManager } from '../state/StateManager';
+import { ProfilerLiveMonitor } from '../profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from '../profiler/ProfilerStateManager';
 import { ProfilerService } from '../profiler/ProfilerService';
 import { ProfilerCommandHandler } from './handlers/ProfilerCommandHandler';
@@ -36,6 +37,7 @@ export class WebviewMessageHandler {
     locale: UiLocale,
     profilerStateManager?: ProfilerStateManager,
     profilerService?: ProfilerService,
+    profilerLiveMonitor?: ProfilerLiveMonitor,
   ) {
     this.mcpClient = new McpClient(mcpEndpoint, {
       name: 'iagent-engineer',
@@ -63,12 +65,13 @@ export class WebviewMessageHandler {
       stateManager,
       locale,
     );
-    if (profilerStateManager && profilerService) {
+    if (profilerStateManager && profilerService && profilerLiveMonitor) {
       this.profilerHandler = new ProfilerCommandHandler(
         webview,
         profilerStateManager,
         profilerService,
         this.editorIntegration,
+        profilerLiveMonitor,
       );
     }
   }

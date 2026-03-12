@@ -6,12 +6,14 @@ import { COMMANDS, VIEW_IDS, getSecretStorageKey } from './constants';
 import { RemoteFigmaAuthService } from './figma/RemoteFigmaAuthService';
 import { AgentType } from './types';
 import { StateManager } from './state/StateManager';
+import { ProfilerLiveMonitor } from './profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from './profiler/ProfilerStateManager';
 import { ProfilerService } from './profiler/ProfilerService';
 import { resolveLocale, t } from './i18n';
 
 let outputChannelRef: vscode.OutputChannel | undefined;
 let sidebarProviders: SidebarProvider[] = [];
+let profilerLiveMonitorRef: ProfilerLiveMonitor | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const locale = resolveLocale(vscode.env.language);
@@ -21,6 +23,8 @@ export async function activate(context: vscode.ExtensionContext) {
   const stateManager = new StateManager();
   const profilerStateManager = new ProfilerStateManager();
   const profilerService = new ProfilerService();
+  const profilerLiveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
+  profilerLiveMonitorRef = profilerLiveMonitor;
   const remoteAuthService = new RemoteFigmaAuthService(context.secrets);
 
   // Load saved API keys at activation
@@ -58,6 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
     (entry) => logProvider.postMessage({ event: 'log.append', entry }),
     profilerStateManager,
     profilerService,
+    profilerLiveMonitor,
   );
   const profilerProvider = new SidebarProvider(
     VIEW_IDS.PROFILER,
@@ -69,6 +74,7 @@ export async function activate(context: vscode.ExtensionContext) {
     undefined,
     profilerStateManager,
     profilerService,
+    profilerLiveMonitor,
   );
   const profilerDetailProvider = new SidebarProvider(
     VIEW_IDS.PROFILER_DETAIL,
@@ -80,6 +86,7 @@ export async function activate(context: vscode.ExtensionContext) {
     undefined,
     profilerStateManager,
     profilerService,
+    profilerLiveMonitor,
   );
   sidebarProviders = [
     setupProvider,
@@ -163,6 +170,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate(): Promise<void> {
   Logger.info('system', 'iAgent Engineer deactivated');
+  profilerLiveMonitorRef?.dispose();
+  profilerLiveMonitorRef = undefined;
   await Promise.allSettled(sidebarProviders.splice(0).map((provider) => provider.dispose()));
   AgentFactory.clear();
   Logger.clear();
