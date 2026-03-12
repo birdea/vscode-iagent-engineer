@@ -164,23 +164,48 @@ export class ProfilerService {
       throw new Error('Selected session was not found in the current scan results.');
     }
 
-    let detail: SessionDetail;
-    switch (file.agent) {
-      case 'codex':
-        detail = await this.analyzeCodexSession(file, summary);
-        break;
-      case 'claude':
-        detail = await this.analyzeClaudeSession(file, summary);
-        break;
-      case 'gemini':
-        detail = await this.analyzeGenericSession(file, summary);
-        break;
-      default:
-        throw new Error('Unsupported profiler session agent.');
-    }
-
+    const detail = await this.analyzeSessionFile(file, summary);
     this.detailCache.set(sessionId, detail);
     return detail;
+  }
+
+  async getLatestSessionSummary(): Promise<SessionSummary | undefined> {
+    let latestFile: DiscoveredSessionFile | undefined;
+
+    for (const agent of ['claude', 'codex', 'gemini'] as const) {
+      const [candidate] = await this.discoverFiles(agent);
+      if (!candidate) {
+        continue;
+      }
+      if (!latestFile || candidate.stat.mtimeMs > latestFile.stat.mtimeMs) {
+        latestFile = candidate;
+      }
+    }
+
+    if (!latestFile) {
+      return undefined;
+    }
+
+    const summary = await this.summarizeFile(latestFile);
+    this.summaryCache.set(summary.id, summary);
+    return summary;
+  }
+
+  async refreshSessionDetail(
+    agent: ProfilerAgentType,
+    filePath: string,
+  ): Promise<{ summary: SessionSummary; detail: SessionDetail; stat: fs.Stats }> {
+    const stat = await fs.promises.stat(filePath);
+    const file = {
+      agent,
+      filePath: path.normalize(filePath),
+      stat,
+    };
+    const summary = await this.summarizeFile(file);
+    this.summaryCache.set(summary.id, summary);
+    const detail = await this.analyzeSessionFile(file, summary);
+    this.detailCache.set(summary.id, detail);
+    return { summary, detail, stat };
   }
 
   async archiveAll(targetRoot: string): Promise<ProfilerArchiveResult> {
@@ -357,6 +382,22 @@ export class ProfilerService {
         return this.summarizeClaudeFile(file);
       case 'gemini':
         return this.summarizeGenericFile(file);
+      default:
+        throw new Error('Unsupported profiler session agent.');
+    }
+  }
+
+  private async analyzeSessionFile(
+    file: DiscoveredSessionFile,
+    summary: SessionSummary,
+  ): Promise<SessionDetail> {
+    switch (file.agent) {
+      case 'codex':
+        return this.analyzeCodexSession(file, summary);
+      case 'claude':
+        return this.analyzeClaudeSession(file, summary);
+      case 'gemini':
+        return this.analyzeGenericSession(file, summary);
       default:
         throw new Error('Unsupported profiler session agent.');
     }

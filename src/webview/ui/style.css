@@ -756,6 +756,15 @@ a:hover {
   justify-content: flex-start;
 }
 
+.profiler-toolbar-live {
+  margin-bottom: -4px;
+}
+
+.profiler-toolbar-live .secondary {
+  width: 100%;
+  justify-content: center;
+}
+
 .profiler-status-chip {
   display: inline-flex;
   align-items: center;
@@ -1027,6 +1036,7 @@ a:hover {
 .profiler-detail-overview,
 .profiler-detail-viewer,
 .profiler-chart-shell,
+.profiler-live-feed,
 .profiler-detail-secondary {
   display: flex;
   flex-direction: column;
@@ -1059,6 +1069,39 @@ a:hover {
 
 .profiler-overview-panel {
   gap: 8px;
+}
+
+.profiler-live-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 78%, transparent);
+}
+
+.profiler-live-status-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profiler-live-status-copy strong {
+  font-size: 11px;
+  color: var(--vscode-foreground);
+}
+
+.profiler-live-status-copy span {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  word-break: break-word;
+}
+
+.profiler-live-stop {
+  flex-shrink: 0;
 }
 
 .profiler-overview-head {
@@ -1268,11 +1311,12 @@ a:hover {
 
 .profiler-detail-secondary {
   display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(280px, 0.8fr) minmax(280px, 0.9fr) minmax(0, 1.15fr);
   align-items: start;
   gap: 10px;
 }
 
+.profiler-live-feed,
 .profiler-bubble-list,
 .profiler-raw-list {
   display: flex;
@@ -1312,6 +1356,66 @@ a:hover {
   text-transform: uppercase;
   color: var(--vscode-descriptionForeground);
   margin-bottom: 2px;
+}
+
+.profiler-live-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profiler-live-row {
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 76%, transparent);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 78%, transparent);
+}
+
+.profiler-live-row.info {
+  border-color: color-mix(in srgb, var(--vscode-focusBorder) 35%, var(--vscode-panel-border));
+}
+
+.profiler-live-row.success {
+  border-color: color-mix(
+    in srgb,
+    var(--vscode-testing-iconPassed, var(--vscode-charts-green)) 40%,
+    var(--vscode-panel-border)
+  );
+}
+
+.profiler-live-row.warn {
+  border-color: color-mix(
+    in srgb,
+    var(--vscode-editorWarning-foreground) 40%,
+    var(--vscode-panel-border)
+  );
+}
+
+.profiler-live-row.error {
+  border-color: color-mix(in srgb, var(--vscode-errorForeground) 40%, var(--vscode-panel-border));
+}
+
+.profiler-live-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profiler-live-row-top strong {
+  font-size: 11px;
+  color: var(--vscode-foreground);
+}
+
+.profiler-live-row-top span,
+.profiler-live-row p {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-live-row p {
+  margin: 6px 0 0;
+  line-height: 1.4;
 }
 
 .profiler-spinner {
@@ -1503,7 +1607,6 @@ a:hover {
   outline: 1px solid var(--vscode-focusBorder, #007acc);
   outline-offset: 1px;
 }
-
 
 @keyframes profiler-spin {
   from {
