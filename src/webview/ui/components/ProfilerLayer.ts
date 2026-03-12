@@ -99,11 +99,10 @@ export class ProfilerLayer {
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
   <div class="btn-row profiler-toolbar profiler-toolbar-inline">
-    <button class="secondary" id="profiler-see-livedata">${this.msg('live')}</button>
+    <button class="primary" id="profiler-see-livedata">${this.msg('live')}</button>
     <button class="primary" id="profiler-start-analysis">${this.msg('scan')}</button>
-    <button class="primary" id="profiler-archive-all">${this.msg('archive')}</button>
+    <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
   </div>
-  <div class="notice ${this.notice ? 'info' : 'hidden'}" id="profiler-notice">${this.notice}</div>
   <div class="profiler-tab-row" id="profiler-tab-row"></div>
   <div class="profiler-sort-bar" id="profiler-sort-bar"></div>
   <div class="profiler-list" id="profiler-session-list"></div>
@@ -193,7 +192,6 @@ export class ProfilerLayer {
     const archiveButton = document.getElementById(
       'profiler-archive-all',
     ) as HTMLButtonElement | null;
-    const notice = document.getElementById('profiler-notice');
     const badge = document.getElementById('profiler-status-badge');
     const tabs = document.getElementById('profiler-tab-row');
     const sortBar = document.getElementById('profiler-sort-bar');
@@ -203,10 +201,6 @@ export class ProfilerLayer {
     if (startButton) startButton.disabled = loading;
     if (archiveButton) archiveButton.disabled = loading || this.state.aggregate.totalSessions === 0;
     if (badge) badge.innerHTML = this.renderStatusBadge();
-    if (notice) {
-      notice.textContent = this.notice;
-      notice.className = `notice ${this.notice ? 'info' : 'hidden'}`;
-    }
     if (tabs) {
       tabs.innerHTML = this.renderTabs();
     }
@@ -297,8 +291,9 @@ export class ProfilerLayer {
 
   private renderStatusBadge(): string {
     const loading = this.state.status === 'loading';
-    const label = loading ? this.msg('loading') : this.state.status.toUpperCase();
-    return `<span class="profiler-status-chip ${this.state.status}">${label}</span>`;
+    const statusLabel = loading ? this.msg('loading') : this.state.status.toUpperCase();
+    const detail = this.notice && !loading ? ` · ${this.notice}` : '';
+    return `<span class="profiler-status-chip ${this.state.status}">${statusLabel}${detail}</span>`;
   }
 
   private formatDate(value?: string): string {
