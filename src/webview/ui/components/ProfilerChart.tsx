@@ -260,10 +260,8 @@ function LegendMarker({ shape, color }: { shape: MarkerShape; color: string }) {
 }
 
 export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartProps) {
-  const timeline = useMemo(
-    () => [...detail.timeline].sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
-    [detail.timeline],
-  );
+  const timeline = [...detail.timeline].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const rawEventById = new Map(detail.rawEvents.map((event) => [event.id, event] as const));
 
   const seriesDefs = useMemo(() => buildSeriesDefs(metric, timeline), [metric, timeline]);
 
@@ -290,7 +288,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   }, []);
 
   // Compute chart width based on fixed time intervals
-  const { chartWidth, times, minTime, maxTime } = useMemo(() => {
+  const { chartWidth, minTime, maxTime } = useMemo(() => {
     const ts = timeline.map((p) => new Date(p.timestamp).valueOf());
     const min = Math.min(...ts);
     const max = Math.max(...timeline.map((p) => new Date(p.endTimestamp ?? p.timestamp).valueOf()));
@@ -300,7 +298,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
       timeline.length * MIN_POINT_SPACING,
       Math.round(spanMinutes * PIXELS_PER_MINUTE),
     );
-    return { chartWidth: w, times: ts, minTime: min, maxTime: max };
+    return { chartWidth: w, minTime: min, maxTime: max };
   }, [timeline]);
 
   const plotWidth = chartWidth - PADDING.left - PADDING.right;
@@ -373,9 +371,9 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   const findRawEvent = useCallback(
     (point: SessionTimelinePoint): SessionRawEventRef | undefined => {
       if (!point.sourceEventId) return undefined;
-      return detail.rawEvents.find((e) => e.id === point.sourceEventId);
+      return rawEventById.get(point.sourceEventId);
     },
-    [detail.rawEvents],
+    [rawEventById],
   );
 
   // Handle bar click
