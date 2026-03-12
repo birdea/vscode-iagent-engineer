@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { EditorIntegration } from '../../editor/EditorIntegration';
 import { Logger } from '../../logger/Logger';
@@ -105,11 +108,14 @@ export class ProfilerCommandHandler {
       return;
     }
 
+    const downloadsDir = path.join(os.homedir(), 'Downloads');
+    const defaultUri = vscode.Uri.file(downloadsDir);
     const target = await vscode.window.showOpenDialog({
       canSelectFiles: false,
       canSelectFolders: true,
       canSelectMany: false,
       openLabel: 'Archive Sessions Here',
+      defaultUri,
     });
     if (!target?.[0]) {
       return;

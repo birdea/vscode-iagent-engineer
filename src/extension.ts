@@ -52,18 +52,6 @@ export async function activate(context: vscode.ExtensionContext) {
     stateManager,
     remoteAuthService,
   );
-  const logProvider = new SidebarProvider(
-    VIEW_IDS.LOG,
-    'log',
-    context.extensionUri,
-    context,
-    stateManager,
-    remoteAuthService,
-    (entry) => logProvider.postMessage({ event: 'log.append', entry }),
-    profilerStateManager,
-    profilerService,
-    profilerLiveMonitor,
-  );
   const profilerProvider = new SidebarProvider(
     VIEW_IDS.PROFILER,
     'profiler',
@@ -88,13 +76,7 @@ export async function activate(context: vscode.ExtensionContext) {
     profilerService,
     profilerLiveMonitor,
   );
-  sidebarProviders = [
-    setupProvider,
-    promptProvider,
-    profilerProvider,
-    logProvider,
-    profilerDetailProvider,
-  ];
+  sidebarProviders = [setupProvider, promptProvider, profilerProvider, profilerDetailProvider];
 
   context.subscriptions.push(
     vscode.window.registerUriHandler({
@@ -119,9 +101,6 @@ export async function activate(context: vscode.ExtensionContext) {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewViewProvider(VIEW_IDS.PROFILER, profilerProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.window.registerWebviewViewProvider(VIEW_IDS.LOG, logProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.registerWebviewViewProvider(VIEW_IDS.PROFILER_DETAIL, profilerDetailProvider, {
@@ -156,7 +135,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand('iagent-engineer.log.clear', () => {
       Logger.clear();
-      logProvider.postMessage({ event: 'log.clear' });
+      outputChannel.clear();
     }),
     vscode.commands.registerCommand('iagent-engineer.log.copy', async () => {
       await vscode.env.clipboard.writeText(Logger.toText());

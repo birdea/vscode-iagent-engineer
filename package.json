@@ -78,11 +78,6 @@
           "type": "webview",
           "id": "iagent-engineer.profiler",
           "name": "%view.profiler.name%"
-        },
-        {
-          "type": "webview",
-          "id": "iagent-engineer.log",
-          "name": "%view.log.name%"
         }
       ],
       "iagent-engineer-profiler-panel": [
@@ -133,12 +128,10 @@
         },
         {
           "command": "iagent-engineer.log.clear",
-          "when": "view == iagent-engineer.log",
           "group": "navigation@1"
         },
         {
           "command": "iagent-engineer.log.copy",
-          "when": "view == iagent-engineer.log",
           "group": "navigation@2"
         }
       ]

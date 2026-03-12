@@ -756,13 +756,16 @@ a:hover {
   justify-content: flex-start;
 }
 
-.profiler-toolbar-live {
-  margin-bottom: -4px;
+.profiler-toolbar-inline {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
-.profiler-toolbar-live .secondary {
-  width: 100%;
+.profiler-toolbar-inline button {
+  flex: 1 1 0;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .profiler-status-chip {
@@ -846,25 +849,54 @@ a:hover {
 
 .profiler-tab-row {
   display: flex;
-  gap: 6px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  gap: 0;
 }
 
-.profiler-tab {
-  border: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-editor-background);
+.profiler-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 32px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.profiler-tab-item:hover {
   color: var(--vscode-foreground);
-  border-radius: 999px;
-  padding: 5px 10px;
+  background: color-mix(in srgb, var(--vscode-panel-border) 25%, transparent);
 }
 
-.profiler-tab.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+.profiler-tab-item.active {
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-button-background);
+  font-weight: 600;
 }
 
-.profiler-tab span {
-  opacity: 0.8;
-  margin-left: 4px;
+.profiler-tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.profiler-tab-label {
+  font-size: inherit;
+}
+
+.profiler-tab-count {
+  opacity: 0.7;
+  font-size: 10px;
+  margin-left: 2px;
 }
 
 .profiler-sort-bar {
@@ -1466,7 +1498,7 @@ a:hover {
   }
 
   .profiler-tab-row {
-    flex-wrap: wrap;
+    overflow-x: auto;
   }
 
   .profiler-chart-head {
