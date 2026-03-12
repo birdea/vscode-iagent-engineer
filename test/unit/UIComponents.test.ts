@@ -968,7 +968,7 @@ suite('UI Components Consolidated', () => {
       layer.mount();
     });
 
-    test('renders compact session rows with filename timestamp and size only', () => {
+    test('renders responsive session rows with dedicated filename timestamp and size cells', () => {
       layer.onState({
         status: 'ready',
         selectedAgent: 'codex',
@@ -1000,11 +1000,24 @@ suite('UI Components Consolidated', () => {
       });
 
       const row = document.querySelector('.profiler-session-row') as HTMLButtonElement;
+      const fileCell = row?.querySelector('.profiler-session-file') as HTMLElement | null;
+      const stampCell = row?.querySelector('.profiler-session-stamp') as HTMLElement | null;
+      const sizeCell = row?.querySelector('.profiler-session-size') as HTMLElement | null;
+      const sortButtons = Array.from(document.querySelectorAll('.profiler-sort-btn')).map((button) =>
+        button.textContent?.trim(),
+      );
+
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
-      assert.ok(row.textContent?.includes('very-long-session-file-name.jsonl'));
-      assert.ok(row.textContent?.includes('2026-03-11'));
-      assert.ok(row.textContent?.includes('55.0 KB'));
+      assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'Size']);
+      assert.ok(fileCell);
+      assert.ok(stampCell);
+      assert.ok(sizeCell);
+      assert.strictEqual(fileCell.getAttribute('title'), 'very-long-session-file-name.jsonl');
+      assert.strictEqual(fileCell.textContent, 'very-long-session-file-name.jsonl');
+      assert.ok(stampCell.textContent?.includes('2026-03-11'));
+      assert.strictEqual(sizeCell.textContent, '55.0 KB');
+      assert.strictEqual(row.querySelector('.profiler-session-meta'), null);
       assert.ok(!row.textContent?.includes('Unknown model'));
       assert.ok(!row.textContent?.includes('In 100'));
       assert.ok(!row.textContent?.includes('Out 40'));

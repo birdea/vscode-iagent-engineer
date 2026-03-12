@@ -859,8 +859,11 @@ a:hover {
 }
 
 .profiler-sort-bar {
-  display: flex;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  min-width: 0;
 }
 
 .profiler-sort-btn {
@@ -872,6 +875,7 @@ a:hover {
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .profiler-sort-btn:hover {
@@ -882,6 +886,15 @@ a:hover {
 .profiler-sort-btn.active {
   color: var(--vscode-foreground);
   font-weight: 600;
+}
+
+.profiler-sort-btn-name {
+  justify-self: start;
+}
+
+.profiler-sort-btn-time,
+.profiler-sort-btn-size {
+  justify-self: end;
 }
 
 .profiler-list {
@@ -900,9 +913,11 @@ a:hover {
   background: none;
   color: var(--vscode-foreground);
   padding: 6px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 2px 12px;
+  align-items: center;
+  min-width: 0;
 }
 
 .profiler-session-row:hover {
@@ -949,14 +964,11 @@ a:hover {
   font-size: 11px;
   font-weight: 500;
   text-align: left;
-  word-break: break-all;
-}
-
-.profiler-session-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
 }
 
 .profiler-session-stamp,
@@ -964,6 +976,7 @@ a:hover {
   color: var(--vscode-descriptionForeground);
   font-size: 10px;
   white-space: nowrap;
+  justify-self: end;
 }
 
 .profiler-raw-meta,
@@ -1348,6 +1361,29 @@ a:hover {
 
   .profiler-chart-legend {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .profiler-sort-bar,
+  .profiler-session-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+  }
+
+  .profiler-sort-btn-name,
+  .profiler-session-file {
+    grid-column: 1 / -1;
+  }
+
+  .profiler-sort-btn-time,
+  .profiler-session-stamp {
+    justify-self: start;
+  }
+
+  .profiler-sort-btn-size,
+  .profiler-session-size {
+    justify-self: end;
   }
 }
 

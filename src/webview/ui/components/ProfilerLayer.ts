@@ -226,9 +226,9 @@ export class ProfilerLayer {
     };
     const active = (field: SortField) => (this.sortField === field ? ' active' : '');
     return `
-<button class="profiler-sort-btn${active('name')}" data-sort="name">Name${arrow('name')}</button>
-<button class="profiler-sort-btn${active('time')}" data-sort="time">Time${arrow('time')}</button>
-<button class="profiler-sort-btn${active('size')}" data-sort="size">Size${arrow('size')}</button>`;
+<button class="profiler-sort-btn profiler-sort-btn-name${active('name')}" data-sort="name">Name${arrow('name')}</button>
+<button class="profiler-sort-btn profiler-sort-btn-time${active('time')}" data-sort="time">Time${arrow('time')}</button>
+<button class="profiler-sort-btn profiler-sort-btn-size${active('size')}" data-sort="size">Size${arrow('size')}</button>`;
   }
 
   private renderSessionList(): string {
@@ -266,7 +266,6 @@ export class ProfilerLayer {
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
     const timestamp = session.startedAt ?? session.modifiedAt;
-    const displayName = session.fileName;
     return `
 <button
   class="profiler-session-row ${isSelected ? 'selected' : ''}"
@@ -274,11 +273,9 @@ export class ProfilerLayer {
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
-  <span class="profiler-session-file" title="${this.escapeAttr(session.fileName)}">${this.escapeHtml(displayName)}</span>
-  <span class="profiler-session-meta">
-    <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
-    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
-  </span>
+  <span class="profiler-session-file" title="${this.escapeAttr(session.fileName)}">${this.escapeHtml(session.fileName)}</span>
+  <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
+  <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
 </button>`;
   }
 
