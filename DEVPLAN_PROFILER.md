@@ -7,7 +7,7 @@
 - Sidebar `Profiler Panel`의 세션 리스트는 `세션 파일명`, `timestamp(YYYY-MM-DD HH:mm)`, `파일 크기`만 보여주는 초경량 목록으로 단순화한다.
 - 세션 파일명은 긴 경우 20자 이내로 잘라 리스트 폭을 고정한다.
 - 에이전트 탭은 유지하되, 세션 행 내부의 `model`, `input/output token`, 기타 부가 문구는 제거한다.
-- Bottom `F.Profiler`는 기존의 큰 카드 나열형 구성을 버리고, `상단 compact overview + 중앙 chart + 우측 event/raw rail` 구조의 고밀도 레이아웃으로 재정렬한다.
+- Bottom `iProfiler`는 기존의 큰 카드 나열형 구성을 버리고, `상단 compact overview + 중앙 chart + 우측 event/raw rail` 구조의 고밀도 레이아웃으로 재정렬한다.
 - 메타/통계/인사이트는 한 덩어리의 overview 보드 안에 통합한다.
 - 차트는 패딩, 레전드, 보조 문구, 포커스 카드 크기를 줄여 한 화면에서 더 많은 시계열과 요약값을 읽을 수 있어야 한다.
 - 이벤트 카드와 raw 이벤트도 작은 활자와 짧은 요약 중심으로 줄여 차트와 동시에 보이게 한다.
@@ -31,12 +31,12 @@
 - 로컬 스토리지에 저장된 `Claude`, `Codex`, `Gemini` 세션 파일을 검색한다.
 - 세션 파일을 표준화된 구조로 파싱해 요약 목록과 상세 분석 데이터를 제공한다.
 - 사이드바에 `Profiler Panel`을 추가해 에이전트별 세션 목록을 보여준다.
-- VS Code 하단 `Panel` 영역에 `F.Profiler` 뷰를 추가해 선택된 세션의 상세 분석을 시각화한다.
+- VS Code 하단 `Panel` 영역에 `iProfiler` 뷰를 추가해 선택된 세션의 상세 분석을 시각화한다.
 - 사용자가 원할 경우, 발견된 세션 파일을 지정 폴더로 정리하여 일괄 보관할 수 있게 한다.
 
 핵심은 단순 파일 뷰어가 아니라 `세션 검색 -> 정규화 -> 요약 -> 상세 분석 -> 보관`까지 이어지는 분석 워크플로우를 확장 내부에서 완결하는 것이다.
 
-가장 중요한 제품 목표는 `Bottom Panel > F.Profiler`의 시간 기반 차트다. 이 차트는 사용자가 지난 세션에서 `어떤 대화가 있었는지`, `어떤 시점에 데이터(KB)와 토큰 사용량이 급증했는지`, `어떤 이벤트가 비용 증가를 유발했는지`를 빠르게 분석할 수 있어야 한다.
+가장 중요한 제품 목표는 `Bottom Panel > iProfiler`의 시간 기반 차트다. 이 차트는 사용자가 지난 세션에서 `어떤 대화가 있었는지`, `어떤 시점에 데이터(KB)와 토큰 사용량이 급증했는지`, `어떤 이벤트가 비용 증가를 유발했는지`를 빠르게 분석할 수 있어야 한다.
 
 이 문서에서 말하는 "완성도 높은 차트"의 기준은 이번 작업에 첨부된 참조 이미지와 동일한 수준의 읽기 경험이다. 즉, 다중 시계열 라인이 한 화면에서 명확히 분리되고, 수평 그리드와 우측 y축 라벨만으로도 값의 높낮이를 빠르게 읽을 수 있으며, 범례와 종점 마커만 보고도 어느 시리즈가 어떤 추세를 보이는지 즉시 파악할 수 있는 차트를 목표로 한다.
 
@@ -94,7 +94,7 @@
 - 세션 요약 목록 제공
 - 세션 상세 분석 제공
 - 선택 파일 아카이브 기능 제공
-- 하단 `F.Profiler` 뷰 추가
+- 하단 `iProfiler` 뷰 추가
 
 ### v1 제외 범위
 
@@ -111,7 +111,7 @@
 요약 목록과 상세 분석은 정보 밀도가 다르다.
 
 - 사이드바 `Profiler Panel`: 탐색과 필터링 중심
-- 하단 `F.Profiler`: 상세 분석과 시각화 중심
+- 하단 `iProfiler`: 상세 분석과 시각화 중심
 
 이렇게 나누면 현재 `Prompt`/`Log` 패턴도 유지되고, 그래프 같은 넓은 UI는 하단 패널에서 자연스럽게 처리할 수 있다.
 
@@ -179,7 +179,7 @@ Sidebar Profiler View
     -> SessionSummaryService
     -> ProfilerStateManager
 
-Bottom F.Profiler Panel
+Bottom iProfiler Panel
   -> ProfilerDetailCommandHandler
     -> SessionAnalysisService
     -> SessionTimelineBuilder
@@ -286,14 +286,14 @@ Shared Domain
 5. 리스트 아이템 클릭 시 상세 뷰 갱신
 6. 필요 시 `Archive All`로 결과 파일 정리
 
-## 7.2 하단 `Panel` 영역의 `F.Profiler`
+## 7.2 하단 `Panel` 영역의 `iProfiler`
 
 VS Code 공식 용어 기준 이 영역은 `Panel`이다. `Problems / Output / Terminal`과 같은 레벨에 새 패널 컨테이너를 추가한다.
 
 권장 구현:
 
 - `contributes.viewsContainers.panel`에 `figma-mcp-helper-profiler-panel` 추가
-- 제목은 `F.Profiler`
+- 제목은 `iProfiler`
 - 그 안에 단일 webview view `figma-mcp-helper.profiler-detail` 등록
 
 ### 상세 뷰 구성
@@ -476,7 +476,7 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 
 - `Start Analysis` 실행 직후 사이드바 상단에 `로딩중..` 배지를 즉시 표시한다.
 - 스캔 중에는 중복 실행을 막기 위해 관련 액션 버튼을 비활성화한다.
-- 세션 상세 분석 요청 시 하단 `F.Profiler` 뷰에 `로딩중..` 상태를 먼저 렌더링한다.
+- 세션 상세 분석 요청 시 하단 `iProfiler` 뷰에 `로딩중..` 상태를 먼저 렌더링한다.
 - 아카이브 작업 중에도 동일하게 `로딩중..` 상태와 대상 파일 수를 표시한다.
 - 가능하면 단순 텍스트만이 아니라 spinner 또는 progress bar를 함께 사용하되, 기본 문구는 요구사항대로 `로딩중..`를 유지한다.
 
@@ -540,7 +540,7 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 
 - `VIEW_IDS` 확장
 - `Profiler` sidebar webview 추가
-- `F.Profiler` panel container 및 detail webview 추가
+- `iProfiler` panel container 및 detail webview 추가
 - `ProfilerStateManager` 추가
 
 ### Phase 2. 데이터 계층
@@ -647,7 +647,7 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 
 가장 먼저 해야 할 일은 아래 세 가지다.
 
-1. `Profiler` 사이드바와 `F.Profiler` 하단 패널 뼈대 추가
+1. `Profiler` 사이드바와 `iProfiler` 하단 패널 뼈대 추가
 2. `CodexSessionProvider`를 기준 구현체로 완성
 3. 공통 `SessionSummary/SessionDetail` 모델을 확정
 
@@ -660,7 +660,7 @@ v1 권장안은 `원본 파일 + line anchor` 우선이다. 별도 임시 포맷
 권장 방향은 다음과 같다.
 
 - 사이드바에 `Profiler` webview 추가
-- 하단 `Panel`에 `F.Profiler` webview 추가
+- 하단 `Panel`에 `iProfiler` webview 추가
 - 에이전트별 `SessionProvider` 구조 도입
 - 파일 검색, 요약 분석, 상세 분석, 아카이브를 독립 서비스로 분리
 
@@ -678,7 +678,7 @@ v1의 성공 기준은 명확하다.
 - `Codex`는 부분 파싱만 되어 있었고, turn 단위 누적 token delta와 latency 분석이 부족했다.
 - `Claude`는 실제 로컬 JSONL 포맷이 존재하지만 상세 분석이 사실상 미구현이었다.
 - `Gemini`는 현재 로컬에서 세션 원본 포맷을 확인하지 못했고, `.gemini` 루트에는 브라우저 프로필 노이즈가 많아 탐색 전략을 보수적으로 다뤄야 한다.
-- `F.Profiler`는 SVG polyline 수준이라 `시간순 세션 구간`, `turn/request 단위 token 소모`, `spike 구간`, `payload/latency 비교`를 읽기 어려웠다.
+- `iProfiler`는 SVG polyline 수준이라 `시간순 세션 구간`, `turn/request 단위 token 소모`, `spike 구간`, `payload/latency 비교`를 읽기 어려웠다.
 
 즉, 현재 구현은 v1 초안으로는 의미가 있지만, 사용자가 원하는 "지난 세션을 다시 읽는 분석 도구" 수준에는 도달하지 못했다.
 
@@ -716,7 +716,7 @@ v1의 성공 기준은 명확하다.
 - `Codex` turn aggregation 재구현
 - `Claude` request aggregation 신규 구현
 - directory walker에 noise directory skip 추가
-- `F.Profiler`를 참조 이미지 수준의 판독성을 목표로 한 horizontal scrollable multi-series chart로 재구현
+- `iProfiler`를 참조 이미지 수준의 판독성을 목표로 한 horizontal scrollable multi-series chart로 재구현
 - spike hotspot / concise event cards / compact raw rows 추가
 - parser/UI 회귀 방지 테스트 추가
 

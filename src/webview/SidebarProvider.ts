@@ -118,7 +118,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       },
     );
 
-    Logger.info('system', `iagent engineer [${this.section}] view initialized`);
+    Logger.info('system', `iAgent Engineer [${this.section}] view initialized`);
   }
 
   private getHtml(webview: vscode.Webview): string {
@@ -151,7 +151,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="${csp}" />
-  <title>iagent engineer</title>
+  <title>iAgent Engineer</title>
   <link rel="stylesheet" href="${codiconUri}" />
   <link rel="stylesheet" href="${styleUri}" />
 </head>

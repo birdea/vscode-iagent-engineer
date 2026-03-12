@@ -1,4 +1,4 @@
-# Contributing to iagent engineer
+# Contributing to iAgent Engineer
 
 Thank you for your interest in contributing! This document covers how to set up the development environment, run tests, build the extension, and submit changes.
 
@@ -169,4 +169,4 @@ Please use the [GitHub Issues](https://github.com/birdea/vscode-iagent-engineer/
 - Extension version
 - Steps to reproduce
 - Expected vs. actual behaviour
-- Relevant logs from the **iagent engineer** output channel
+- Relevant logs from the **iAgent Engineer** output channel

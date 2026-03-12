@@ -15,7 +15,7 @@ let sidebarProviders: SidebarProvider[] = [];
 
 export async function activate(context: vscode.ExtensionContext) {
   const locale = resolveLocale(vscode.env.language);
-  const outputChannel = vscode.window.createOutputChannel('iagent engineer');
+  const outputChannel = vscode.window.createOutputChannel('iAgent Engineer');
   outputChannelRef = outputChannel;
   Logger.initialize(outputChannel);
   const stateManager = new StateManager();
@@ -158,11 +158,11 @@ export async function activate(context: vscode.ExtensionContext) {
     outputChannel,
   );
 
-  Logger.info('system', `iagent engineer v${context.extension.packageJSON.version} activated`);
+  Logger.info('system', `iAgent Engineer v${context.extension.packageJSON.version} activated`);
 }
 
 export async function deactivate(): Promise<void> {
-  Logger.info('system', 'iagent engineer deactivated');
+  Logger.info('system', 'iAgent Engineer deactivated');
   await Promise.allSettled(sidebarProviders.splice(0).map((provider) => provider.dispose()));
   AgentFactory.clear();
   Logger.clear();

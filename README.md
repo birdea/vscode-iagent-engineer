@@ -3,6 +3,7 @@
 iAgent Engineer is a VS Code extension for turning Figma context into implementation-ready code, previews, and diagnostics without leaving the editor.
 
 It combines four workflows in one extension:
+
 - Figma MCP connection and design-data retrieval
 - AI-assisted code generation across multiple providers
 - Editor and preview handoff for generated output
@@ -58,7 +59,7 @@ The Profiler helps inspect historical AI-agent session files.
 
 - Scan available session archives by agent
 - Review aggregate token and size statistics
-- Open a detailed timeline in the `F.Profiler` panel
+- Open a detailed timeline in the `iProfiler` panel
 - Jump from chart/raw events back to source log lines
 
 ## Supported Providers
@@ -90,7 +91,7 @@ The Profiler helps inspect historical AI-agent session files.
 4. In **Prompt**, choose an agent, save an API key, and load a model.
 5. Select an output format and generate code.
 6. Open the result in the editor or preview it directly inside VS Code.
-7. Use **Profiler** and `F.Profiler` when you want to inspect historical session logs.
+7. Use **Profiler** and `iProfiler` when you want to inspect historical session logs.
 
 ## Key Settings
 
