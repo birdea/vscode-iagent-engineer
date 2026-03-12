@@ -1158,7 +1158,7 @@ suite('UI Components Consolidated', () => {
 
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
-      assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'Size']);
+      assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'tin', 'tout', 'Size']);
       assert.ok(fileCell);
       assert.ok(meta);
       assert.ok(stampCell);

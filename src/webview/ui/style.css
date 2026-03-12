@@ -858,8 +858,8 @@ a:hover {
   align-items: center;
   gap: 5px;
   padding: 6px 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 0;
+  outline: 0;
   border-radius: 0;
   background: transparent;
   color: var(--vscode-descriptionForeground);
@@ -867,9 +867,10 @@ a:hover {
   font-weight: 500;
   cursor: pointer;
   min-height: 32px;
+  box-shadow: inset 0 -2px 0 transparent;
   transition:
     color 0.15s,
-    border-color 0.15s;
+    box-shadow 0.15s;
 }
 
 .profiler-tab-item:hover {
@@ -879,7 +880,7 @@ a:hover {
 
 .profiler-tab-item.active {
   color: var(--vscode-foreground);
-  border-bottom-color: var(--vscode-button-background);
+  box-shadow: inset 0 -2px 0 var(--vscode-button-background);
   font-weight: 600;
 }
 
