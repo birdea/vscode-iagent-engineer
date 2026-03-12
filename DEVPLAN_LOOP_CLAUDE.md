@@ -1044,7 +1044,7 @@ export class PixelDiffEvaluator implements ISimilarityEvaluator {
 }
 ```
 
-**권장**: Phase 1은 `ClaudeVisionEvaluator`를 기본으로, `PixelDiffEvaluator`는 `figma-mcp-helper.loop.similarityStrategy: "pixel-diff"` 설정 시 활성화.
+**권장**: Phase 1은 `ClaudeVisionEvaluator`를 기본으로, `PixelDiffEvaluator`는 `iagent-engineer.loop.similarityStrategy: "pixel-diff"` 설정 시 활성화.
 
 ---
 
@@ -1485,9 +1485,9 @@ export const LOOP_DEFAULTS = {
 // VSCode 설정 키 추가
 export const CONFIG_KEYS = {
   // ... 기존 키 유지 ...
-  LOOP_MAX_ITERATIONS: 'figma-mcp-helper.loop.maxIterations',
-  LOOP_TARGET_SIMILARITY: 'figma-mcp-helper.loop.targetSimilarity',
-  LOOP_STRATEGY: 'figma-mcp-helper.loop.similarityStrategy',
+  LOOP_MAX_ITERATIONS: 'iagent-engineer.loop.maxIterations',
+  LOOP_TARGET_SIMILARITY: 'iagent-engineer.loop.targetSimilarity',
+  LOOP_STRATEGY: 'iagent-engineer.loop.similarityStrategy',
 } as const;
 ```
 

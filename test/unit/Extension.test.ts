@@ -20,7 +20,7 @@ suite('Extension Comprehensive', () => {
         delete: sandbox.stub().resolves(),
       },
       globalState: { get: sandbox.stub().returns('gemini'), update: sandbox.stub().resolves() },
-      extension: { id: 'bd-creative.figma-mcp-helper', packageJSON: { version: '1.0.0' } },
+      extension: { id: 'bd-creative.iagent-engineer', packageJSON: { version: '1.0.0' } },
     };
 
     const vscode = require('vscode');
@@ -48,19 +48,19 @@ suite('Extension Comprehensive', () => {
 
     const commands = vscode.commands.registerCommand.args;
 
-    const connect = commands.find((c: any) => c[0] === 'figma-mcp-helper.connect')?.[1];
+    const connect = commands.find((c: any) => c[0] === 'iagent-engineer.connect')?.[1];
     assert.ok(connect);
     await connect();
     assert.ok(
-      vscode.commands.executeCommand.calledWith('workbench.view.extension.figma-mcp-helper'),
+      vscode.commands.executeCommand.calledWith('workbench.view.extension.iagent-engineer'),
     );
 
-    const generate = commands.find((c: any) => c[0] === 'figma-mcp-helper.generate')?.[1];
+    const generate = commands.find((c: any) => c[0] === 'iagent-engineer.generate')?.[1];
     assert.ok(generate);
     generate();
 
     const promptGenerate = commands.find(
-      (c: any) => c[0] === 'figma-mcp-helper.prompt.generate',
+      (c: any) => c[0] === 'iagent-engineer.prompt.generate',
     )?.[1];
     assert.ok(promptGenerate);
     promptGenerate();
@@ -69,22 +69,22 @@ suite('Extension Comprehensive', () => {
     assert.ok(uriHandler);
     await uriHandler.handleUri(
       vscode.Uri.parse(
-        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?access_token=test-token`,
+        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?access_token=test-token`,
       ),
     );
     assert.ok(mockContext.secrets.store.called);
 
-    const logCopy = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.copy')?.[1];
+    const logCopy = commands.find((c: any) => c[0] === 'iagent-engineer.log.copy')?.[1];
     assert.ok(logCopy);
     vscode.env.clipboard = { writeText: sandbox.stub().resolves() };
     vscode.window.showInformationMessage.resetHistory?.();
     await logCopy();
 
-    const clearLog = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.clear')?.[1];
+    const clearLog = commands.find((c: any) => c[0] === 'iagent-engineer.log.clear')?.[1];
     assert.ok(clearLog);
     clearLog();
 
-    const saveLog = commands.find((c: any) => c[0] === 'figma-mcp-helper.log.save')?.[1];
+    const saveLog = commands.find((c: any) => c[0] === 'iagent-engineer.log.save')?.[1];
     assert.strictEqual(saveLog, undefined);
   });
 
@@ -97,7 +97,7 @@ suite('Extension Comprehensive', () => {
 
     await uriHandler.handleUri(
       vscode.Uri.parse(
-        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/not-figma-remote-auth?access_token=test-token`,
+        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/not-figma-remote-auth?access_token=test-token`,
       ),
     );
     assert.ok(mockContext.secrets.store.notCalled);
@@ -105,7 +105,7 @@ suite('Extension Comprehensive', () => {
     mockContext.secrets.store.rejects(new Error('store failed'));
     await uriHandler.handleUri(
       vscode.Uri.parse(
-        `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?access_token=test-token`,
+        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?access_token=test-token`,
       ),
     );
 

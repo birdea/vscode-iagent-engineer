@@ -24,7 +24,7 @@ suite('FigmaCommandHandler', () => {
     sandbox = sinon.createSandbox();
     webview = { postMessage: sandbox.spy() };
     context = {
-      extension: { id: 'bd-creative.figma-mcp-helper', packageJSON: { version: '1.0.0' } },
+      extension: { id: 'bd-creative.iagent-engineer', packageJSON: { version: '1.0.0' } },
       secrets: {
         get: sandbox.stub().resolves(undefined),
         store: sandbox.stub().resolves(),
@@ -108,7 +108,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect initializes MCP client and posts connected status', async () => {
     const getStub = sandbox.stub();
-    getStub.withArgs('figma-mcp-helper.mcpEndpoint').returns('http://localhost:3845');
+    getStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
 
     await handler.connect();
@@ -216,7 +216,7 @@ suite('FigmaCommandHandler', () => {
     assert.ok(
       (vscode.commands.executeCommand as sinon.SinonStub).calledWith(
         'workbench.action.openSettings',
-        'figma-mcp-helper.remoteMcpAuthUrl',
+        'iagent-engineer.remoteMcpAuthUrl',
       ),
     );
   });

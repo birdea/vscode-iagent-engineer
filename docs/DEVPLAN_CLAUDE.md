@@ -30,7 +30,7 @@
 
 ## 1. 개요
 
-- **앱 이름**: `vscode-figmalab`
+- **앱 이름**: `vscode-iagent-engineer`
 - **목표**: VSCode 내에서 Figma MCP 데이터를 조회하고, AI Agent(Gemini/Claude/Codex)를 통해 코드를 생성하여 에디터에 직접 통합하는 확장 프로그램
 - **언어**: TypeScript (Extension Host + Webview)
 - **빌드**: esbuild (번들러), vsce (패키징)
@@ -41,7 +41,7 @@
 ## 2. 프로젝트 구조
 
 ```
-vscode-figmalab/
+vscode-iagent-engineer/
 ├── package.json               # Extension manifest (contributes, activationEvents)
 ├── tsconfig.json
 ├── esbuild.config.js
@@ -405,7 +405,7 @@ textarea {
 
 ```jsonc
 {
-  "name": "vscode-figmalab",
+  "name": "vscode-iagent-engineer",
   "displayName": "FigmaLab",
   "description": "Figma MCP + AI Agent code generation for VSCode",
   "version": "0.1.0",

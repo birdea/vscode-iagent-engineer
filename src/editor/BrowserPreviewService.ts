@@ -91,7 +91,7 @@ export class BrowserPreviewService {
 
   private async ensureProjectFiles(code: string, format: OutputFormat): Promise<void> {
     if (!this.previewDir) {
-      this.previewDir = await fs.mkdtemp(path.join(os.tmpdir(), 'figma-mcp-helper-preview-'));
+      this.previewDir = await fs.mkdtemp(path.join(os.tmpdir(), 'iagent-engineer-preview-'));
       await fs.mkdir(path.join(this.previewDir, 'src'), { recursive: true });
       await fs.writeFile(path.join(this.previewDir, 'index.html'), this.getIndexHtml(), 'utf8');
       await fs.writeFile(
@@ -267,7 +267,7 @@ export class BrowserPreviewService {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Figma MCP Helper Browser Preview</title>
+    <title>iagent engineer Browser Preview</title>
   </head>
   <body>
     <div id="app"></div>
@@ -342,7 +342,7 @@ function applyHtmlMarkup(markup) {
   clearInjectedHeadNodes();
   const parser = new DOMParser();
   const parsed = parser.parseFromString(markup, 'text/html');
-  document.title = parsed.title || 'Figma MCP Helper Browser Preview';
+  document.title = parsed.title || 'iagent engineer Browser Preview';
 
   Array.from(parsed.head.children).forEach((node) => {
     if (node.tagName === 'TITLE' || node.tagName === 'SCRIPT') {

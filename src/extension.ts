@@ -13,7 +13,7 @@ let sidebarProviders: SidebarProvider[] = [];
 
 export async function activate(context: vscode.ExtensionContext) {
   const locale = resolveLocale(vscode.env.language);
-  const outputChannel = vscode.window.createOutputChannel('Figma MCP Helper');
+  const outputChannel = vscode.window.createOutputChannel('iagent engineer');
   outputChannelRef = outputChannel;
   Logger.initialize(outputChannel);
   const stateManager = new StateManager();
@@ -84,7 +84,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (!e.affectsConfiguration('figma-mcp-helper')) return;
+      if (!e.affectsConfiguration('iagent-engineer')) return;
 
       Logger.info('system', 'Configuration changed — reloading agent API keys');
       for (const agent of agents) {
@@ -98,31 +98,31 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(COMMANDS.CONNECT, async () => {
-      await vscode.commands.executeCommand('workbench.view.extension.figma-mcp-helper');
+      await vscode.commands.executeCommand('workbench.view.extension.iagent-engineer');
       setupProvider.postMessage({ event: 'figma.connectRequested' });
     }),
     vscode.commands.registerCommand(COMMANDS.GENERATE, () => {
-      vscode.commands.executeCommand('workbench.view.extension.figma-mcp-helper');
+      vscode.commands.executeCommand('workbench.view.extension.iagent-engineer');
     }),
-    vscode.commands.registerCommand('figma-mcp-helper.prompt.generate', () => {
+    vscode.commands.registerCommand('iagent-engineer.prompt.generate', () => {
       promptProvider.postMessage({ event: 'prompt.generateRequested' });
     }),
-    vscode.commands.registerCommand('figma-mcp-helper.log.clear', () => {
+    vscode.commands.registerCommand('iagent-engineer.log.clear', () => {
       Logger.clear();
       logProvider.postMessage({ event: 'log.clear' });
     }),
-    vscode.commands.registerCommand('figma-mcp-helper.log.copy', async () => {
+    vscode.commands.registerCommand('iagent-engineer.log.copy', async () => {
       await vscode.env.clipboard.writeText(Logger.toText());
       vscode.window.showInformationMessage(t(locale, 'system.logCopied'));
     }),
     outputChannel,
   );
 
-  Logger.info('system', `Figma MCP Helper v${context.extension.packageJSON.version} activated`);
+  Logger.info('system', `iagent engineer v${context.extension.packageJSON.version} activated`);
 }
 
 export async function deactivate(): Promise<void> {
-  Logger.info('system', 'Figma MCP Helper deactivated');
+  Logger.info('system', 'iagent engineer deactivated');
   await Promise.allSettled(sidebarProviders.splice(0).map((provider) => provider.dispose()));
   AgentFactory.clear();
   Logger.clear();

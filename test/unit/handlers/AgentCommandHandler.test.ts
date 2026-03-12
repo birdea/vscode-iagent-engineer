@@ -54,8 +54,8 @@ suite('AgentCommandHandler', () => {
   });
 
   test('getState loads persisted settings and API key status', async () => {
-    context.globalState.get.withArgs('figma-mcp-helper.defaultAgent', 'gemini').returns('claude');
-    context.globalState.get.withArgs('figma-mcp-helper.defaultModel', '').returns('claude-3');
+    context.globalState.get.withArgs('iagent-engineer.defaultAgent', 'gemini').returns('claude');
+    context.globalState.get.withArgs('iagent-engineer.defaultModel', '').returns('claude-3');
 
     await handler.getState();
 
@@ -65,8 +65,8 @@ suite('AgentCommandHandler', () => {
   });
 
   test('getState reports missing API key', async () => {
-    context.globalState.get.withArgs('figma-mcp-helper.defaultAgent', 'gemini').returns('gemini');
-    context.globalState.get.withArgs('figma-mcp-helper.defaultModel', '').returns('');
+    context.globalState.get.withArgs('iagent-engineer.defaultAgent', 'gemini').returns('gemini');
+    context.globalState.get.withArgs('iagent-engineer.defaultModel', '').returns('');
     context.secrets.get.resolves(undefined);
 
     await handler.getState();
@@ -75,8 +75,8 @@ suite('AgentCommandHandler', () => {
   });
 
   test('getState keeps the current in-memory selection after setup changes', async () => {
-    context.globalState.get.withArgs('figma-mcp-helper.defaultAgent', 'gemini').returns('gemini');
-    context.globalState.get.withArgs('figma-mcp-helper.defaultModel', '').returns('saved-model');
+    context.globalState.get.withArgs('iagent-engineer.defaultAgent', 'gemini').returns('gemini');
+    context.globalState.get.withArgs('iagent-engineer.defaultModel', '').returns('saved-model');
     stateManager.setAgent('claude');
     stateManager.setModel('claude-3');
 
@@ -172,7 +172,7 @@ suite('AgentCommandHandler', () => {
 
     assert.ok(
       context.secrets.store.calledWith(
-        'figma-mcp-helper.geminiApiKey',
+        'iagent-engineer.geminiApiKey',
         'AIzaSy123456789012345678901234567890123',
       ),
     );
@@ -190,7 +190,7 @@ suite('AgentCommandHandler', () => {
     );
 
     assert.ok(setApiKeyStub.calledWith('claude', 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz'));
-    assert.ok(context.globalState.update.calledWith('figma-mcp-helper.defaultAgent', 'claude'));
+    assert.ok(context.globalState.update.calledWith('iagent-engineer.defaultAgent', 'claude'));
     assert.ok(
       webview.postMessage.calledWithMatch({ event: 'agent.settingsSaved', hasApiKey: true }),
     );
@@ -247,7 +247,7 @@ suite('AgentCommandHandler', () => {
 
     await handler.clearSettings('claude');
 
-    assert.ok(context.secrets.delete.calledWith('figma-mcp-helper.claudeApiKey'));
+    assert.ok(context.secrets.delete.calledWith('iagent-engineer.claudeApiKey'));
     assert.strictEqual(stateManager.getAgent(), 'gemini');
     assert.strictEqual(stateManager.getModel(), '');
     assert.ok(

@@ -198,13 +198,13 @@ export class EditorIntegration {
     suggestedName?: string,
   ): Promise<vscode.Uri> {
     const filename = this.toUntitledName(suggestedName, language);
-    const dir = path.join(os.tmpdir(), 'figma-mcp-helper-generated');
+    const dir = path.join(os.tmpdir(), 'iagent-engineer-generated');
     await fs.promises.mkdir(dir, { recursive: true });
     return vscode.Uri.file(path.join(dir, filename));
   }
 
   private async ensureBinaryDocumentUri(suggestedName: string): Promise<vscode.Uri> {
-    const dir = path.join(os.tmpdir(), 'figma-mcp-helper-generated');
+    const dir = path.join(os.tmpdir(), 'iagent-engineer-generated');
     await fs.promises.mkdir(dir, { recursive: true });
     const filename =
       path.basename(suggestedName).replace(/[<>:"/\\|?*\x00-\x1F]+/g, '-') || 'asset.bin';

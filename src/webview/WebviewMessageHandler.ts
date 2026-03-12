@@ -32,7 +32,7 @@ export class WebviewMessageHandler {
     locale: UiLocale,
   ) {
     this.mcpClient = new McpClient(mcpEndpoint, {
-      name: 'vscode-figmalab',
+      name: 'iagent-engineer',
       version: extensionVersion,
     });
     this.remoteApiClient = new RemoteFigmaApiClient();

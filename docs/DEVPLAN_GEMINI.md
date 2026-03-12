@@ -2,7 +2,7 @@
 
 ## 1. 개요 및 목적
 
-- **앱 이름**: `vscode-figmalab`
+- **앱 이름**: `vscode-iagent-engineer`
 - **목표**: 개발자가 VSCode 내부에서 직접 Figma 디자인(Design Context, Screenshot)을 불러오고, AI Agent (주로 Gemini API)를 활용하여 코드를 생성 및 적용할 수 있는 VSCode 확장 프로그램(Plugin) 개발.
 - **주요 기능**:
   1. Figma Desktop App과 MCP 연동: 데이터 조회, 스크린샷 및 MCP API 기능 활용

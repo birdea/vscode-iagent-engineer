@@ -91,7 +91,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.remoteAuthUrlMissing':
       'Remote auth URL is unavailable. Check the remote authentication settings and try again.',
     'host.figma.remoteAuthUrlInvalid':
-      'Remote auth URL is invalid. Review figma-mcp-helper.remoteMcpAuthUrl in Settings.',
+      'Remote auth URL is invalid. Review iagent-engineer.remoteMcpAuthUrl in Settings.',
     'host.figma.remoteEndpointMissing':
       'Remote API endpoint is unavailable. Check the remote endpoint settings and try again.',
     'host.figma.remoteAuthRequired':
@@ -302,7 +302,7 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'host.figma.remoteAuthUrlMissing':
       'Remote auth URL을 사용할 수 없습니다. remote 인증 설정을 확인한 뒤 다시 시도하세요.',
     'host.figma.remoteAuthUrlInvalid':
-      'Remote auth URL 형식이 올바르지 않습니다. 설정의 figma-mcp-helper.remoteMcpAuthUrl 값을 확인하세요.',
+      'Remote auth URL 형식이 올바르지 않습니다. 설정의 iagent-engineer.remoteMcpAuthUrl 값을 확인하세요.',
     'host.figma.remoteEndpointMissing':
       'Remote API 엔드포인트를 사용할 수 없습니다. remote 엔드포인트 설정을 확인한 뒤 다시 시도하세요.',
     'host.figma.remoteAuthRequired':

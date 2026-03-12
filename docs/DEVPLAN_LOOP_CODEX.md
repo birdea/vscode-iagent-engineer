@@ -2,7 +2,7 @@
 
 ## 1. 목적
 
-이 문서는 현재 `vscode-figma-mcp-helper`에 `반복형 GUI 코드 수정 루프`를 추가하기 위한 상세 설계안이다.
+이 문서는 현재 `vscode-iagent-engineer`에 `반복형 GUI 코드 수정 루프`를 추가하기 위한 상세 설계안이다.
 
 목표는 다음과 같다.
 
@@ -194,7 +194,7 @@ Webview UI
 #### `LoopArtifactStore`
 
 - iteration별 프롬프트, 스크린샷, diff 결과, 로그, 점수 저장
-- temp 디렉터리 또는 workspace 내부 `.figma-mcp-helper/loops/<runId>` 사용
+- temp 디렉터리 또는 workspace 내부 `.iagent-engineer/loops/<runId>` 사용
 
 #### `LoopPolicy`
 
@@ -329,7 +329,7 @@ Webview UI
 - exit code 해석
 - iteration 결과와 changed files 요약 반환
 
-현재 저장소는 이미 [BrowserPreviewService.ts](/Users/1112327/workspace/vscode-figma-mcp-helper/src/editor/BrowserPreviewService.ts)에서 child process를 사용하므로, 확장 호스트에서 CLI 실행 자체는 구조적으로 자연스럽다.
+현재 저장소는 이미 [BrowserPreviewService.ts](/Users/1112327/workspace/vscode-iagent-engineer/src/editor/BrowserPreviewService.ts)에서 child process를 사용하므로, 확장 호스트에서 CLI 실행 자체는 구조적으로 자연스럽다.
 
 ## 6.4. CLI 기반 표준 실행 방식
 
@@ -875,11 +875,11 @@ src/
 
 예시 설정:
 
-- `figma-mcp-helper.loop.defaultThreshold`
-- `figma-mcp-helper.loop.defaultMaxIterations`
-- `figma-mcp-helper.loop.enableBash`
-- `figma-mcp-helper.loop.artifactLocation`
-- `figma-mcp-helper.loop.allowedWriteGlobs`
+- `iagent-engineer.loop.defaultThreshold`
+- `iagent-engineer.loop.defaultMaxIterations`
+- `iagent-engineer.loop.enableBash`
+- `iagent-engineer.loop.artifactLocation`
+- `iagent-engineer.loop.allowedWriteGlobs`
 
 ### `src/i18n.ts`
 

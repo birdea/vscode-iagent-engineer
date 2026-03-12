@@ -1,8 +1,8 @@
-# Figma MCP Helper
+# iagent engineer
 
 Turn Figma screens into implementation-ready code inside VS Code.
 
-Figma MCP Helper connects VS Code to a Figma Desktop MCP server, fetches design context from a Figma URL, and generates code with Gemini, Claude, DeepSeek, Qwen, or OpenRouter without leaving your editor.
+iagent engineer connects VS Code to a Figma Desktop MCP server, fetches design context from a Figma URL, and generates code with Gemini, Claude, DeepSeek, Qwen, or OpenRouter without leaving your editor.
 
 `v0.6.2` highlights:
 
@@ -10,7 +10,7 @@ Figma MCP Helper connects VS Code to a Figma Desktop MCP server, fetches design 
 - The repository includes a dedicated [`CODE_REVIEW.md`](CODE_REVIEW.md) summary for follow-up engineering work.
 - Release metadata has been aligned for the `v0.6.2` package update.
 
-![Figma MCP Helper screenshot](images/screenshot-2.png)
+![iagent engineer screenshot](images/screenshot-2.png)
 
 The screenshot above shows the current sidebar workflow for Setup, Prompt, and Log in a single VS Code session.
 
@@ -39,7 +39,7 @@ Detailed review: [`CODE_REVIEW.md`](CODE_REVIEW.md)
 
 ## Quick Start
 
-1. Install the extension and open **Figma MCP Helper** from the activity bar.
+1. Install the extension and open **iagent engineer** from the activity bar.
 2. In **Setup**, select `local` and connect to your Figma Desktop MCP endpoint.
 3. Paste a Figma URL and fetch the design data or screenshot.
 4. In **Agent**, choose a provider, save your API key, and load a model.

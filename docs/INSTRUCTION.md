@@ -3,7 +3,7 @@
 ## 1. 목적
 
 VSCode 확장 프로그램(Plugin)을 개발하자.
-앱이름 = vscode-figmalab
+앱이름 = vscode-iagent-engineer
 주요기능 = 이를 통해 개발자는 VSCode 내부에서 직접 Figma 디자인(Design Context, Screenshot)을 불러오고 Gemini API를 활용하여 코드를 생성/적용할 수 있습니다.
 
 1. Figma 연결 방식은 `local / remote`를 모두 고려하되, 현재 요구 범위는 `local Desktop MCP`와 `remote OAuth + REST` 기준으로 동일한 fetch/screenshot 기능을 제공하기

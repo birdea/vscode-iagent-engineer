@@ -238,7 +238,7 @@ suite('Agent Implementations', () => {
       const vscode = require('vscode');
       const getStub = vscode.workspace.getConfiguration().get;
       getStub
-        .withArgs('figma-mcp-helper.claudeModels')
+        .withArgs('iagent-engineer.claudeModels')
         .returns([{ id: 'claude-custom', name: 'Claude Custom', outputTokenLimit: 4096 }]);
 
       const models = await agent.listModels();
@@ -265,7 +265,7 @@ suite('Agent Implementations', () => {
     test('listModels returns defaults when all configured models are invalid', async () => {
       const vscode = require('vscode');
       const getStub = vscode.workspace.getConfiguration().get;
-      getStub.withArgs('figma-mcp-helper.claudeModels').returns([
+      getStub.withArgs('iagent-engineer.claudeModels').returns([
         { id: '' }, // empty id — invalid
         { not_a_model: true }, // wrong shape
       ]);

@@ -1,6 +1,6 @@
 # 코드 리뷰 보고서
 
-**프로젝트:** Figma MCP Helper (VS Code Extension)
+**프로젝트:** iagent engineer (VS Code Extension)
 **버전:** 0.1.4 (현재 브랜치: main)
 **리뷰 일자:** 2026-03-08
 **근거:** 이전 리뷰(CODEREVIEW.md) 대비 소스 직접 검증
@@ -227,7 +227,7 @@ innerHTML과 DOM API 혼용이 사라지고 패턴이 일관성 있게 통일되
   if: startsWith(github.ref, 'refs/tags/v')
   uses: softprops/action-gh-release@v2
   with:
-    files: figma-mcp-helper-${{ github.ref_name }}.vsix
+    files: iagent-engineer-${{ github.ref_name }}.vsix
 
 # codeql.yml - 정적 분석
 - name: Analyze

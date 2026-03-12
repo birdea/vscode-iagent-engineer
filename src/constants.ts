@@ -1,39 +1,39 @@
 import { AgentType } from './types';
 
-export const EXTENSION_ID = 'figma-mcp-helper';
+export const EXTENSION_ID = 'iagent-engineer';
 
 export const VIEW_IDS = {
-  SETUP: 'figma-mcp-helper.setup',
-  PROMPT: 'figma-mcp-helper.prompt',
-  LOG: 'figma-mcp-helper.log',
+  SETUP: 'iagent-engineer.setup',
+  PROMPT: 'iagent-engineer.prompt',
+  LOG: 'iagent-engineer.log',
 } as const;
 
 export const COMMANDS = {
-  CONNECT: 'figma-mcp-helper.connect',
-  GENERATE: 'figma-mcp-helper.generate',
+  CONNECT: 'iagent-engineer.connect',
+  GENERATE: 'iagent-engineer.generate',
 } as const;
 
 export const CONFIG_KEYS = {
-  DEFAULT_AGENT: 'figma-mcp-helper.defaultAgent',
-  DEFAULT_MODEL: 'figma-mcp-helper.defaultModel',
-  MCP_CONNECTION_MODE: 'figma-mcp-helper.mcpConnectionMode',
-  MCP_ENDPOINT: 'figma-mcp-helper.mcpEndpoint',
-  REMOTE_MCP_ENDPOINT: 'figma-mcp-helper.remoteMcpEndpoint',
-  REMOTE_MCP_AUTH_URL: 'figma-mcp-helper.remoteMcpAuthUrl',
-  OPEN_FETCH_RESULT_IN_EDITOR: 'figma-mcp-helper.openFetchedDataInEditor',
-  CLAUDE_MODELS: 'figma-mcp-helper.claudeModels',
-  DEEPSEEK_MODELS: 'figma-mcp-helper.deepseekModels',
-  QWEN_MODELS: 'figma-mcp-helper.qwenModels',
-  OPENROUTER_MODELS: 'figma-mcp-helper.openrouterModels',
+  DEFAULT_AGENT: 'iagent-engineer.defaultAgent',
+  DEFAULT_MODEL: 'iagent-engineer.defaultModel',
+  MCP_CONNECTION_MODE: 'iagent-engineer.mcpConnectionMode',
+  MCP_ENDPOINT: 'iagent-engineer.mcpEndpoint',
+  REMOTE_MCP_ENDPOINT: 'iagent-engineer.remoteMcpEndpoint',
+  REMOTE_MCP_AUTH_URL: 'iagent-engineer.remoteMcpAuthUrl',
+  OPEN_FETCH_RESULT_IN_EDITOR: 'iagent-engineer.openFetchedDataInEditor',
+  CLAUDE_MODELS: 'iagent-engineer.claudeModels',
+  DEEPSEEK_MODELS: 'iagent-engineer.deepseekModels',
+  QWEN_MODELS: 'iagent-engineer.qwenModels',
+  OPENROUTER_MODELS: 'iagent-engineer.openrouterModels',
 } as const;
 
 export const SECRET_KEYS = {
-  GEMINI_API_KEY: 'figma-mcp-helper.geminiApiKey',
-  CLAUDE_API_KEY: 'figma-mcp-helper.claudeApiKey',
-  DEEPSEEK_API_KEY: 'figma-mcp-helper.deepseekApiKey',
-  QWEN_API_KEY: 'figma-mcp-helper.qwenApiKey',
-  OPENROUTER_API_KEY: 'figma-mcp-helper.openrouterApiKey',
-  REMOTE_FIGMA_AUTH: 'figma-mcp-helper.remoteFigmaAuth',
+  GEMINI_API_KEY: 'iagent-engineer.geminiApiKey',
+  CLAUDE_API_KEY: 'iagent-engineer.claudeApiKey',
+  DEEPSEEK_API_KEY: 'iagent-engineer.deepseekApiKey',
+  QWEN_API_KEY: 'iagent-engineer.qwenApiKey',
+  OPENROUTER_API_KEY: 'iagent-engineer.openrouterApiKey',
+  REMOTE_FIGMA_AUTH: 'iagent-engineer.remoteFigmaAuth',
 } as const;
 
 export function getSecretStorageKey(agent: AgentType): string {
@@ -55,9 +55,9 @@ export function getSecretStorageKey(agent: AgentType): string {
 
 export const DEFAULT_MCP_ENDPOINT = 'http://127.0.0.1:3845/mcp';
 export const DEFAULT_REMOTE_MCP_ENDPOINT =
-  'https://vscode-figma-mcp-helper-workers.birdea.workers.dev';
+  'https://vscode-iagent-engineer-workers.birdea.workers.dev';
 export const DEFAULT_REMOTE_MCP_AUTH_URL =
-  'https://vscode-figma-mcp-helper-workers.birdea.workers.dev/api/figma/oauth/start';
+  'https://vscode-iagent-engineer-workers.birdea.workers.dev/api/figma/oauth/start';
 
 export const MCP_DEFAULT_PORT = 3845;
 

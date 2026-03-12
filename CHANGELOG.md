@@ -4,6 +4,9 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+- Renamed the extension package, namespace, and repository metadata from `figma-mcp-helper` to `iagent-engineer`.
+- Updated user-facing documentation and worker identifiers to the new `iagent engineer` product naming.
+
 ## [0.6.1] - 2026-03-11
 
 - Consolidated the Prompt metric area into a single board so selected-model stats read as one grouped layout.

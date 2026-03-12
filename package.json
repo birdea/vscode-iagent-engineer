@@ -1,18 +1,18 @@
 {
-  "name": "figma-mcp-helper",
-  "displayName": "Figma MCP Helper",
+  "name": "iagent-engineer",
+  "displayName": "iagent engineer",
   "description": "Figma MCP + AI Agent code generation for VSCode",
   "version": "0.6.2",
   "publisher": "bd-creative",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/birdea/vscode-figma-mcp-helper.git"
+    "url": "https://github.com/birdea/vscode-iagent-engineer.git"
   },
   "bugs": {
-    "url": "https://github.com/birdea/vscode-figma-mcp-helper/issues"
+    "url": "https://github.com/birdea/vscode-iagent-engineer/issues"
   },
-  "homepage": "https://github.com/birdea/vscode-figma-mcp-helper#readme",
+  "homepage": "https://github.com/birdea/vscode-iagent-engineer#readme",
   "engines": {
     "vscode": "^1.85.0",
     "node": ">=20.0.0"
@@ -27,19 +27,19 @@
   },
   "badges": [
     {
-      "url": "https://github.com/birdea/vscode-figma-mcp-helper/actions/workflows/ci.yml/badge.svg",
-      "href": "https://github.com/birdea/vscode-figma-mcp-helper/actions",
+      "url": "https://github.com/birdea/vscode-iagent-engineer/actions/workflows/ci.yml/badge.svg",
+      "href": "https://github.com/birdea/vscode-iagent-engineer/actions",
       "description": "Build Status"
     }
   ],
   "screenshots": [
     {
       "path": "images/screenshot-2.png",
-      "label": "Figma MCP Helper — Setup & Code Generation"
+      "label": "iagent engineer — Setup & Code Generation"
     }
   ],
   "activationEvents": [
-    "onView:figma-mcp-helper.setup"
+    "onView:iagent-engineer.setup"
   ],
   "icon": "resources/icon.png",
   "main": "./dist/extension.js",
@@ -47,53 +47,53 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "figma-mcp-helper",
+          "id": "iagent-engineer",
           "title": "%viewsContainer.title%",
           "icon": "resources/icon-activity.png"
         }
       ]
     },
     "views": {
-      "figma-mcp-helper": [
+      "iagent-engineer": [
         {
           "type": "webview",
-          "id": "figma-mcp-helper.setup",
+          "id": "iagent-engineer.setup",
           "name": "%view.setup.name%"
         },
         {
           "type": "webview",
-          "id": "figma-mcp-helper.prompt",
+          "id": "iagent-engineer.prompt",
           "name": "%view.prompt.name%"
         },
         {
           "type": "webview",
-          "id": "figma-mcp-helper.log",
+          "id": "iagent-engineer.log",
           "name": "%view.log.name%"
         }
       ]
     },
     "commands": [
       {
-        "command": "figma-mcp-helper.connect",
+        "command": "iagent-engineer.connect",
         "title": "%command.connect.title%",
         "icon": "$(plug)"
       },
       {
-        "command": "figma-mcp-helper.generate",
+        "command": "iagent-engineer.generate",
         "title": "%command.generate.title%"
       },
       {
-        "command": "figma-mcp-helper.prompt.generate",
+        "command": "iagent-engineer.prompt.generate",
         "title": "%command.promptGenerate.title%",
         "icon": "$(play)"
       },
       {
-        "command": "figma-mcp-helper.log.clear",
+        "command": "iagent-engineer.log.clear",
         "title": "%command.logClear.title%",
         "icon": "$(clear-all)"
       },
       {
-        "command": "figma-mcp-helper.log.copy",
+        "command": "iagent-engineer.log.copy",
         "title": "%command.logCopy.title%",
         "icon": "$(copy)"
       }
@@ -101,23 +101,23 @@
     "menus": {
       "view/title": [
         {
-          "command": "figma-mcp-helper.connect",
-          "when": "view == figma-mcp-helper.setup",
+          "command": "iagent-engineer.connect",
+          "when": "view == iagent-engineer.setup",
           "group": "navigation@1"
         },
         {
-          "command": "figma-mcp-helper.prompt.generate",
-          "when": "view == figma-mcp-helper.prompt",
+          "command": "iagent-engineer.prompt.generate",
+          "when": "view == iagent-engineer.prompt",
           "group": "navigation@1"
         },
         {
-          "command": "figma-mcp-helper.log.clear",
-          "when": "view == figma-mcp-helper.log",
+          "command": "iagent-engineer.log.clear",
+          "when": "view == iagent-engineer.log",
           "group": "navigation@1"
         },
         {
-          "command": "figma-mcp-helper.log.copy",
-          "when": "view == figma-mcp-helper.log",
+          "command": "iagent-engineer.log.copy",
+          "when": "view == iagent-engineer.log",
           "group": "navigation@2"
         }
       ]
@@ -125,7 +125,7 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
-        "figma-mcp-helper.defaultAgent": {
+        "iagent-engineer.defaultAgent": {
           "type": "string",
           "enum": [
             "gemini",
@@ -144,12 +144,12 @@
           "default": "gemini",
           "description": "%configuration.defaultAgent.description%"
         },
-        "figma-mcp-helper.defaultModel": {
+        "iagent-engineer.defaultModel": {
           "type": "string",
           "default": "",
           "description": "%configuration.defaultModel.description%"
         },
-        "figma-mcp-helper.mcpConnectionMode": {
+        "iagent-engineer.mcpConnectionMode": {
           "type": "string",
           "enum": [
             "local",
@@ -158,27 +158,27 @@
           "default": "local",
           "description": "%configuration.mcpConnectionMode.description%"
         },
-        "figma-mcp-helper.mcpEndpoint": {
+        "iagent-engineer.mcpEndpoint": {
           "type": "string",
           "default": "http://127.0.0.1:3845/mcp",
           "description": "%configuration.mcpEndpoint.description%"
         },
-        "figma-mcp-helper.remoteMcpEndpoint": {
+        "iagent-engineer.remoteMcpEndpoint": {
           "type": "string",
-          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev",
+          "default": "https://vscode-iagent-engineer-workers.birdea.workers.dev",
           "description": "%configuration.remoteMcpEndpoint.description%"
         },
-        "figma-mcp-helper.remoteMcpAuthUrl": {
+        "iagent-engineer.remoteMcpAuthUrl": {
           "type": "string",
-          "default": "https://vscode-figma-mcp-helper-workers.birdea.workers.dev/api/figma/oauth/start",
+          "default": "https://vscode-iagent-engineer-workers.birdea.workers.dev/api/figma/oauth/start",
           "description": "%configuration.remoteMcpAuthUrl.description%"
         },
-        "figma-mcp-helper.openFetchedDataInEditor": {
+        "iagent-engineer.openFetchedDataInEditor": {
           "type": "boolean",
           "default": false,
           "description": "%configuration.openFetchedDataInEditor.description%"
         },
-        "figma-mcp-helper.claudeModels": {
+        "iagent-engineer.claudeModels": {
           "type": "array",
           "default": [
             {
@@ -229,7 +229,7 @@
             }
           }
         },
-        "figma-mcp-helper.deepseekModels": {
+        "iagent-engineer.deepseekModels": {
           "type": "array",
           "default": [
             {
@@ -273,7 +273,7 @@
             }
           }
         },
-        "figma-mcp-helper.qwenModels": {
+        "iagent-engineer.qwenModels": {
           "type": "array",
           "default": [
             {
@@ -317,7 +317,7 @@
             }
           }
         },
-        "figma-mcp-helper.openrouterModels": {
+        "iagent-engineer.openrouterModels": {
           "type": "array",
           "default": [
             {

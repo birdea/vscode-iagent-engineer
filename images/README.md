@@ -1,6 +1,6 @@
 # Screenshots
 
-This directory contains marketplace screenshots for the Figma MCP Helper extension.
+This directory contains marketplace screenshots for the iagent engineer extension.
 
 ## Required Screenshots
 
@@ -19,7 +19,7 @@ This directory contains marketplace screenshots for the Figma MCP Helper extensi
 ## How to Capture
 
 1. Open VS Code with the extension installed (or in Extension Development Host via `F5`)
-2. Arrange the Figma MCP Helper sidebar so all three views are visible
+2. Arrange the iagent engineer sidebar so all three views are visible
 3. Take a screenshot of the full VS Code window
 4. Crop and resize to a marketplace-friendly landscape size
 5. Save as `images/screenshot-2.png`

@@ -102,7 +102,7 @@ export class McpClient {
   constructor(
     endpoint: string,
     private readonly clientInfo: { name: string; version: string } = {
-      name: 'vscode-figmalab',
+      name: 'iagent-engineer',
       version: resolveDefaultClientVersion(),
     },
   ) {

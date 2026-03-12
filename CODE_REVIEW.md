@@ -47,7 +47,7 @@
   - `src/webview/handlers/FigmaCommandHandler.ts:219`
   - `src/webview/handlers/FigmaCommandHandler.ts:368`
 - 문제:
-  - 설정에는 `figma-mcp-helper.openFetchedDataInEditor`가 존재하고 기본값도 `false`로 선언되어 있습니다.
+  - 설정에는 `iagent-engineer.openFetchedDataInEditor`가 존재하고 기본값도 `false`로 선언되어 있습니다.
   - 하지만 실제 fetch 경로는 design context, parse-only fallback, metadata/variable defs 모두에서 항상 `editorIntegration.openInEditor()`를 호출합니다.
 - 결과:
   - 사용자는 설정을 꺼도 에디터 포커스가 계속 강제로 이동합니다.

@@ -19,7 +19,7 @@ suite('Webview workflow E2E', function () {
     sandbox = sinon.createSandbox();
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({
       get: sandbox.stub().callsFake((key: string, defaultValue?: unknown) => {
-        if (key === 'figma-mcp-helper.mcpEndpoint') {
+        if (key === 'iagent-engineer.mcpEndpoint') {
           return `http://127.0.0.1:${port}`;
         }
         return defaultValue;

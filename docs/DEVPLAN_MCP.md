@@ -39,7 +39,7 @@
 
 ### Local
 
-- 기존 [`src/figma/McpClient.ts`](/Users/birdea/workspace/vscode-figma-mcp-helper/src/figma/McpClient.ts) 유지
+- 기존 [`src/figma/McpClient.ts`](/Users/birdea/workspace/vscode-iagent-engineer/src/figma/McpClient.ts) 유지
 - Desktop MCP endpoint에 연결
 
 ### Remote
@@ -56,7 +56,7 @@
 
 ### Handler
 
-- [`src/webview/handlers/FigmaCommandHandler.ts`](/Users/birdea/workspace/vscode-figma-mcp-helper/src/webview/handlers/FigmaCommandHandler.ts)에서 mode 분기
+- [`src/webview/handlers/FigmaCommandHandler.ts`](/Users/birdea/workspace/vscode-iagent-engineer/src/webview/handlers/FigmaCommandHandler.ts)에서 mode 분기
   - `local`: 기존 MCP 경로
   - `remote`: 인증 상태 확인 후 REST 호출
 

@@ -29,29 +29,29 @@ suite('RemoteFigmaAuthService', () => {
   });
 
   test('buildCallbackUri uses extension id and vscode uri scheme', () => {
-    const uri = service.buildCallbackUri('bd-creative.figma-mcp-helper');
+    const uri = service.buildCallbackUri('bd-creative.iagent-engineer');
     assert.strictEqual(
       uri.toString(),
-      `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth`,
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth`,
     );
   });
 
   test('buildAuthUrl appends redirect and oauth helpers', async () => {
     const url = await service.buildAuthUrl(
       'https://example.com/oauth',
-      'bd-creative.figma-mcp-helper',
+      'bd-creative.iagent-engineer',
     );
     const parsed = new URL(url);
     assert.strictEqual(
       parsed.searchParams.get('vscode_redirect_uri'),
-      `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth`,
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth`,
     );
   });
 
   test('buildAuthUrl preserves an existing redirect uri', async () => {
     const url = await service.buildAuthUrl(
       `https://example.com/oauth?vscode_redirect_uri=${encodeURIComponent('vscode://existing/callback')}`,
-      'bd-creative.figma-mcp-helper',
+      'bd-creative.iagent-engineer',
     );
     const parsed = new URL(url);
     assert.strictEqual(
@@ -62,7 +62,7 @@ suite('RemoteFigmaAuthService', () => {
 
   test('handleCallbackUri stores session from query params', async () => {
     const uri = vscode.Uri.parse(
-      `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?access_token=abc&refresh_token=ref&expires_in=60`,
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?access_token=abc&refresh_token=ref&expires_in=60`,
     );
 
     const session = await service.handleCallbackUri(uri);
@@ -75,7 +75,7 @@ suite('RemoteFigmaAuthService', () => {
 
   test('handleCallbackUri accepts fragment params and ignores invalid expiry', async () => {
     const uri = vscode.Uri.parse(
-      `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth#access_token=abc&refresh_token=ref&expires_in=abc`,
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth#access_token=abc&refresh_token=ref&expires_in=abc`,
     );
 
     const session = await service.handleCallbackUri(uri);
@@ -87,7 +87,7 @@ suite('RemoteFigmaAuthService', () => {
 
   test('handleCallbackUri rejects callbacks without an access token', async () => {
     const uri = vscode.Uri.parse(
-      `${vscode.env.uriScheme}://bd-creative.figma-mcp-helper/figma-remote-auth?refresh_token=ref`,
+      `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?refresh_token=ref`,
     );
 
     await assert.rejects(() => service.handleCallbackUri(uri), ValidationError);

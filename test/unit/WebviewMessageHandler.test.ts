@@ -119,7 +119,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(
       vscode.commands.executeCommand.calledWith(
         'workbench.action.openSettings',
-        'figma-mcp-helper.remoteMcpAuthUrl',
+        'iagent-engineer.remoteMcpAuthUrl',
       ),
     );
   });
@@ -143,7 +143,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
   });
 
   test('handle agent.getState', async () => {
-    mockContext.globalState.get.withArgs('figma-mcp-helper.defaultAgent').returns('claude');
+    mockContext.globalState.get.withArgs('iagent-engineer.defaultAgent').returns('claude');
     await handler.handle({ command: 'agent.getState' });
     assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.state', agent: 'claude' }));
   });
@@ -385,7 +385,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
     });
     assert.ok(
       mockContext.secrets.store.calledWith(
-        'figma-mcp-helper.geminiApiKey',
+        'iagent-engineer.geminiApiKey',
         'AIzaSy123456789012345678901234567890123',
       ),
     );
@@ -404,7 +404,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
 
   test('handle agent.settingsCleared', async () => {
     await handler.handle({ command: 'agent.clearSettings', agent: 'gemini' });
-    assert.ok(mockContext.secrets.delete.calledWith('figma-mcp-helper.geminiApiKey'));
+    assert.ok(mockContext.secrets.delete.calledWith('iagent-engineer.geminiApiKey'));
     assert.ok(postMessageSpy.calledWithMatch({ event: 'agent.settingsCleared', agent: 'gemini' }));
   });
 
@@ -417,7 +417,7 @@ suite('WebviewMessageHandler Comprehensive', () => {
     });
     assert.ok(
       mockContext.secrets.store.calledWith(
-        'figma-mcp-helper.claudeApiKey',
+        'iagent-engineer.claudeApiKey',
         'sk-ant-api03-abcdefghijklmnopqrstuvwxyz',
       ),
     );

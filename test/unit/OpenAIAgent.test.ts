@@ -20,7 +20,7 @@ suite('OpenAIAgent', () => {
     const agent = new OpenAIAgent('openrouter');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
     getStub
-      .withArgs('figma-mcp-helper.openrouterModels')
+      .withArgs('iagent-engineer.openrouterModels')
       .returns([{ id: 'model-a', name: 'Model A', outputTokenLimit: 2048 }, { id: '' }]);
 
     const models = await agent.listModels();
@@ -33,7 +33,7 @@ suite('OpenAIAgent', () => {
   test('listModels fills configured model defaults when optional fields are missing', async () => {
     const agent = new OpenAIAgent('openrouter');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
-    getStub.withArgs('figma-mcp-helper.openrouterModels').returns([{ id: 'model-a' }]);
+    getStub.withArgs('iagent-engineer.openrouterModels').returns([{ id: 'model-a' }]);
 
     const models = await agent.listModels();
 
@@ -44,7 +44,7 @@ suite('OpenAIAgent', () => {
   test('listModels returns fallback model when no api key is set', async () => {
     const agent = new OpenAIAgent('qwen');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
-    getStub.withArgs('figma-mcp-helper.qwenModels').returns(undefined);
+    getStub.withArgs('iagent-engineer.qwenModels').returns(undefined);
 
     const models = await agent.listModels();
 
@@ -56,7 +56,7 @@ suite('OpenAIAgent', () => {
     const agent = new OpenAIAgent('deepseek');
     await agent.setApiKey('test-key');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
-    getStub.withArgs('figma-mcp-helper.deepseekModels').returns(undefined);
+    getStub.withArgs('iagent-engineer.deepseekModels').returns(undefined);
     sandbox.stub(globalThis, 'fetch' as any).resolves({
       ok: true,
       json: async () => ({
@@ -74,7 +74,7 @@ suite('OpenAIAgent', () => {
     const agent = new OpenAIAgent('deepseek');
     await agent.setApiKey('test-key');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
-    getStub.withArgs('figma-mcp-helper.deepseekModels').returns(undefined);
+    getStub.withArgs('iagent-engineer.deepseekModels').returns(undefined);
     sandbox.stub(globalThis, 'fetch' as any).rejects(new Error('network failed'));
 
     const models = await agent.listModels();
@@ -87,7 +87,7 @@ suite('OpenAIAgent', () => {
     const agent = new OpenAIAgent('deepseek');
     await agent.setApiKey('test-key');
     const getStub = vscode.workspace.getConfiguration().get as sinon.SinonStub;
-    getStub.withArgs('figma-mcp-helper.deepseekModels').returns(undefined);
+    getStub.withArgs('iagent-engineer.deepseekModels').returns(undefined);
     sandbox.stub(globalThis, 'fetch' as any).resolves({
       ok: false,
       status: 503,

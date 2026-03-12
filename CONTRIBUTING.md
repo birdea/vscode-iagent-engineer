@@ -1,4 +1,4 @@
-# Contributing to Figma MCP Helper
+# Contributing to iagent engineer
 
 Thank you for your interest in contributing! This document covers how to set up the development environment, run tests, build the extension, and submit changes.
 
@@ -27,8 +27,8 @@ Thank you for your interest in contributing! This document covers how to set up 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/birdea/vscode-figmalab.git
-   cd vscode-figmalab
+   git clone https://github.com/birdea/vscode-iagent-engineer.git
+   cd vscode-iagent-engineer
    ```
 
 2. **Install dependencies**
@@ -163,10 +163,10 @@ After `npm install`, a `pre-commit` hook is installed automatically and runs Pre
 
 ## Reporting Issues
 
-Please use the [GitHub Issues](https://github.com/bd-creative/figma-mcp-helper/issues) tracker. When reporting a bug, include:
+Please use the [GitHub Issues](https://github.com/birdea/vscode-iagent-engineer/issues) tracker. When reporting a bug, include:
 
 - VS Code version
 - Extension version
 - Steps to reproduce
 - Expected vs. actual behaviour
-- Relevant logs from the **Figma MCP Helper** output channel
+- Relevant logs from the **iagent engineer** output channel
