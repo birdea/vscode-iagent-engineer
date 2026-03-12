@@ -199,12 +199,7 @@ export class FigmaCommandHandler {
       try {
         const data = await this.mcpClient.getDesignContext(parsed.fileId, parsed.nodeId);
         this.stateManager.setLastDesignContextData(data);
-        const formatted = this.formatDataForEditor(data, 'figma-design-data.json');
-        await this.editorIntegration.openInEditor(
-          formatted.content,
-          formatted.language,
-          formatted.suggestedName,
-        );
+        await this.openFetchedResultInEditorIfEnabled(data, 'figma-design-data.json');
 
         this.post({ event: 'figma.dataResult', data, kind: 'designContext' });
       } catch (e) {
@@ -221,12 +216,7 @@ export class FigmaCommandHandler {
         'figma',
         'MCP not connected - returning local URL parse result only. Connect to MCP for full Figma data.',
       );
-      const formatted = this.formatDataForEditor(parsed, 'figma-design-data.json');
-      await this.editorIntegration.openInEditor(
-        formatted.content,
-        formatted.language,
-        formatted.suggestedName,
-      );
+      await this.openFetchedResultInEditorIfEnabled(parsed, 'figma-design-data.json');
       this.post({ event: 'figma.dataResult', data: parsed, kind: 'parsedInput' });
     }
   }
@@ -287,6 +277,7 @@ export class FigmaCommandHandler {
     this.stateManager.clearLastMcpInput();
     this.stateManager.clearLastDesignContextData();
     this.stateManager.clearLastMetadata();
+    this.stateManager.clearLastVariableDefinitions();
     this.stateManager.clearLastScreenshot();
   }
 
@@ -417,13 +408,12 @@ export class FigmaCommandHandler {
 
     try {
       const data = await options.fetcher(parsed.fileId, parsed.nodeId);
-      this.stateManager.setLastMetadata(data);
-      const formatted = this.formatDataForEditor(data, options.fileName);
-      await this.editorIntegration.openInEditor(
-        formatted.content,
-        formatted.language,
-        formatted.suggestedName,
-      );
+      if (options.kind === 'metadata') {
+        this.stateManager.setLastMetadata(data);
+      } else {
+        this.stateManager.setLastVariableDefinitions(data);
+      }
+      await this.openFetchedResultInEditorIfEnabled(data, options.fileName);
       this.post({ event: 'figma.dataResult', data, kind: options.kind });
     } catch (e) {
       const errMessage = toErrorMessage(e);
@@ -468,6 +458,28 @@ export class FigmaCommandHandler {
       language: 'json',
       suggestedName,
     };
+  }
+
+  private shouldOpenFetchResultInEditor(): boolean {
+    const config = vscode.workspace.getConfiguration();
+    return config.get<boolean>(CONFIG_KEYS.OPEN_FETCH_RESULT_IN_EDITOR, false) ?? false;
+  }
+
+  private async openFetchedResultInEditorIfEnabled(
+    data: unknown,
+    suggestedName: string,
+  ): Promise<void> {
+    if (!this.shouldOpenFetchResultInEditor()) {
+      Logger.info('figma', `Skipped opening fetched result in editor (${suggestedName})`);
+      return;
+    }
+
+    const formatted = this.formatDataForEditor(data, suggestedName);
+    await this.editorIntegration.openInEditor(
+      formatted.content,
+      formatted.language,
+      formatted.suggestedName,
+    );
   }
 
   private toReadableText(value: string): string {

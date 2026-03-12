@@ -19,6 +19,7 @@ suite('FigmaCommandHandler', () => {
   let stateManager: StateManager;
   let handler: FigmaCommandHandler;
   let desktopAppLauncher: sinon.SinonStub;
+  let configGetStub: sinon.SinonStub;
 
   setup(() => {
     sandbox = sinon.createSandbox();
@@ -97,9 +98,11 @@ suite('FigmaCommandHandler', () => {
       desktopAppLauncher,
       sourceDataService,
     );
+    configGetStub = sandbox.stub();
+    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(true);
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: configGetStub });
     (vscode.window.showInformationMessage as sinon.SinonStub).resetHistory();
     (vscode.env.openExternal as sinon.SinonStub).resetHistory();
-    (vscode.workspace.getConfiguration as sinon.SinonStub).resetHistory();
   });
 
   teardown(() => {
@@ -107,9 +110,7 @@ suite('FigmaCommandHandler', () => {
   });
 
   test('connect initializes MCP client and posts connected status', async () => {
-    const getStub = sandbox.stub();
-    getStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
 
     await handler.connect();
 
@@ -134,8 +135,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect posts disconnected status when initialize returns false', async () => {
     mcpClient.initialize.resolves(false);
-    const getStub = sandbox.stub().returns('http://localhost:3845');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
 
     await handler.connect();
 
@@ -144,8 +144,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect converts ECONNREFUSED to friendly message', async () => {
     mcpClient.initialize.rejects(new Error('ECONNREFUSED'));
-    const getStub = sandbox.stub().returns('http://localhost:3845');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
 
     await handler.connect();
 
@@ -159,8 +158,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect converts timeout to friendly message', async () => {
     mcpClient.initialize.rejects(new Error('request timeout exceeded'));
-    const getStub = sandbox.stub().returns('http://localhost:3845');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
 
     await handler.connect();
 
@@ -174,8 +172,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect falls back to generic message for unknown errors', async () => {
     mcpClient.initialize.rejects(new Error('unexpected failure'));
-    const getStub = sandbox.stub().returns('http://localhost:3845');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
 
     await handler.connect();
 
@@ -189,8 +186,7 @@ suite('FigmaCommandHandler', () => {
 
   test('connect maps cancelled non-local confirmation to a dedicated message', async () => {
     mcpClient.initialize.rejects(new Error('MCP connection cancelled for non-local endpoint'));
-    const getStub = sandbox.stub().returns('https://example.com/mcp');
-    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: getStub });
+    configGetStub.withArgs('iagent-engineer.mcpEndpoint').returns('https://example.com/mcp');
 
     await handler.connect();
 
@@ -256,10 +252,25 @@ suite('FigmaCommandHandler', () => {
     );
   });
 
-  test('fetchData always opens result in editor', async () => {
+  test('fetchData opens result in editor when the setting is enabled', async () => {
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(editorIntegration.openInEditor.calledOnce);
+  });
+
+  test('fetchData skips opening the editor when the setting is disabled', async () => {
+    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(false);
+
+    await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(editorIntegration.openInEditor.notCalled);
+    assert.ok(
+      webview.postMessage.calledWithMatch({
+        event: 'figma.dataResult',
+        data: { name: 'Frame' },
+        kind: 'designContext',
+      }),
+    );
   });
 
   test('fetchData opens multiline text results as readable plaintext', async () => {
@@ -290,12 +301,14 @@ suite('FigmaCommandHandler', () => {
     stateManager.setLastMcpInput('abc');
     stateManager.setLastMcpData({ foo: 'bar' });
     stateManager.setLastMetadata({ bar: 'baz' });
+    stateManager.setLastVariableDefinitions({ token: 'x' });
 
     handler.clearData();
 
     assert.strictEqual(stateManager.getLastMcpInput(), '');
     assert.strictEqual(stateManager.getLastMcpData(), null);
     assert.strictEqual(stateManager.getLastMetadata(), null);
+    assert.strictEqual(stateManager.getLastVariableDefinitions(), null);
   });
 
   test('fetchData posts parse-only result when disconnected', async () => {
@@ -365,6 +378,10 @@ suite('FigmaCommandHandler', () => {
     await handler.fetchVariableDefs('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
     assert.ok(mcpClient.getVariableDefs.calledWith('ABCDE', '1:2'));
+    assert.deepStrictEqual(stateManager.getLastVariableDefinitions(), {
+      variables: [{ name: 'color.primary' }],
+    });
+    assert.strictEqual(stateManager.getLastMetadata(), null);
     assert.ok(
       webview.postMessage.calledWithMatch({
         event: 'figma.dataResult',
@@ -386,6 +403,15 @@ suite('FigmaCommandHandler', () => {
         'figma-metadata.json',
       ),
     );
+  });
+
+  test('fetchMetadata skips opening the editor when the setting is disabled', async () => {
+    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(false);
+
+    await handler.fetchMetadata('https://figma.com/file/ABCDE/demo?node-id=1-2');
+
+    assert.ok(editorIntegration.openInEditor.notCalled);
+    assert.deepStrictEqual(stateManager.getLastMetadata(), { layers: [{ id: '1' }] });
   });
 
   test('fetchMetadata requires connection', async () => {

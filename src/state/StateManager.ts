@@ -7,6 +7,7 @@ export class StateManager {
   private agentStateListeners = new Set<(state: { agent: AgentType; model: string }) => void>();
   private lastDesignContextData: unknown = null;
   private lastMetadata: unknown = null;
+  private lastVariableDefinitions: unknown = null;
   private lastMcpInput = '';
   private lastScreenshot: ScreenshotAsset | null = null;
 
@@ -66,6 +67,18 @@ export class StateManager {
 
   clearLastMetadata() {
     this.lastMetadata = null;
+  }
+
+  getLastVariableDefinitions(): unknown {
+    return this.lastVariableDefinitions;
+  }
+
+  setLastVariableDefinitions(data: unknown) {
+    this.lastVariableDefinitions = data;
+  }
+
+  clearLastVariableDefinitions() {
+    this.lastVariableDefinitions = null;
   }
 
   getLastMcpInput(): string {
