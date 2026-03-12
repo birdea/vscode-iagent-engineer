@@ -10,7 +10,7 @@ iagent engineer connects VS Code to a Figma Desktop MCP server, fetches design c
 - The repository includes a dedicated [`CODE_REVIEW.md`](CODE_REVIEW.md) summary for follow-up engineering work.
 - Release metadata has been aligned for the `v0.7.0` package update.
 
-![iagent engineer screenshot](images/screenshot-2.png)
+![iagent engineer screenshot](images/screenshot-3.png)
 
 The screenshot above shows the current sidebar workflow for Setup, Prompt, and Log in a single VS Code session.
 

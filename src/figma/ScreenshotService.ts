@@ -32,7 +32,7 @@ export class ScreenshotService {
     const safeNodeId = nodeId ? this.sanitizePathSegment(nodeId, 'node') : '';
     const tmpPath = path.join(
       os.tmpdir(),
-      `figmalab-${safeFileId}${safeNodeId ? `-${safeNodeId}` : ''}-${Date.now()}.png`,
+      `iagent-engineer-${safeFileId}${safeNodeId ? `-${safeNodeId}` : ''}-${Date.now()}.png`,
     );
     const uri = vscode.Uri.file(tmpPath);
     await vscode.workspace.fs.writeFile(uri, buffer);

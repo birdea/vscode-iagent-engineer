@@ -6,7 +6,7 @@ This directory contains marketplace screenshots for the iagent engineer extensio
 
 | File               | Dimensions  | Description                                                          |
 | ------------------ | ----------- | -------------------------------------------------------------------- |
-| `screenshot-2.png` | 1280×715 px | Main view — Prompt workflow showing code generation and HTML preview |
+| `screenshot-3.png` | 1280×715 px | Main view — Prompt workflow showing code generation and HTML preview |
 
 ## Guidelines
 
@@ -22,4 +22,4 @@ This directory contains marketplace screenshots for the iagent engineer extensio
 2. Arrange the iagent engineer sidebar so all three views are visible
 3. Take a screenshot of the full VS Code window
 4. Crop and resize to a marketplace-friendly landscape size
-5. Save as `images/screenshot-2.png`
+5. Save as `images/screenshot-3.png`

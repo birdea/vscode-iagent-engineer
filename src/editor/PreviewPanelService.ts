@@ -13,7 +13,7 @@ export class PreviewPanelService {
 
     if (!this.panel) {
       this.panel = vscode.window.createWebviewPanel(
-        'figmaMcpHelper.preview',
+        'iagentEngineer.preview',
         'Generated UI Preview',
         column,
         {

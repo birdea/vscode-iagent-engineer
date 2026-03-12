@@ -122,7 +122,7 @@ export class ClaudeAgent extends BaseAgent {
       .filter((model): model is ModelInfo => model !== null);
 
     if (validModels.length === 0) {
-      Logger.warn('agent', 'Invalid figmalab.claudeModels config, using defaults');
+      Logger.warn('agent', 'Invalid iagent-engineer.claudeModels config, using defaults');
       return DEFAULT_CLAUDE_MODELS;
     }
 

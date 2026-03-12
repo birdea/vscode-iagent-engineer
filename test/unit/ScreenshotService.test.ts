@@ -50,7 +50,7 @@ suite('ScreenshotService', () => {
     await service.openInEditor('base64', '../file', '../../node:id');
     const tempPath = vscode.Uri.file.firstCall.args[0] as string;
     assert.ok(!tempPath.includes('..'));
-    assert.ok(tempPath.includes('figmalab-file-node_id-'));
+    assert.ok(tempPath.includes('iagent-engineer-file-node_id-'));
   });
 
   test('saveToWorkspace success', async () => {

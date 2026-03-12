@@ -5,9 +5,9 @@
 }
 
 :root {
-  --figmalab-radius: 6px;
-  --figmalab-gap: 10px;
-  --figmalab-gap-sm: 6px;
+  --iagent-radius: 6px;
+  --iagent-gap: 10px;
+  --iagent-gap-sm: 6px;
 }
 
 body {
@@ -22,7 +22,7 @@ body {
 
 .panel {
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   background: color-mix(
     in srgb,
     var(--vscode-editorWidget-background, var(--vscode-editor-background)) 55%,
@@ -34,11 +34,11 @@ body {
 .panel-compact {
   display: flex;
   flex-direction: column;
-  gap: var(--figmalab-gap-sm);
+  gap: var(--iagent-gap-sm);
 }
 
 .panel + .panel {
-  margin-top: var(--figmalab-gap);
+  margin-top: var(--iagent-gap);
 }
 
 .stack-gap-sm {
@@ -116,7 +116,7 @@ body {
   display: inline-flex;
   width: 100%;
   padding: 3px;
-  border-radius: calc(var(--figmalab-radius) + 2px);
+  border-radius: calc(var(--iagent-radius) + 2px);
   background: color-mix(
     in srgb,
     var(--vscode-input-background) 80%,
@@ -162,7 +162,7 @@ select {
   font-family: var(--vscode-font-family);
   font-size: 12px;
   padding: 5px 8px;
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   outline: none;
 }
 
@@ -261,7 +261,7 @@ textarea:disabled {
   align-items: center;
   gap: 8px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   background: color-mix(
     in srgb,
     var(--vscode-editorWidget-background, var(--vscode-editor-background)) 70%,
@@ -289,7 +289,7 @@ textarea:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   background: color-mix(in srgb, var(--vscode-panel-border) 40%, transparent);
   overflow: hidden;
 }
@@ -425,7 +425,7 @@ button {
   font-family: var(--vscode-font-family);
   font-size: 12px;
   border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   padding: 5px 10px;
   display: inline-flex;
   align-items: center;
@@ -537,7 +537,7 @@ label {
 
 .notice {
   border: 1px solid transparent;
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   background: color-mix(
     in srgb,
     var(--vscode-editorWidget-background, var(--vscode-editor-background)) 75%,
@@ -590,22 +590,22 @@ label {
   height: 6px;
   border: 0;
   background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
 }
 
 .progress-track::-webkit-progress-bar {
   background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
 }
 
 .progress-track::-webkit-progress-value {
   background: var(--vscode-progressBar-background, var(--vscode-button-background));
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
 }
 
 .progress-track::-moz-progress-bar {
   background: var(--vscode-progressBar-background, var(--vscode-button-background));
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
 }
 
 /* Log terminal */
@@ -613,7 +613,7 @@ label {
   background: var(--vscode-terminal-background, var(--vscode-editor-background));
   color: var(--vscode-terminal-foreground, var(--vscode-editor-foreground));
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 65%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   margin: 0;
   padding: 6px 8px;
   font-family: var(--vscode-editor-font-family);
@@ -626,7 +626,7 @@ label {
 
 .log-shell {
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   overflow: auto;
   resize: vertical;
   min-height: calc(4 * 1.5em + 14px);
@@ -645,7 +645,7 @@ label {
 .code-output {
   background: var(--vscode-editor-background);
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   padding: 8px;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
@@ -664,7 +664,7 @@ label {
 .screenshot-preview {
   max-width: 100%;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   display: none;
 }
 
@@ -722,7 +722,7 @@ a:hover {
 
 /* Vertical spacing between sibling elements */
 #app > * + * {
-  margin-top: var(--figmalab-gap);
+  margin-top: var(--iagent-gap);
 }
 
 @media (max-width: 720px) {
@@ -786,7 +786,7 @@ a:hover {
   grid-template-columns: 1fr;
   gap: 1px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--figmalab-radius);
+  border-radius: var(--iagent-radius);
   background: color-mix(in srgb, var(--vscode-panel-border) 40%, transparent);
   overflow: hidden;
 }

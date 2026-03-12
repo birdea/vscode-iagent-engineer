@@ -70,7 +70,7 @@ jobs:
           target_safe_name="$(printf '%s' "${{ matrix.target }}" | tr '/:@ ' '-' | tr -cd 'A-Za-z0-9._-')"
           echo "safe_ref_name=${safe_ref_name}" >> "${GITHUB_OUTPUT}"
           echo "target_safe_name=${target_safe_name}" >> "${GITHUB_OUTPUT}"
-          echo "vsix_name=figma-mcp-helper-${safe_ref_name}-${target_safe_name}.vsix" >> "${GITHUB_OUTPUT}"
+          echo "vsix_name=iagent-engineer-${safe_ref_name}-${target_safe_name}.vsix" >> "${GITHUB_OUTPUT}"
 
       - name: Build
         run: npm run build
