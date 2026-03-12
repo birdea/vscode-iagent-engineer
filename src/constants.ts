@@ -42,6 +42,7 @@ export const SECRET_KEYS = {
   QWEN_API_KEY: 'iagent-engineer.qwenApiKey',
   OPENROUTER_API_KEY: 'iagent-engineer.openrouterApiKey',
   REMOTE_FIGMA_AUTH: 'iagent-engineer.remoteFigmaAuth',
+  REMOTE_FIGMA_AUTH_PENDING: 'iagent-engineer.remoteFigmaAuthPending',
 } as const;
 
 export function getSecretStorageKey(agent: AgentType): string {

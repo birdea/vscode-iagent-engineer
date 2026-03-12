@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { activate, deactivate } from '../../src/extension';
+import { SECRET_KEYS } from '../../src/constants';
 import { Logger } from '../../src/logger/Logger';
 import { SidebarProvider } from '../../src/webview/SidebarProvider';
 
@@ -15,7 +16,16 @@ suite('Extension Comprehensive', () => {
       subscriptions: [],
       extensionUri: { path: '/test', fsPath: '/test' },
       secrets: {
-        get: sandbox.stub().resolves('test-key'),
+        get: sandbox.stub().callsFake(async (key: string) => {
+          if (key === SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING) {
+            return JSON.stringify({
+              nonce: 'pending-state',
+              callbackUri: 'vscode://bd-creative.iagent-engineer/figma-remote-auth',
+              createdAt: Date.now(),
+            });
+          }
+          return 'test-key';
+        }),
         store: sandbox.stub().resolves(),
         delete: sandbox.stub().resolves(),
       },
@@ -69,10 +79,11 @@ suite('Extension Comprehensive', () => {
     assert.ok(uriHandler);
     await uriHandler.handleUri(
       vscode.Uri.parse(
-        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?access_token=test-token`,
+        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=pending-state&access_token=test-token`,
       ),
     );
     assert.ok(mockContext.secrets.store.called);
+    assert.ok(mockContext.secrets.delete.calledWith(SECRET_KEYS.REMOTE_FIGMA_AUTH_PENDING));
 
     const logCopy = commands.find((c: any) => c[0] === 'iagent-engineer.log.copy')?.[1];
     assert.ok(logCopy);
@@ -105,7 +116,7 @@ suite('Extension Comprehensive', () => {
     mockContext.secrets.store.rejects(new Error('store failed'));
     await uriHandler.handleUri(
       vscode.Uri.parse(
-        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?access_token=test-token`,
+        `${vscode.env.uriScheme}://bd-creative.iagent-engineer/figma-remote-auth?state=pending-state&access_token=test-token`,
       ),
     );
 
