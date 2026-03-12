@@ -966,6 +966,8 @@ a:hover {
   padding: 6px 8px;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 4px;
   min-width: 0;
 }
@@ -1010,14 +1012,22 @@ a:hover {
   font-weight: 700;
 }
 
-.profiler-session-file {
-  display: block;
+.profiler-session-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   width: 100%;
+  min-width: 0;
+}
+
+.profiler-session-file {
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--vscode-foreground);
   text-align: left;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1046,7 +1056,10 @@ a:hover {
 }
 
 .profiler-session-size {
-  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .profiler-raw-meta,

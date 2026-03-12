@@ -1195,7 +1195,7 @@ suite('UI Components Consolidated', () => {
       layer.mount();
     });
 
-    test('renders responsive session rows with dedicated filename timestamp and size cells', () => {
+    test('renders session rows with an explicit filename header and metadata line', () => {
       layer.onState({
         status: 'ready',
         selectedAgent: 'codex',
@@ -1227,6 +1227,7 @@ suite('UI Components Consolidated', () => {
       });
 
       const row = document.querySelector('.profiler-session-row') as HTMLButtonElement;
+      const head = row?.querySelector('.profiler-session-head') as HTMLElement | null;
       const fileCell = row?.querySelector('.profiler-session-file') as HTMLElement | null;
       const meta = row?.querySelector('.profiler-session-meta') as HTMLElement | null;
       const stampCell = row?.querySelector('.profiler-session-stamp') as HTMLElement | null;
@@ -1238,6 +1239,7 @@ suite('UI Components Consolidated', () => {
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
       assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'tin', 'tout', 'Size']);
+      assert.ok(head);
       assert.ok(fileCell);
       assert.ok(meta);
       assert.ok(stampCell);

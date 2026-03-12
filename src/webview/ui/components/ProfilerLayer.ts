@@ -299,11 +299,13 @@ export class ProfilerLayer {
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
-  <span class="profiler-session-file" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
+  <span class="profiler-session-head">
+    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
+    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
+  </span>
   <span class="profiler-session-meta">
     <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
     <span class="profiler-session-tokens">IN ${inK} · OUT ${outK}</span>
-    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
   </span>
 </button>`;
   }
