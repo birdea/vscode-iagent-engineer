@@ -861,7 +861,48 @@ suite('UI Components Consolidated', () => {
         warnings: [],
       },
       metadata: {
+        agentLabel: 'CODEX',
+        vendorLabel: 'OpenAI',
+        sessionId: 'session-123',
+        cwd: '/tmp/workspace/demo',
+        provider: 'OpenAI',
         sourceFormat: 'jsonl',
+        storageLabel: '~/.codex/sessions',
+        parserCoverage: 'Threads, usage, lifecycle, tooling',
+        summarySections: [
+          {
+            id: 'storage',
+            title: 'Storage',
+            description: 'Persisted session file',
+            fields: [
+              { label: 'Path', value: '~/.codex/sessions', tone: 'muted' as const },
+              { label: 'Format', value: 'JSONL', tone: 'default' as const },
+            ],
+          },
+          {
+            id: 'usage',
+            title: 'Usage',
+            description: 'Normalized token metrics',
+            fields: [
+              { label: 'Input', value: '320', tone: 'default' as const },
+              { label: 'Output', value: '140', tone: 'accent' as const },
+            ],
+          },
+        ],
+        keyEventSections: [
+          {
+            id: 'conversation',
+            title: 'Conversation',
+            description: 'User and assistant turns',
+            fields: [{ label: 'Count', value: '2', tone: 'default' as const }],
+          },
+          {
+            id: 'usage',
+            title: 'Usage',
+            description: 'Token and latency checkpoints',
+            fields: [{ label: 'Count', value: '2', tone: 'accent' as const }],
+          },
+        ],
       },
       timeline: [
         {
@@ -903,6 +944,7 @@ suite('UI Components Consolidated', () => {
           timestamp: '2026-03-11T10:01:05.000Z',
           title: 'Turn completed',
           detail: 'Render profiler chart',
+          category: 'conversation' as const,
           rawEventId: 'raw-2',
         },
       ],
@@ -913,9 +955,16 @@ suite('UI Components Consolidated', () => {
           lineNumber: 4,
           timestamp: '2026-03-11T10:00:03.000Z',
           eventType: 'token_count',
+          category: 'usage' as const,
           summary: 'Token snapshot',
           excerpt: '{"sample":1}',
+          messagePreview: 'Input 100 / Output 40 / Cached 20',
           payloadKb: 4.4,
+          payloadBytes: 4505,
+          inputTokens: 100,
+          outputTokens: 40,
+          cachedTokens: 20,
+          totalTokens: 160,
         },
         {
           id: 'raw-2',
@@ -923,9 +972,16 @@ suite('UI Components Consolidated', () => {
           lineNumber: 8,
           timestamp: '2026-03-11T10:01:05.000Z',
           eventType: 'task_complete',
+          category: 'conversation' as const,
           summary: 'Turn completed',
           excerpt: '{"sample":2}',
+          messagePreview: 'Render profiler chart',
           payloadKb: 7.8,
+          payloadBytes: 7987,
+          inputTokens: 220,
+          outputTokens: 100,
+          cachedTokens: 40,
+          totalTokens: 360,
         },
       ],
     });
@@ -958,11 +1014,12 @@ suite('UI Components Consolidated', () => {
       assert.ok(chartShell?.textContent?.includes('Trend'));
       assert.strictEqual(viewer?.nextElementSibling, secondary);
       assert.ok(axisRail);
+      assert.ok(axisRail);
       assert.ok(
         document.getElementById('profiler-bubble-list')?.textContent?.includes('Turn completed'),
       );
       assert.ok(
-        document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak tokens'),
+        document.getElementById('profiler-detail-overview')?.textContent?.includes('Peak turn'),
       );
       // visx chart renders bar rects for each timeline point
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
@@ -1046,9 +1103,15 @@ suite('UI Components Consolidated', () => {
         lineNumber: 12,
         timestamp: '2026-03-11T10:02:06.000Z',
         eventType: 'task_complete',
+        category: 'conversation' as const,
         summary: 'Live turn completed',
         excerpt: '{"sample":3}',
         payloadKb: 9.6,
+        payloadBytes: 9830,
+        inputTokens: 260,
+        outputTokens: 120,
+        cachedTokens: 40,
+        totalTokens: 420,
       });
 
       act(() => {
@@ -1140,6 +1203,36 @@ suite('UI Components Consolidated', () => {
       );
     });
 
+    test('info buttons open markdown guides in the editor', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      postMessageStub.resetHistory();
+      (document.querySelector('[data-info-kind="summary"]') as HTMLButtonElement | null)?.click();
+      (
+        document.querySelector('[data-info-kind="key-events"]') as HTMLButtonElement | null
+      )?.click();
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.openInfoDoc',
+          kind: 'summary',
+        }),
+      );
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.openInfoDoc',
+          kind: 'key-events',
+        }),
+      );
+    });
+
     test('renders live updates and allows stopping live mode', async () => {
       const { act } = await import('react');
       act(() => {
@@ -1170,9 +1263,7 @@ suite('UI Components Consolidated', () => {
       });
 
       assert.ok(
-        document
-          .getElementById('profiler-live-feed')
-          ?.textContent?.includes('Live session updated'),
+        document.getElementById('profiler-live-feed')?.textContent?.includes('Live session updated'),
       );
       assert.ok(
         document
@@ -1183,6 +1274,29 @@ suite('UI Components Consolidated', () => {
       (document.querySelector('[data-profiler-live-stop]') as HTMLButtonElement | null)?.click();
 
       assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.stopLiveData' }));
+    });
+
+    test('raw events resort by token usage', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      const tokensSort = document.querySelector(
+        '[data-raw-sort="tokens"]',
+      ) as HTMLButtonElement | null;
+      assert.ok(tokensSort);
+      act(() => {
+        tokensSort?.click();
+      });
+
+      const firstRow = document.querySelector('.profiler-raw-row strong');
+      assert.strictEqual(firstRow?.textContent, 'Turn completed');
+      assert.ok(document.getElementById('profiler-raw-list')?.textContent?.includes('tokens 360'));
     });
   });
 

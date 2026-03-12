@@ -3,10 +3,16 @@ import { createRoot, Root } from 'react-dom/client';
 import {
   ProfilerDetailState,
   ProfilerMetricType,
+  SessionEventCategory,
   SessionDetail,
+  SessionInsightSection,
   SessionRawEventRef,
   SessionTimelinePoint,
 } from '../../../types';
+import {
+  getProfilerAgentDescriptor,
+  getProfilerEventCategoryMeta,
+} from '../../../profiler/ProfilerCatalog';
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 import { ProfilerChart } from './ProfilerChart';
@@ -19,6 +25,8 @@ const EMPTY_STATE: ProfilerDetailState = {
 export class ProfilerDetailLayer {
   private state = EMPTY_STATE;
   private metric: ProfilerMetricType = 'tokens';
+  private rawSortField: 'time' | 'type' | 'size' | 'tokens' = 'time';
+  private rawSortDirection: 'asc' | 'desc' = 'desc';
   private readonly locale: UiLocale = getDocumentLocale();
   private chartRoot: Root | null = null;
 
@@ -48,14 +56,49 @@ export class ProfilerDetailLayer {
     });
     document.getElementById('profiler-bubble-list')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
+      const infoButton = target?.closest<HTMLButtonElement>('[data-info-kind]');
+      if (infoButton) {
+        const kind = infoButton.dataset.infoKind as 'summary' | 'key-events' | undefined;
+        if (kind) {
+          vscode.postMessage({ command: 'profiler.openInfoDoc', kind });
+        }
+        return;
+      }
       const button = target?.closest<HTMLButtonElement>('[data-file-path]');
       if (!button) {
         return;
       }
       this.openSource(button);
     });
+    document.getElementById('profiler-detail-overview')?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const infoButton = target?.closest<HTMLButtonElement>('[data-info-kind]');
+      if (!infoButton) {
+        return;
+      }
+      const kind = infoButton.dataset.infoKind as 'summary' | 'key-events' | undefined;
+      if (!kind) {
+        return;
+      }
+      vscode.postMessage({ command: 'profiler.openInfoDoc', kind });
+    });
     document.getElementById('profiler-raw-list')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
+      const sortButton = target?.closest<HTMLButtonElement>('[data-raw-sort]');
+      if (sortButton) {
+        const field = sortButton.dataset.rawSort as 'time' | 'type' | 'size' | 'tokens' | undefined;
+        if (!field) {
+          return;
+        }
+        if (this.rawSortField === field) {
+          this.rawSortDirection = this.rawSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.rawSortField = field;
+          this.rawSortDirection = field === 'type' ? 'asc' : 'desc';
+        }
+        this.renderDynamicContent();
+        return;
+      }
       const button = target?.closest<HTMLButtonElement>('[data-file-path]');
       if (!button) {
         return;
@@ -157,7 +200,14 @@ export class ProfilerDetailLayer {
 
   private renderOverview(detail: SessionDetail): string {
     const summary = detail.summary;
+    const descriptor = getProfilerAgentDescriptor(summary.agent);
+    const metadata = detail.metadata;
     const timeline = this.getOrderedTimeline(detail.timeline);
+    const summarySections = metadata.summarySections ?? [];
+    const sourceFormat = metadata.sourceFormat ?? '-';
+    const parserCoverage = metadata.parserCoverage ?? 'Core fields only';
+    const storageLabel = metadata.storageLabel ?? 'session file';
+    const vendorLabel = metadata.vendorLabel ?? descriptor.vendor;
     const start = summary.startedAt ?? timeline[0]?.timestamp;
     const end =
       summary.endedAt ??
@@ -187,36 +237,52 @@ export class ProfilerDetailLayer {
       ? [...timeline].sort((a, b) => (b.latencyMs ?? 0) - (a.latencyMs ?? 0))[0]
       : undefined;
     const live = this.state.live;
+    const title = summary.title ?? metadata.sessionId ?? summary.fileName;
 
     return `
 <div class="profiler-overview-panel">
-  <div class="profiler-overview-head">
+  <div class="profiler-overview-head profiler-overview-head-rich">
     <div class="profiler-overview-identity">
-      <span>Session</span>
-      <strong title="${this.escapeAttr(summary.fileName)}">${this.escapeHtml(this.truncate(summary.fileName, 48))}</strong>
-      <p title="${this.escapeAttr(summary.filePath)}">${this.escapeHtml(this.compactPath(summary.filePath, 6))}</p>
+      <div class="profiler-overview-brand-row">
+        <div class="profiler-agent-brand">
+          <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconSvg}</span>
+          <div>
+            <span>${this.escapeHtml(vendorLabel)}</span>
+            <strong>${this.escapeHtml(descriptor.label)}</strong>
+          </div>
+        </div>
+        <button class="secondary icon-btn profiler-info-btn" data-info-kind="summary" title="Summary data guide">
+          <i class="codicon codicon-info"></i>
+        </button>
+      </div>
+      <p class="profiler-overview-kicker">${this.escapeHtml(sourceFormat)} · ${this.escapeHtml(parserCoverage)}</p>
+      <strong title="${this.escapeAttr(title)}">${this.escapeHtml(this.truncate(title, 72))}</strong>
+      <p>${this.escapeHtml(`Saved in ${storageLabel}`)}</p>
     </div>
     <div class="profiler-meta-inline">
       ${live?.status && live.status !== 'idle' ? this.metaPill('Live', live.status.toUpperCase()) : ''}
       ${this.metaPill('Timestamp', start ? this.formatStamp(start) : '-')}
       ${this.metaPill('Range', start && end ? `${this.formatClock(start)} -> ${this.formatClock(end)}` : '-')}
-      ${this.metaPill('Source', detail.metadata.sourceFormat)}
-      ${this.metaPill('Provider', detail.metadata.provider ?? summary.agent)}
+      ${this.metaPill('Provider', metadata.provider ?? summary.agent)}
+      ${this.metaPill('Model', summary.model ?? '-')}
       ${this.metaPill('Status', summary.parseStatus.toUpperCase())}
-      ${this.metaPill('Workspace', detail.metadata.cwd ? this.compactPath(detail.metadata.cwd, 5) : '-')}
+      ${this.metaPill('Workspace', metadata.cwd ? this.compactPath(metadata.cwd, 5) : '-')}
     </div>
   </div>
   ${this.renderLiveStatusLine()}
   <div class="profiler-overview-board">
-    ${this.summaryCell('Total', this.formatNumber(summary.totalTokens ?? 0))}
+    ${this.summaryCell('Total tokens', this.formatNumber(summary.totalTokens ?? 0))}
     ${this.summaryCell('Turns', this.formatNumber(summary.requestCount ?? timeline.length))}
+    ${this.summaryCell('Session span', this.formatDuration(spanMs))}
+    ${this.summaryCell('File size', this.formatBytes(summary.fileSizeBytes))}
     ${this.summaryCell('Peak turn', this.formatNumber(peakTokens))}
-    ${this.summaryCell('Slowest', this.formatDuration(peakLatency))}
-    ${this.summaryCell('Span', this.formatDuration(spanMs))}
-    ${this.summaryCell('Size', this.formatBytes(summary.fileSizeBytes))}
-    ${this.summaryCell('Peak tokens', topToken ? this.formatNumber(topToken.totalTokens ?? this.getTokenTotal(topToken)) : '-')}
+    ${this.summaryCell('Slowest response', this.formatDuration(peakLatency))}
     ${this.summaryCell('Largest payload', topPayload ? this.formatMetricValue(topPayload.payloadKb ?? 0, 'data') : '-')}
-    ${this.summaryCell('Slowest request', topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-')}
+    ${this.summaryCell('Top token event', topToken ? this.formatNumber(topToken.totalTokens ?? this.getTokenTotal(topToken)) : '-')}
+    ${this.summaryCell('Last slow point', topLatency ? this.formatMetricValue(topLatency.latencyMs ?? 0, 'latency') : '-')}
+  </div>
+  <div class="profiler-summary-section-grid">
+    ${summarySections.map((section) => this.renderInsightSection(section)).join('')}
   </div>
 </div>`;
   }
@@ -248,55 +314,181 @@ export class ProfilerDetailLayer {
   }
 
   private renderBubbleList(detail: SessionDetail): string {
-    const bubbles = detail.eventBubbles.slice(0, 8);
-    const body =
-      bubbles.length === 0
-        ? '<div class="profiler-empty">No key events extracted for this session.</div>'
-        : bubbles
-            .map((bubble) => {
-              const raw = this.findRawEvent(detail, bubble.rawEventId);
-              if (!raw) {
-                return '';
-              }
-              return `
+    const bubbles = detail.eventBubbles.slice(0, 12);
+    const keyEventSections = detail.metadata.keyEventSections ?? [];
+    const groups = this.groupBubblesByCategory(bubbles);
+    const body = groups.length
+      ? groups
+          .map(({ category, bubbles: groupBubbles }) => {
+            const meta = getProfilerEventCategoryMeta(category);
+            return `
+<div class="profiler-key-group">
+  <div class="profiler-key-group-title">${this.escapeHtml(meta.label)} <span>${groupBubbles.length}</span></div>
+  ${groupBubbles
+    .map((bubble) => {
+      const raw = this.findRawEvent(detail, bubble.rawEventId);
+      if (!raw) {
+        return '';
+      }
+      return `
 <button class="profiler-bubble-card" ${this.getSourceAttrs(raw)}>
   <div class="profiler-bubble-card-top">
     <strong>${this.escapeHtml(bubble.title)}</strong>
     <span>${this.escapeHtml(this.formatTime(bubble.timestamp))}</span>
   </div>
+  <div class="profiler-raw-tags">
+    ${this.renderCategoryTag(bubble.category)}
+    ${this.renderInlineTag(raw.eventType, 'muted')}
+  </div>
   <p>${this.escapeHtml(this.truncate(bubble.detail, 140))}</p>
 </button>`;
-            })
-            .join('');
+    })
+    .join('')}
+</div>`;
+          })
+          .join('')
+      : '<div class="profiler-empty">No key events extracted for this session.</div>';
 
     return `
 <section class="profiler-side-section">
-  <div class="profiler-section-label">Key events</div>
+  <div class="profiler-section-header">
+    <div>
+      <div class="profiler-section-label">Key events</div>
+      <p class="profiler-section-note">Categorized from the selected agent format.</p>
+    </div>
+    <button class="secondary icon-btn profiler-info-btn" data-info-kind="key-events" title="Key event guide">
+      <i class="codicon codicon-info"></i>
+    </button>
+  </div>
+  <div class="profiler-insight-mini-grid">
+    ${keyEventSections.map((section) => this.renderMiniInsight(section)).join('')}
+  </div>
   ${body}
 </section>`;
   }
 
   private renderRawList(detail: SessionDetail): string {
-    const rows = detail.rawEvents.slice(0, 16);
+    const rows = this.sortRawEvents(detail.rawEvents).slice(0, 20);
     return `
 <section class="profiler-side-section">
-  <div class="profiler-section-label">Linked raw events</div>
+  <div class="profiler-section-header">
+    <div>
+      <div class="profiler-section-label">Raw events</div>
+      <p class="profiler-section-note">Original records with normalized key metrics.</p>
+    </div>
+    <div class="profiler-raw-sortbar">
+      ${this.renderRawSortButton('time', 'Time')}
+      ${this.renderRawSortButton('type', 'Type')}
+      ${this.renderRawSortButton('size', 'Size')}
+      ${this.renderRawSortButton('tokens', 'Tokens')}
+    </div>
+  </div>
   ${rows
     .map((event) => {
+      const preview = event.messagePreview ?? event.excerpt;
+      const tokenValue =
+        typeof event.totalTokens === 'number'
+          ? this.formatNumber(event.totalTokens)
+          : typeof event.inputTokens === 'number' || typeof event.outputTokens === 'number'
+            ? `${this.formatNumber(event.inputTokens ?? 0)} / ${this.formatNumber(event.outputTokens ?? 0)}`
+            : 'n/a';
       return `
 <button class="profiler-raw-row" ${this.getSourceAttrs(event)}>
   <div class="profiler-raw-header">
     <strong>${this.escapeHtml(event.summary)}</strong>
     <span>${this.escapeHtml(this.formatTime(event.timestamp))}</span>
   </div>
-  <div class="profiler-raw-meta">${this.escapeHtml(event.eventType)} · line ${event.lineNumber} · ${
-    event.payloadKb ? `${event.payloadKb.toFixed(1)} KB` : 'n/a'
-  }</div>
-  <pre>${this.escapeHtml(this.truncate(event.excerpt, 200))}</pre>
+  <div class="profiler-raw-tags">
+    ${this.renderCategoryTag(event.category)}
+    ${this.renderInlineTag(event.eventType, 'muted')}
+    ${this.renderInlineTag(`line ${event.lineNumber}`, 'muted')}
+    ${this.renderInlineTag(event.payloadKb ? `${event.payloadKb.toFixed(1)} KB` : 'n/a', 'muted')}
+    ${this.renderInlineTag(`tokens ${tokenValue}`, event.totalTokens ? 'accent' : 'muted')}
+  </div>
+  <pre>${this.escapeHtml(this.truncate(preview, 220))}</pre>
 </button>`;
     })
     .join('')}
 </section>`;
+  }
+
+  private renderInsightSection(section: SessionInsightSection): string {
+    const fields = section.fields ?? [];
+    return `
+<section class="profiler-insight-card">
+  <div class="profiler-insight-title">${this.escapeHtml(section.title)}</div>
+  ${section.description ? `<p class="profiler-insight-note">${this.escapeHtml(section.description)}</p>` : ''}
+  <div class="profiler-insight-fields">
+    ${fields
+      .map(
+        (field) => `
+<div class="profiler-insight-field">
+  <span>${this.escapeHtml(field.label)}</span>
+  <strong class="tone-${field.tone ?? 'default'}">${this.escapeHtml(field.value)}</strong>
+</div>`,
+      )
+      .join('')}
+  </div>
+</section>`;
+  }
+
+  private renderMiniInsight(section: SessionInsightSection): string {
+    const preview = section.fields?.[0]?.value ?? '';
+    return `
+<div class="profiler-insight-mini">
+  <strong>${this.escapeHtml(section.title)}</strong>
+  <span>${this.escapeHtml(section.description ?? preview)}</span>
+</div>`;
+  }
+
+  private renderRawSortButton(field: 'time' | 'type' | 'size' | 'tokens', label: string): string {
+    const active = this.rawSortField === field;
+    const arrow = active ? (this.rawSortDirection === 'asc' ? ' ↑' : ' ↓') : '';
+    return `<button class="profiler-sort-btn ${active ? 'active' : ''}" data-raw-sort="${field}">${label}${arrow}</button>`;
+  }
+
+  private sortRawEvents(events: SessionRawEventRef[]): SessionRawEventRef[] {
+    const sorted = [...events].sort((a, b) => {
+      switch (this.rawSortField) {
+        case 'type':
+          return a.eventType.localeCompare(b.eventType);
+        case 'size':
+          return (a.payloadBytes ?? 0) - (b.payloadBytes ?? 0);
+        case 'tokens':
+          return (a.totalTokens ?? 0) - (b.totalTokens ?? 0);
+        case 'time':
+        default:
+          return (
+            (a.timestamp ?? '').localeCompare(b.timestamp ?? '') || a.lineNumber - b.lineNumber
+          );
+      }
+    });
+    return this.rawSortDirection === 'asc' ? sorted : sorted.reverse();
+  }
+
+  private renderCategoryTag(category: SessionEventCategory): string {
+    const meta = getProfilerEventCategoryMeta(category ?? 'other');
+    return this.renderInlineTag(meta.label, meta.tone);
+  }
+
+  private renderInlineTag(value: string, tone: 'default' | 'accent' | 'muted'): string {
+    return `<span class="profiler-inline-tag tone-${tone}">${this.escapeHtml(value)}</span>`;
+  }
+
+  private groupBubblesByCategory(
+    bubbles: SessionDetail['eventBubbles'],
+  ): Array<{ category: SessionEventCategory; bubbles: SessionDetail['eventBubbles'] }> {
+    const grouped = new Map<SessionEventCategory, SessionDetail['eventBubbles']>();
+    bubbles.forEach((bubble) => {
+      const category = bubble.category ?? 'other';
+      const list = grouped.get(category) ?? [];
+      list.push(bubble);
+      grouped.set(category, list);
+    });
+    return [...grouped.entries()].map(([category, groupBubbles]) => ({
+      category,
+      bubbles: groupBubbles,
+    }));
   }
 
   private renderLoadingState(): string {
@@ -488,8 +680,8 @@ export class ProfilerDetailLayer {
 </span>`;
   }
 
-  private escapeHtml(value: string): string {
-    return value
+  private escapeHtml(value: string | undefined | null): string {
+    return String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -497,7 +689,7 @@ export class ProfilerDetailLayer {
       .replace(/'/g, '&#39;');
   }
 
-  private escapeAttr(value: string): string {
+  private escapeAttr(value: string | undefined | null): string {
     return this.escapeHtml(value);
   }
 }

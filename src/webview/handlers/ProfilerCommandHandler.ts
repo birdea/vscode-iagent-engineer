@@ -148,5 +148,9 @@ export class ProfilerCommandHandler {
     await this.editorIntegration.openFileAtLine(filePath, lineNumber);
   }
 
+  async openInfoDoc(kind: 'summary' | 'key-events') {
+    await this.editorIntegration.openProfilerInfoDocument(kind);
+  }
+
   dispose() {}
 }
