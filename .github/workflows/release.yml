@@ -7,12 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       publish_mode:
-        description: 'Choose whether to only build a VSIX artifact or publish a tagged release'
+        description: 'Choose whether to only build a VSIX artifact, validate artifact download, or publish a tagged release'
         required: true
         default: package-only
         type: choice
         options:
           - package-only
+          - verify-artifacts
           - tagged-release
 
 concurrency:
@@ -79,7 +80,7 @@ jobs:
         run: npm test
 
       - name: Build VSIX
-        run: npx vsce package --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
+        run: npx vsce package --no-dependencies --target "${{ matrix.target }}" --out "${{ steps.package_meta.outputs.vsix_name }}"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
@@ -103,6 +104,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release-assets/**/*.vsix
+
+  artifact-roundtrip-verify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_mode == 'verify-artifacts'
+    steps:
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+
+      - name: Verify downloaded VSIX artifacts
+        shell: bash
+        run: |
+          shopt -s nullglob globstar
+          files=(release-assets/**/*.vsix)
+          printf 'Downloaded VSIX files:\n%s\n' "${files[@]}"
+          if [[ "${#files[@]}" -ne 4 ]]; then
+            echo "Expected 4 VSIX files, found ${#files[@]}." >&2
+            exit 1
+          fi
 
   marketplace-publish:
     needs: build
