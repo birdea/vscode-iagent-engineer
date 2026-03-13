@@ -266,25 +266,28 @@ export class ProfilerDetailLayer {
 </div>
 
 <div class="profiler-metric-board">
-  ${this.metricItem('File', this.truncate(summary.fileName, 32))}
-  ${this.metricItem('Size', this.formatBytes(summary.fileSizeBytes))}
-  ${this.metricItem('Tokens', `${this.formatNumber(input)} / ${this.formatNumber(output)}`)}
-  ${this.metricItem('Cost', cost > 0 ? `$${cost.toFixed(4)}` : '-')}
-  ${this.metricItem('Turns', String(summary.requestCount ?? detail.timeline.length))}
-  ${this.metricItem('Duration', this.formatDuration(spanMs))}
-  ${this.metricItem('Peak', this.formatNumber(peakTokens))}
-  ${this.metricItem('Avg/Turn', this.formatNumber(avgTokens))}
-  ${this.metricItem('Cache', `${cachedRatio}%`)}
-  ${this.metricItem('Latency', this.formatDuration(Math.max(0, ...detail.timeline.map((p) => p.latencyMs ?? 0))))}
-  ${this.metricItem('Total Tok', this.formatNumber(total))}
-  ${this.metricItem('Date', start ? this.formatStamp(start).split(' ')[0] : '-')}
+  ${this.metricItem('File', this.truncate(summary.fileName, 32), 'symbol-file')}
+  ${this.metricItem('Size', this.formatBytes(summary.fileSizeBytes), 'database')}
+  ${this.metricItem('Tokens', `${this.formatNumber(input)} / ${this.formatNumber(output)}`, 'symbol-number')}
+  ${this.metricItem('Cost', cost > 0 ? `$${cost.toFixed(4)}` : '-', 'credit-card')}
+  ${this.metricItem('Turns', String(summary.requestCount ?? detail.timeline.length), 'comment-discussion')}
+  ${this.metricItem('Duration', this.formatDuration(spanMs), 'watch')}
+  ${this.metricItem('Peak', this.formatNumber(peakTokens), 'zap')}
+  ${this.metricItem('Avg/Turn', this.formatNumber(avgTokens), 'graph')}
+  ${this.metricItem('Cache', `${cachedRatio}%`, 'history')}
+  ${this.metricItem('Latency', this.formatDuration(Math.max(0, ...detail.timeline.map((p) => p.latencyMs ?? 0))), 'pulse')}
+  ${this.metricItem('Total Tok', this.formatNumber(total), 'layers')}
+  ${this.metricItem('Date', start ? this.formatStamp(start).split(' ')[0] : '-', 'calendar')}
 </div>`;
   }
 
-  private metricItem(label: string, value: string): string {
+  private metricItem(label: string, value: string, icon: string): string {
     return `
 <div class="metric-item">
-  <span class="metric-label">${label}</span>
+  <div class="metric-label-row">
+    <i class="codicon codicon-${icon}"></i>
+    <span class="metric-label">${label}</span>
+  </div>
   <span class="metric-value">${this.escapeHtml(value)}</span>
 </div>`;
   }

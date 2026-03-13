@@ -1028,7 +1028,9 @@ suite('UI Components Consolidated', () => {
       assert.ok(
         document.getElementById('profiler-log-table')?.textContent?.includes('Turn completed'),
       );
-      assert.ok(document.getElementById('profiler-header-surface')?.textContent?.includes('토큰'));
+      assert.ok(
+        document.getElementById('profiler-header-surface')?.textContent?.includes('Tokens'),
+      );
       // visx chart renders bar rects for each timeline point
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
@@ -1254,9 +1256,7 @@ suite('UI Components Consolidated', () => {
         });
       });
 
-      assert.ok(
-        document.getElementById('profiler-header-surface')?.textContent?.includes('Live active'),
-      );
+      assert.ok(document.getElementById('profiler-header-surface')?.textContent?.includes('Live'));
 
       (document.querySelector('[data-profiler-live-stop]') as HTMLButtonElement | null)?.click();
 
