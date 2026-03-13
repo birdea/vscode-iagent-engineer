@@ -1014,23 +1014,21 @@ suite('UI Components Consolidated', () => {
       });
 
       assert.ok(
-        document.getElementById('profiler-detail-overview')?.textContent?.includes('session.jsonl'),
+        document.getElementById('profiler-header-surface')?.textContent?.includes('session.jsonl'),
       );
       // visx React chart renders legend toggle buttons with series labels
       const chartShell = document.getElementById('profiler-chart-shell');
-      const viewer = document.querySelector('.profiler-detail-viewer');
-      const secondary = document.querySelector('.profiler-detail-secondary-triple');
+      const viewer = document.querySelector('.profiler-chart-surface');
+      const secondary = document.querySelector('.profiler-log-surface');
       const axisRail = document.querySelector('.profiler-chart-axis-rail');
       assert.ok(chartShell?.textContent?.includes('Input'));
       assert.ok(chartShell?.textContent?.includes('Trend'));
       assert.strictEqual(viewer?.nextElementSibling, secondary);
       assert.ok(axisRail);
       assert.ok(
-        document.getElementById('profiler-response-list')?.textContent?.includes('Turn completed'),
+        document.getElementById('profiler-log-table')?.textContent?.includes('Turn completed'),
       );
-      assert.ok(
-        document.getElementById('profiler-detail-overview')?.textContent?.includes('Tokens'),
-      );
+      assert.ok(document.getElementById('profiler-header-surface')?.textContent?.includes('토큰'));
       // visx chart renders bar rects for each timeline point
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
@@ -1257,7 +1255,7 @@ suite('UI Components Consolidated', () => {
       });
 
       assert.ok(
-        document.getElementById('profiler-detail-overview')?.textContent?.includes('Live active'),
+        document.getElementById('profiler-header-surface')?.textContent?.includes('Live active'),
       );
 
       (document.querySelector('[data-profiler-live-stop]') as HTMLButtonElement | null)?.click();
@@ -1275,17 +1273,13 @@ suite('UI Components Consolidated', () => {
         });
       });
 
-      assert.ok(
-        document
-          .getElementById('profiler-request-list')
-          ?.textContent?.includes('Initial user prompt'),
-      );
-      assert.ok(
-        document.getElementById('profiler-response-list')?.textContent?.includes('Turn completed'),
-      );
-      assert.ok(
-        document.getElementById('profiler-system-list')?.textContent?.includes('Session started'),
-      );
+      const stream = document.getElementById('profiler-log-table');
+      assert.ok(stream?.textContent?.includes('User'));
+      assert.ok(stream?.textContent?.includes('Initial user prompt'));
+      assert.ok(stream?.textContent?.includes('Agent'));
+      assert.ok(stream?.textContent?.includes('Turn completed'));
+      assert.ok(stream?.textContent?.includes('System'));
+      assert.ok(stream?.textContent?.includes('Session started'));
     });
   });
 
