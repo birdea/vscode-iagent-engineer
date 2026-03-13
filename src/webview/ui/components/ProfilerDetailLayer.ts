@@ -24,7 +24,7 @@ export class ProfilerDetailLayer {
 
   render(): string {
     return `
-  <section class="profiler-detail-container">
+<section class="profiler-detail-container">
   <div class="profiler-header-surface" id="profiler-header-surface"></div>
   <div class="profiler-chart-surface">
     <div class="profiler-chart-header" id="profiler-chart-header"></div>
@@ -37,7 +37,7 @@ export class ProfilerDetailLayer {
     </div>
     <div class="profiler-log-table" id="profiler-log-table"></div>
   </div>
-  </section>`;
+</section>`;
   }
 
   mount() {
@@ -80,7 +80,7 @@ export class ProfilerDetailLayer {
     this.renderDynamicContent();
   }
 
-  private openSource(button: HTMLButtonElement) {
+  private openSource(button: HTMLElement) {
     const filePath = button.dataset.filePath;
     const lineNumber = Number(button.dataset.lineNumber ?? '1');
     if (!filePath) {
@@ -147,7 +147,7 @@ export class ProfilerDetailLayer {
     );
 
     logTable.innerHTML = this.renderLogTable(allEvents);
-    if (logCount) logCount.textContent = `${allEvents.length} events`;
+    if (logCount) logCount.textContent = `(${allEvents.length} events)`;
   }
 
   private renderLogTable(events: SessionRawEventRef[]): string {
@@ -178,97 +178,29 @@ export class ProfilerDetailLayer {
         }
 
         const preview = event.messagePreview ?? event.excerpt;
-        const time = this.formatTime(event.timestamp).split(' ')[1] ?? '-'; // Extract only time
+        const time = this.formatTime(event.timestamp).split(' ')[1] ?? '-';
         const tokens = event.totalTokens || (event.inputTokens ?? 0) + (event.outputTokens ?? 0);
-        const kb = event.payloadKb ? `${event.payloadKb.toFixed(1)}KB` : '';
+        const kb = event.payloadKb ? `${event.payloadKb.toFixed(1)} KB` : '';
 
         return `
-  <button class="profiler-table-row ${roleClass}" ${this.getSourceAttrs(event)} title="Click to view source">
+<div class="profiler-table-row ${roleClass}" ${this.getSourceAttrs(event)} role="button" tabindex="0" title="Click to open source">
   <div class="table-cell time">${this.escapeHtml(time)}</div>
   <div class="table-cell role">
     <span class="role-dot"></span>
-    ${roleLabel}
+    <span>${roleLabel}</span>
   </div>
   <div class="table-cell content">
-    <span class="content-text">${this.escapeHtml(preview)}</span>
+    <span>${this.escapeHtml(preview)}</span>
   </div>
   <div class="table-cell meta">
     ${kb ? `<span class="meta-size">${kb}</span>` : ''}
-    ${tokens > 0 ? `<span class="meta-tokens">${this.formatNumber(tokens)}</span>` : ''}
+    ${tokens > 0 ? `<span class="meta-tokens"><i class="codicon codicon-symbol-number"></i> ${this.formatNumber(tokens)}</span>` : ''}
   </div>
-  </button>`;
+</div>`;
       })
       .join('');
   }
 
-  private renderOverview(detail: SessionDetail): string {
-    const summary = detail.summary;
-    const descriptor = getProfilerAgentDescriptor(summary.agent);
-    const start = summary.startedAt ?? detail.timeline[0]?.timestamp;
-
-    const input = summary.totalInputTokens ?? 0;
-    const output = summary.totalOutputTokens ?? 0;
-    const total = summary.totalTokens ?? input + output;
-    const cost = this.estimateCost(summary.model, input, output);
-
-    // Additional metrics
-    const spanMs = this.getSpanMs(
-      start,
-      detail.timeline[detail.timeline.length - 1]?.endTimestamp ??
-        detail.timeline[detail.timeline.length - 1]?.timestamp,
-    );
-    const peakTokens = Math.max(
-      0,
-      ...detail.timeline.map((p) => p.totalTokens ?? (p.inputTokens ?? 0) + (p.outputTokens ?? 0)),
-    );
-    const avgTokens = detail.timeline.length > 0 ? Math.round(total / detail.timeline.length) : 0;
-    const cachedRatio =
-      total > 0 && summary.totalCachedTokens
-        ? ((summary.totalCachedTokens / total) * 100).toFixed(1)
-        : '0.0';
-
-    return `
-  <div class="profiler-hero">
-  <div class="profiler-hero-brand">
-    <div class="brand-icon">${descriptor.iconSvg}</div>
-    <div class="brand-text">
-      <span class="vendor">${this.escapeHtml(descriptor.vendor)}</span>
-      <h1 class="model-title">${this.escapeHtml(summary.model ?? descriptor.label)}</h1>
-      <span class="session-id">${this.escapeHtml(summary.id)}</span>
-    </div>
-  </div>
-  <div class="profiler-live-indicator">
-    ${this.state.live?.active ? '<span class="status-dot connected"></span> <strong data-profiler-live-stop="true" style="cursor:pointer">Live active</strong>' : ''}
-  </div>
-  </div>
-
-  <div class="profiler-metric-board">
-  <div class="metric-group primary">
-    ${this.metricItem('파일', this.truncate(summary.fileName, 32))}
-    ${this.metricItem('크기', this.formatBytes(summary.fileSizeBytes))}
-    ${this.metricItem('날짜', start ? this.formatStamp(start).split(' ')[0] : '-')}
-    ${this.metricItem('소요', this.formatDuration(spanMs))}
-    ${this.metricItem('토큰', `${this.formatNumber(input)} / ${this.formatNumber(output)}`)}
-    ${this.metricItem('비용', cost > 0 ? `~$${cost.toFixed(4)}` : '-')}
-  </div>
-  <div class="metric-group secondary">
-    ${this.metricItem('턴', String(summary.requestCount ?? detail.timeline.length))}
-    ${this.metricItem('피크 턴', this.formatNumber(peakTokens))}
-    ${this.metricItem('평균/턴', this.formatNumber(avgTokens))}
-    ${this.metricItem('캐시 비율', `${cachedRatio}%`)}
-    ${this.metricItem('최대 지연', this.formatDuration(Math.max(0, ...detail.timeline.map((p) => p.latencyMs ?? 0))))}
-    ${this.metricItem('합계 토큰', this.formatNumber(total))}
-  </div>
-  </div>`;
-  }
-
-  private metricItem(label: string, value: string): string {
-    return `
-  <div class="metric-item">
-  <span class="metric-label">${label}</span>
-  <span class="metric-value">${this.escapeHtml(value)}</span>
-  </div>`;
-  }
   private mountChart(container: HTMLElement, detail: SessionDetail) {
     if (!this.chartRoot) {
       container.innerHTML = '';
@@ -291,6 +223,70 @@ export class ProfilerDetailLayer {
     }
     this.chartRoot.unmount();
     this.chartRoot = null;
+  }
+
+  private renderOverview(detail: SessionDetail): string {
+    const summary = detail.summary;
+    const descriptor = getProfilerAgentDescriptor(summary.agent);
+    const start = summary.startedAt ?? detail.timeline[0]?.timestamp;
+
+    const input = summary.totalInputTokens ?? 0;
+    const output = summary.totalOutputTokens ?? 0;
+    const total = summary.totalTokens ?? input + output;
+    const cost = this.estimateCost(summary.model, input, output);
+
+    const spanMs = this.getSpanMs(
+      start,
+      detail.timeline[detail.timeline.length - 1]?.endTimestamp ??
+        detail.timeline[detail.timeline.length - 1]?.timestamp,
+    );
+    const peakTokens = Math.max(
+      0,
+      ...detail.timeline.map((p) => p.totalTokens ?? (p.inputTokens ?? 0) + (p.outputTokens ?? 0)),
+    );
+    const avgTokens = detail.timeline.length > 0 ? Math.round(total / detail.timeline.length) : 0;
+    const cachedRatio =
+      total > 0 && summary.totalCachedTokens
+        ? ((summary.totalCachedTokens / total) * 100).toFixed(1)
+        : '0.0';
+
+    return `
+<div class="profiler-hero">
+  <div class="profiler-hero-brand">
+    <div class="brand-icon">${descriptor.iconSvg}</div>
+    <div class="brand-text">
+      <span class="vendor">${this.escapeHtml(descriptor.vendor)}</span>
+      <h1 class="model-title">${this.escapeHtml(summary.model ?? descriptor.label)}</h1>
+      <span class="session-id">${this.escapeHtml(summary.id)}</span>
+    </div>
+  </div>
+  <div class="profiler-live-indicator">
+    ${this.state.live?.active ? '<span class="status-dot connected"></span> <strong data-profiler-live-stop="true" style="cursor:pointer">Live</strong>' : '<span>Archive</span>'}
+  </div>
+</div>
+
+<div class="profiler-metric-board">
+  ${this.metricItem('File', this.truncate(summary.fileName, 32))}
+  ${this.metricItem('Size', this.formatBytes(summary.fileSizeBytes))}
+  ${this.metricItem('Tokens', `${this.formatNumber(input)} / ${this.formatNumber(output)}`)}
+  ${this.metricItem('Cost', cost > 0 ? `$${cost.toFixed(4)}` : '-')}
+  ${this.metricItem('Turns', String(summary.requestCount ?? detail.timeline.length))}
+  ${this.metricItem('Duration', this.formatDuration(spanMs))}
+  ${this.metricItem('Peak', this.formatNumber(peakTokens))}
+  ${this.metricItem('Avg/Turn', this.formatNumber(avgTokens))}
+  ${this.metricItem('Cache', `${cachedRatio}%`)}
+  ${this.metricItem('Latency', this.formatDuration(Math.max(0, ...detail.timeline.map((p) => p.latencyMs ?? 0))))}
+  ${this.metricItem('Total Tok', this.formatNumber(total))}
+  ${this.metricItem('Date', start ? this.formatStamp(start).split(' ')[0] : '-')}
+</div>`;
+  }
+
+  private metricItem(label: string, value: string): string {
+    return `
+<div class="metric-item">
+  <span class="metric-label">${label}</span>
+  <span class="metric-value">${this.escapeHtml(value)}</span>
+</div>`;
   }
 
   private estimateCost(model: string | undefined, input: number, output: number): number {
