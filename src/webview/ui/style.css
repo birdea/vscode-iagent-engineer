@@ -1512,213 +1512,180 @@ a:hover {
   line-height: 1.35;
 }
 
-/* --- Material Design Profiler Overhaul --- */
+/* --- Native VS Code Style Profiler Overhaul --- */
 
 .profiler-detail-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background: var(--vscode-editor-background);
+  background: var(--vscode-panel-background);
   color: var(--vscode-foreground);
   font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
 }
 
-/* 1. Header Surface & Metric Board */
+/* 1. Panel Header & Metrics (Settings/Debug style) */
 .profiler-header-surface {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  background: color-mix(in srgb, var(--vscode-editorWidget-background) 50%, transparent);
+  padding: 16px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .profiler-hero {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 16px;
 }
 
 .profiler-hero-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .brand-icon {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--vscode-foreground);
-}
-
-.brand-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  color: var(--vscode-icon-foreground);
 }
 
 .brand-text .vendor {
   font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--vscode-descriptionForeground);
-  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .brand-text .model-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--vscode-foreground);
-  line-height: 1.2;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .brand-text .session-id {
   font-size: 10px;
-  color: var(--vscode-descriptionForeground);
   font-family: var(--vscode-editor-font-family);
-  opacity: 0.7;
+  color: var(--vscode-descriptionForeground);
+}
+
+.profiler-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 2px;
 }
 
 .profiler-metric-board {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 60%, transparent);
-  border-radius: 8px;
-  padding: 1px; /* border inner gap */
-}
-
-.metric-group {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 1px;
-  background: color-mix(in srgb, var(--vscode-panel-border) 40%, transparent);
-}
-
-.metric-group.secondary .metric-item {
-  background: color-mix(in srgb, var(--vscode-editor-background) 60%, transparent);
+  gap: 8px;
 }
 
 .metric-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 12px 8px;
-  background: var(--vscode-editor-background);
-  text-align: center;
+  gap: 2px;
+  padding: 4px 0;
 }
 
 .metric-label {
   font-size: 10px;
-  font-weight: 600;
-  color: color-mix(
-    in srgb,
-    var(--vscode-charts-orange) 80%,
-    var(--vscode-descriptionForeground)
-  ); /* Subtle accent color for labels */
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
 }
 
 .metric-value {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--vscode-foreground);
   white-space: nowrap;
-  font-family: var(--vscode-editor-font-family);
 }
 
-/* 2. Chart Surface */
+/* 2. Chart Section */
 .profiler-chart-surface {
-  padding: 0 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .profiler-chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .profiler-chart-wrapper {
-  background: color-mix(in srgb, var(--vscode-editorWidget-background) 30%, transparent);
-  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 60%, transparent);
-  border-radius: 8px;
-  overflow: hidden;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
 }
 
-/* 3. Log Stream Surface (Table Layout) */
+/* 3. Log Stream (Problems/Search View style) */
 .profiler-log-surface {
   display: flex;
   flex-direction: column;
-  padding: 0 20px 20px;
+  padding: 0;
 }
 
 .profiler-log-header-row {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding-bottom: 12px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--vscode-sideBar-background);
   border-bottom: 1px solid var(--vscode-panel-border);
-  margin-bottom: 8px;
 }
 
 .profiler-surface-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--vscode-foreground);
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
 }
 
 .profiler-log-count {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--vscode-descriptionForeground);
 }
 
 .profiler-log-table {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* Tight density */
 }
 
 .profiler-table-row {
   display: grid;
-  grid-template-columns: 70px 80px minmax(0, 1fr) 120px;
+  grid-template-columns: 60px 70px minmax(0, 1fr) 110px;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 4px 16px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border) 30%, transparent);
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.1s;
+  transition: background-color 0.05s;
 }
 
 .profiler-table-row:hover {
-  background: color-mix(
-    in srgb,
-    var(--vscode-list-hoverBackground, var(--vscode-panel-border)) 40%,
-    transparent
-  );
-  border-color: color-mix(in srgb, var(--vscode-panel-border) 50%, transparent);
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.profiler-table-row:focus {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .table-cell {
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1734,56 +1701,50 @@ a:hover {
   gap: 6px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--vscode-descriptionForeground);
 }
 
 .role-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px; /* Square dots like VS Code markers */
   flex-shrink: 0;
 }
 
 .user .role-dot {
-  background: var(--vscode-charts-blue, #007acc);
+  background: var(--vscode-charts-blue);
 }
 .agent .role-dot {
-  background: var(--vscode-charts-orange, #d18616);
-} /* Matching screenshot orange */
+  background: var(--vscode-charts-orange);
+}
 .system .role-dot {
-  background: color-mix(in srgb, var(--vscode-descriptionForeground) 50%, transparent);
+  background: var(--vscode-debugIcon-stepOverForeground);
 }
 
 .table-cell.content {
   font-size: 12px;
   color: var(--vscode-foreground);
   font-family: var(--vscode-editor-font-family);
-  opacity: 0.85;
-}
-
-.content-text {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .table-cell.meta {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 10px;
   color: var(--vscode-descriptionForeground);
   font-family: var(--vscode-editor-font-family);
 }
 
-.meta-size,
-.meta-tokens {
-  display: inline-block;
+/* Tooltip override for cleaner look */
+.profiler-chart-tooltip {
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+  border-radius: 0;
 }
 
-@media (max-width: 960px) {
-  .metric-group {
+@media (max-width: 1024px) {
+  .profiler-metric-board {
     grid-template-columns: repeat(3, 1fr);
   }
 }
