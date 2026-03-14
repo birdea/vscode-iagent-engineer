@@ -90,7 +90,7 @@ export class ProfilerLayer {
     <div>
       <div class="panel-title">${this.msg('title')}</div>
     </div>
-    <button class="primary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
+    <button class="secondary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
   </div>
   <div class="profiler-toolbar profiler-toolbar-status">
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
@@ -249,11 +249,11 @@ export class ProfilerLayer {
     };
     const active = (field: SortField) => (this.sortField === field ? ' active' : '');
     return `<div class="profiler-sort-header">
-<button class="profiler-sort-btn${active('name')}" data-sort="name">Name${arrow('name')}</button>
-<button class="profiler-sort-btn${active('time')}" data-sort="time">Time${arrow('time')}</button>
-<button class="profiler-sort-btn${active('tin')}" data-sort="tin">tin${arrow('tin')}</button>
-<button class="profiler-sort-btn${active('tout')}" data-sort="tout">tout${arrow('tout')}</button>
-<button class="profiler-sort-btn${active('size')}" data-sort="size">Size${arrow('size')}</button>
+<button class="profiler-sort-btn${active('name')}" data-sort="name">name${arrow('name')}</button>
+<button class="profiler-sort-btn${active('time')}" data-sort="time">time${arrow('time')}</button>
+<button class="profiler-sort-btn${active('tin')}" data-sort="tin">in${arrow('tin')}</button>
+<button class="profiler-sort-btn${active('tout')}" data-sort="tout">out${arrow('tout')}</button>
+<button class="profiler-sort-btn${active('size')}" data-sort="size">size${arrow('size')}</button>
 </div>`;
   }
 

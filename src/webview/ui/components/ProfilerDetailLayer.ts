@@ -246,7 +246,10 @@ export class ProfilerDetailLayer {
         let roleClass = 'system';
         let roleLabel = 'System';
 
-        if (type === 'user' || type === 'user_message' || type === 'token_count') {
+        if (cat === 'tool') {
+          roleClass = 'agent';
+          roleLabel = 'Agent';
+        } else if (type === 'user' || type === 'user_message') {
           roleClass = 'user';
           roleLabel = 'User';
         } else if (

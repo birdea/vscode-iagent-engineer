@@ -893,6 +893,19 @@ suite('UI Components Consolidated', () => {
       ],
       rawEvents: [
         {
+          id: 'raw-user',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 3,
+          timestamp: '2026-03-11T10:00:02.000Z',
+          eventType: 'user_message',
+          category: 'conversation' as const,
+          summary: 'User prompt',
+          excerpt: 'Initial user prompt',
+          messagePreview: 'Initial user prompt',
+          payloadKb: 1.2,
+          payloadBytes: 1220,
+        },
+        {
           id: 'raw-1',
           filePath: '/tmp/session.jsonl',
           lineNumber: 4,
@@ -908,6 +921,19 @@ suite('UI Components Consolidated', () => {
           outputTokens: 40,
           cachedTokens: 20,
           totalTokens: 160,
+        },
+        {
+          id: 'raw-tool',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 7,
+          timestamp: '2026-03-11T10:01:03.000Z',
+          eventType: 'custom_tool_call_output',
+          category: 'tool' as const,
+          summary: 'Tool result',
+          excerpt: '{"sample":"tool"}',
+          messagePreview: 'Initial user prompt',
+          payloadKb: 1.4,
+          payloadBytes: 1430,
         },
         {
           id: 'raw-2',
@@ -1653,6 +1679,11 @@ suite('UI Components Consolidated', () => {
       assert.ok(stream?.textContent?.includes('Turn completed'));
       assert.ok(stream?.textContent?.includes('System'));
       assert.ok(stream?.textContent?.includes('Session started'));
+      assert.ok(
+        Array.from(document.querySelectorAll('.profiler-table-row.agent')).some((row) =>
+          row.textContent?.includes('Initial user prompt'),
+        ),
+      );
     });
   });
 
@@ -1709,7 +1740,7 @@ suite('UI Components Consolidated', () => {
 
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-card').length, 1);
-      assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'tin', 'tout', 'Size']);
+      assert.deepStrictEqual(sortButtons, ['name', 'time ↓', 'in', 'out', 'size']);
       assert.ok(main);
       assert.ok(titleRow);
       assert.ok(fileCell);

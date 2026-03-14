@@ -727,6 +727,7 @@ export class ProfilerService {
       cachedTokens: 0,
       totalTokens: 0,
     };
+    let latestUserPromptPreview = '';
     let cwd = '';
     let provider = '';
 
@@ -741,11 +742,23 @@ export class ProfilerService {
           ? (lastUsageSnapshot ?? (usage ? this.diffUsage(usage, lastUsage) : undefined))
           : usage;
       const payload = this.readRecord(record.data, 'payload');
+      const rawCodexMessage = this.readString(payload, 'message');
+      const codexUserPrompt =
+        payloadType === 'user_message' ? this.extractCodexUserPrompt(record) : undefined;
+      const isCodexToolResult =
+        payloadType === 'user_message' && this.isLikelyToolResultContent(rawCodexMessage);
+      const category = isCodexToolResult ? 'tool' : this.classifyCodexEvent(payloadType);
       const excerpt = record.raw.length > 260 ? `${record.raw.slice(0, 260)}...` : record.raw;
       if (payloadType === 'token_count' && usageDelta) {
         summaryLine = {
           title: 'Token snapshot',
           detail: this.formatTokenUsageSnapshot(usageDelta),
+        };
+      }
+      if (isCodexToolResult) {
+        summaryLine = {
+          title: 'Tool result',
+          detail: this.truncate(rawCodexMessage ?? 'Tool result', 160),
         };
       }
       rawEvents.push({
@@ -754,7 +767,7 @@ export class ProfilerService {
         lineNumber: record.lineNumber,
         timestamp: record.timestamp,
         eventType: payloadType,
-        category: this.classifyCodexEvent(payloadType),
+        category,
         summary: summaryLine.title,
         excerpt,
         payloadKb: record.payloadKb,
@@ -765,7 +778,8 @@ export class ProfilerService {
         totalTokens: usageDelta?.totalTokens,
         maxTokens: usageDelta?.maxTokens,
         messagePreview:
-          this.readString(payload, 'message') ??
+          (isCodexToolResult ? latestUserPromptPreview : codexUserPrompt) ??
+          rawCodexMessage ??
           this.readString(payload, 'last_agent_message') ??
           this.readString(payload, 'name') ??
           summaryLine.detail,
@@ -790,7 +804,10 @@ export class ProfilerService {
 
       const turn = this.getActiveCodexTurn(turns, activeTurnId);
       if (turn && payloadType === 'user_message') {
-        turn.prompt = this.truncate(this.readString(payload, 'message') ?? 'User prompt', 160);
+        if (!isCodexToolResult && codexUserPrompt) {
+          latestUserPromptPreview = codexUserPrompt;
+          turn.prompt = this.truncate(codexUserPrompt, 160);
+        }
         turn.lastTimestamp = timestamp ?? turn.lastTimestamp;
         turn.sourceEventId = rawEventId;
       }
@@ -856,7 +873,7 @@ export class ProfilerService {
           timestamp: timestamp ?? summary.modifiedAt,
           title: summaryLine.title,
           detail: summaryLine.detail,
-          category: this.classifyCodexEvent(payloadType),
+          category,
           rawEventId,
         });
       }
@@ -974,7 +991,8 @@ export class ProfilerService {
         cachedTokens: rawUsage?.cachedTokens,
         totalTokens: rawUsage?.totalTokens,
         messagePreview:
-          this.extractClaudeUserPrompt(record.data) ??
+          this.extractClaudeUserPromptText(record.data) ??
+          this.extractClaudeToolResultPreview(record.data) ??
           assistantSummary?.detail ??
           summaryLine.detail,
       });
@@ -1976,7 +1994,7 @@ export class ProfilerService {
       return 'checkpoint';
     }
     if (record.recordType === 'user') {
-      return 'conversation';
+      return this.isClaudeToolResultRecord(record.data) ? 'tool' : 'conversation';
     }
     if (record.recordType === 'assistant') {
       const summary = this.extractClaudeAssistantSummary(record.data);
@@ -2044,6 +2062,13 @@ export class ProfilerService {
   }
 
   private extractGeminiMessagePreview(message: GeminiConversationMessage): string | undefined {
+    if (message.type === 'user') {
+      const userPrompt = this.extractGeminiSessionTitle(message);
+      if (userPrompt) {
+        return this.truncate(userPrompt, 160);
+      }
+    }
+
     const direct =
       this.extractTextSnippet(message.displayContent) ?? this.extractTextSnippet(message.content);
     if (direct) {
@@ -2147,7 +2172,7 @@ export class ProfilerService {
       case 'user_message':
         return {
           title: 'User prompt',
-          detail: this.truncate(this.readString(payload, 'message') ?? 'User prompt'),
+          detail: this.truncate(this.extractCodexUserPrompt(record) ?? 'User prompt'),
         };
       case 'agent_message':
         return {
@@ -2186,8 +2211,10 @@ export class ProfilerService {
   private summarizeClaudeRecord(record: ParsedRecord): { title: string; detail: string } {
     switch (record.recordType) {
       case 'user': {
-        const detail = this.extractClaudeUserPrompt(record.data) ?? 'User message';
-        const isToolResult = Array.isArray(this.readUnknown(record.data, 'message', 'content'));
+        const isToolResult = this.isClaudeToolResultRecord(record.data);
+        const detail = isToolResult
+          ? (this.extractClaudeToolResultPreview(record.data) ?? 'Tool result')
+          : (this.extractClaudeUserPromptText(record.data) ?? 'User message');
         return {
           title: isToolResult ? 'Tool result' : 'User prompt',
           detail: this.truncate(detail, 160),
@@ -2302,10 +2329,20 @@ export class ProfilerService {
   }
 
   private extractCodexUserPrompt(record: ParsedRecord): string | undefined {
-    return this.normalizeSessionTitle(this.readString(record.data, 'payload', 'message'));
+    return this.normalizeSessionTitle(
+      this.stripLeadingAttachmentPaths(this.readString(record.data, 'payload', 'message')),
+    );
   }
 
   private extractClaudeSessionTitle(record: Record<string, unknown>): string | undefined {
+    const direct = this.extractClaudeUserPromptText(record);
+    if (direct) {
+      return direct;
+    }
+    return undefined;
+  }
+
+  private extractClaudeUserPromptText(record: Record<string, unknown>): string | undefined {
     const direct = this.normalizeSessionTitle(this.readString(record, 'message', 'content'));
     if (direct) {
       return direct;
@@ -2327,6 +2364,33 @@ export class ProfilerService {
     }
 
     return undefined;
+  }
+
+  private extractClaudeToolResultPreview(record: Record<string, unknown>): string | undefined {
+    const content = this.readUnknown(record, 'message', 'content');
+    if (!Array.isArray(content)) {
+      return undefined;
+    }
+
+    for (const item of content) {
+      if (this.readString(item, 'type') !== 'tool_result') {
+        continue;
+      }
+      const result = this.readUnknown(item, 'content');
+      if (typeof result === 'string') {
+        return result;
+      }
+    }
+
+    return undefined;
+  }
+
+  private isClaudeToolResultRecord(record: Record<string, unknown>): boolean {
+    const content = this.readUnknown(record, 'message', 'content');
+    return (
+      Array.isArray(content) &&
+      content.some((item) => this.readString(item, 'type') === 'tool_result')
+    );
   }
 
   private extractClaudeAssistantSummary(record: Record<string, unknown>): {
@@ -2502,6 +2566,33 @@ export class ProfilerService {
     }
     const normalized = value.replace(/\s+/g, ' ').trim();
     return normalized || undefined;
+  }
+
+  private stripLeadingAttachmentPaths(value?: string): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const imagePathPattern =
+      /^(?:(?:\/|~\/)[^\n]*?\.(?:png|jpe?g|gif|webp|svg|bmp|heic))(?:\s+(?:(?:\/|~\/)[^\n]*?\.(?:png|jpe?g|gif|webp|svg|bmp|heic)))*\s*/i;
+    let cleaned = value.trim();
+
+    while (imagePathPattern.test(cleaned)) {
+      cleaned = cleaned.replace(imagePathPattern, '').trimStart();
+    }
+
+    return cleaned || value;
+  }
+
+  private isLikelyToolResultContent(value?: string): boolean {
+    if (!value) {
+      return false;
+    }
+
+    const trimmed = value.trim();
+    return /^(total \d+\b|[d-][rwx-]{9}\b|Chunk ID:|Process exited with code|Success\. Updated the following files:)/m.test(
+      trimmed,
+    );
   }
 
   private readString(value: unknown, ...keys: string[]): string | undefined {

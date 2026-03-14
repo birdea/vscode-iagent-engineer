@@ -80,6 +80,37 @@ suite('ProfilerService', () => {
     assert.strictEqual(tokenSnapshots[1].totalTokens, 150);
   });
 
+  test('keeps codex event-log user preview focused on the prompt instead of attachment paths or tool output', async () => {
+    const filePath = path.join(tempRoot, 'codex-user-preview.jsonl');
+    await fs.promises.writeFile(
+      filePath,
+      [
+        '{"timestamp":"2026-03-11T12:00:00.000Z","type":"session_meta","payload":{"id":"sess-preview","timestamp":"2026-03-11T12:00:00.000Z","cwd":"/tmp/project","model_provider":"openai"}}',
+        '{"timestamp":"2026-03-11T12:00:01.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-1"}}',
+        '{"timestamp":"2026-03-11T12:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"/Users/birdea/Desktop/screen-1.png /Users/birdea/Desktop/screen-2.png 첨부 이미지를 참고해서 profiler UI를 정리해줘"}}',
+        '{"timestamp":"2026-03-11T12:00:03.000Z","type":"event_msg","payload":{"type":"user_message","message":"total 880\\ndrwxr-xr-x  29 birdea  staff  928 Mar 14 21:13 ."}}',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const stat = await fs.promises.stat(filePath);
+    const service = new ProfilerService() as any;
+    sandbox.stub(service, 'loadCodexThreadTitles').resolves(new Map());
+    const summary = await service.summarizeCodexFile({ agent: 'codex', filePath, stat });
+    const detail = await service.analyzeCodexSession({ agent: 'codex', filePath, stat }, summary);
+
+    assert.strictEqual(summary.title, '첨부 이미지를 참고해서 profiler UI를 정리해줘');
+    assert.strictEqual(
+      detail.rawEvents[2].messagePreview,
+      '첨부 이미지를 참고해서 profiler UI를 정리해줘',
+    );
+    assert.strictEqual(detail.rawEvents[3].category, 'tool');
+    assert.strictEqual(
+      detail.rawEvents[3].messagePreview,
+      '첨부 이미지를 참고해서 profiler UI를 정리해줘',
+    );
+  });
+
   test('groups claude requests by request id with usage totals', async () => {
     const filePath = path.join(tempRoot, 'claude.jsonl');
     await fs.promises.writeFile(
@@ -109,6 +140,9 @@ suite('ProfilerService', () => {
     assert.strictEqual(detail.timeline[0].detail, 'Read');
     assert.strictEqual(detail.timeline[1].detail, 'Profiler looks better.');
     assert.strictEqual(detail.timeline[1].latencyMs, 5000);
+    assert.strictEqual(detail.rawEvents[0].messagePreview, 'Review profiler');
+    assert.strictEqual(detail.rawEvents[2].category, 'tool');
+    assert.strictEqual(detail.rawEvents[2].messagePreview, 'file contents');
   });
 
   test('selects the most recently modified live session across agents', async () => {
