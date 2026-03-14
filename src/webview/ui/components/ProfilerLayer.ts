@@ -36,7 +36,6 @@ const MESSAGES: Record<
   Record<
     | 'title'
     | 'scan'
-    | 'archive'
     | 'loading'
     | 'empty'
     | 'sessions'
@@ -52,7 +51,6 @@ const MESSAGES: Record<
   en: {
     title: 'Agent Session Profiler',
     scan: 'Find',
-    archive: 'Archive All',
     loading: '로딩중..',
     empty: 'No sessions found.',
     sessions: 'Sessions',
@@ -66,7 +64,6 @@ const MESSAGES: Record<
   ko: {
     title: 'Agent 세션 프로파일러',
     scan: 'Find',
-    archive: 'Archive All',
     loading: '로딩중..',
     empty: '검색된 세션이 없습니다.',
     sessions: '세션',
@@ -93,11 +90,10 @@ export class ProfilerLayer {
     <div>
       <div class="panel-title">${this.msg('title')}</div>
     </div>
-    <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
-  </div>
-  <div class="btn-row profiler-toolbar profiler-toolbar-inline">
     <button class="primary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
-    <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
+  </div>
+  <div class="profiler-toolbar profiler-toolbar-status">
+    <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
   <div class="profiler-tab-row" id="profiler-tab-row" role="tablist" aria-label="Agents"></div>
   <div class="profiler-sort-bar" id="profiler-sort-bar"></div>
@@ -109,9 +105,6 @@ export class ProfilerLayer {
     document
       .getElementById('profiler-start-analysis')
       ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.scan' }));
-    document
-      .getElementById('profiler-archive-all')
-      ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.archiveAll' }));
     document.getElementById('profiler-tab-row')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
       const button = target?.closest<HTMLButtonElement>('[data-agent]');
@@ -198,16 +191,12 @@ export class ProfilerLayer {
     const startButton = document.getElementById(
       'profiler-start-analysis',
     ) as HTMLButtonElement | null;
-    const archiveButton = document.getElementById(
-      'profiler-archive-all',
-    ) as HTMLButtonElement | null;
     const badge = document.getElementById('profiler-status-badge');
     const tabs = document.getElementById('profiler-tab-row');
     const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
     if (startButton) startButton.disabled = loading;
-    if (archiveButton) archiveButton.disabled = loading || this.state.aggregate.totalSessions === 0;
     if (badge) badge.innerHTML = this.renderStatusBadge();
     if (tabs) {
       tabs.innerHTML = this.renderTabs();
@@ -309,7 +298,7 @@ export class ProfilerLayer {
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
     const timestamp = session.startedAt ?? session.modifiedAt;
-    const fileName = this.getDisplayFileName(session);
+    const title = this.getDisplayFileName(session);
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
     const liveBadge = this.isLiveSession(session)
@@ -325,7 +314,7 @@ export class ProfilerLayer {
   <span class="profiler-session-card-main">
     <span class="profiler-session-card-title-row">
       <span class="profiler-session-card-title-wrap">
-        <span class="profiler-session-card-name" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
+        <span class="profiler-session-card-name" title="${this.escapeAttr(title)}">${this.escapeHtml(title)}</span>
         ${liveBadge}
       </span>
       <span class="profiler-session-card-size">${this.formatBytes(session.fileSizeBytes)}</span>
@@ -408,13 +397,6 @@ export class ProfilerLayer {
     const normalizedPath = session.filePath.replace(/\\/g, '/');
     const fallback = normalizedPath.split('/').pop()?.trim();
     return fallback || 'session';
-  }
-
-  private truncate(value: string, length: number): string {
-    if (value.length <= length) {
-      return value;
-    }
-    return `${value.slice(0, Math.max(0, length - 3))}...`;
   }
 
   private escapeHtml(value: string): string {
