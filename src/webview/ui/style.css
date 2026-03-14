@@ -816,8 +816,10 @@ a:hover {
 
 .profiler-tab-row {
   display: flex;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  gap: 0;
+  align-items: flex-end;
+  gap: 2px;
+  padding-top: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border) 65%, transparent);
 }
 
 .profiler-tab {
@@ -825,28 +827,28 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-editor-background);
-  color: var(--vscode-foreground);
-  border-radius: 999px;
-  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border-radius: 10px 10px 0 0;
+  padding: 9px 12px 8px;
   min-width: 0;
+  position: relative;
+  margin-bottom: -1px;
 }
 
 .profiler-tab:hover {
-  border-color: color-mix(in srgb, var(--vscode-focusBorder) 38%, var(--vscode-panel-border));
-  background: color-mix(in srgb, var(--vscode-editorWidget-background) 92%, transparent);
+  color: var(--vscode-foreground);
+  background: color-mix(in srgb, var(--vscode-editorWidget-background) 88%, transparent);
 }
 
 .profiler-tab.active {
   color: var(--vscode-foreground);
-  border-color: color-mix(in srgb, var(--vscode-focusBorder) 45%, var(--vscode-panel-border));
-  background: color-mix(
-    in srgb,
-    var(--vscode-button-background) 12%,
-    var(--vscode-editor-background)
-  );
+  border-color: color-mix(in srgb, var(--vscode-focusBorder) 40%, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--vscode-editor-background) 92%, transparent);
   font-weight: 700;
+  box-shadow: inset 0 2px 0 var(--vscode-button-background);
 }
 
 .profiler-tab-brand {
@@ -874,6 +876,13 @@ a:hover {
   width: 100%;
   height: 100%;
   fill: currentColor;
+}
+
+.profiler-agent-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .profiler-tab > span:last-child {
@@ -1004,14 +1013,28 @@ a:hover {
   width: 100%;
   flex: 1 1 auto;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--vscode-foreground);
   text-align: left;
+  line-height: 1.35;
+}
+
+.profiler-session-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.35;
+}
+
+.profiler-session-live {
+  color: #4fbf6b;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .profiler-session-meta {

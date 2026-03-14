@@ -253,7 +253,7 @@ export class ProfilerDetailLayer {
     return `
 <div class="profiler-hero">
   <div class="profiler-hero-brand">
-    <div class="brand-icon">${descriptor.iconSvg}</div>
+    <div class="brand-icon">${descriptor.iconMarkup}</div>
     <div class="brand-text">
       <span class="vendor">${this.escapeHtml(descriptor.vendor)}</span>
       <h1 class="model-title">${this.escapeHtml(summary.model ?? descriptor.label)}</h1>

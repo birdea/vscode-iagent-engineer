@@ -1290,6 +1290,58 @@ suite('UI Components Consolidated', () => {
       assert.ok(row.textContent?.includes('OUT 0K'));
     });
 
+    test('marks the latest recently-updated session as live', () => {
+      const liveTimestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const historyTimestamp = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:live',
+        aggregate: {
+          totalSessions: 2,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 2048,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:live',
+              agent: 'codex',
+              filePath: '/tmp/live-session.jsonl',
+              fileName: 'live-session.jsonl',
+              modifiedAt: liveTimestamp,
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+            {
+              id: 'codex:history',
+              agent: 'codex',
+              filePath: '/tmp/history-session.jsonl',
+              fileName: 'history-session.jsonl',
+              modifiedAt: historyTimestamp,
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const badges = Array.from(document.querySelectorAll('.profiler-session-live')).map((node) =>
+        node.textContent?.trim(),
+      );
+
+      assert.deepStrictEqual(badges, ['(live)']);
+      assert.ok(document.querySelector('.profiler-session-row')?.textContent?.includes('(live)'));
+    });
+
     test('falls back to the session path basename when fileName is blank', () => {
       layer.onState({
         status: 'ready',
@@ -1328,10 +1380,10 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(fileCell.getAttribute('title'), 'fallback-session-name.jsonl');
     });
 
-    test('see livedata button posts startLiveData command', () => {
-      document.getElementById('profiler-see-livedata')?.click();
+    test('find button posts scan command', () => {
+      document.getElementById('profiler-start-analysis')?.click();
 
-      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.startLiveData' }));
+      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.scan' }));
     });
   });
 });
