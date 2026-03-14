@@ -8,11 +8,11 @@ Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=YmeUWzeAsxw)
 
 ## Release Highlights
 
-### v0.7.1
+### v0.7.2
 
-- Refreshed the repository docs so the current `0.7.x` implementation, supported workflows, and known limitations are documented consistently.
-- Clarified the supported Figma path as local MCP, while remote Figma remains a disabled prototype in the current UI.
-- Expanded the profiler guides to match the current sidebar scan flow and the bottom-panel `iProfiler` detail experience.
+- Added direct file actions in the bottom-panel `iProfiler` summary so session files can be revealed in Finder / Explorer or copied to the clipboard.
+- Restored context-window limit rendering for Claude Haiku 4.5 session files in the profiler chart.
+- Added chart fallbacks for Claude `history.jsonl` logs so non-token history records still render as payload-based timelines instead of an empty chart.
 
 ## Current Product Scope
 
