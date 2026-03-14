@@ -151,6 +151,31 @@ suite('ProfilerService', () => {
     assert.strictEqual(detail.rawEvents[2].messagePreview, 'file contents');
   });
 
+  test('maps claude haiku 4.5 aliases to a context window limit', async () => {
+    const filePath = path.join(tempRoot, 'claude-haiku-4-5.jsonl');
+    await fs.promises.writeFile(
+      filePath,
+      [
+        '{"parentUuid":null,"cwd":"/tmp/project","sessionId":"claude-haiku","type":"user","message":{"role":"user","content":"Inspect the profiler"},"uuid":"u1","timestamp":"2026-03-14T12:13:16.906Z"}',
+        '{"parentUuid":"u1","cwd":"/tmp/project","sessionId":"claude-haiku","type":"assistant","requestId":"req1","uuid":"a1","timestamp":"2026-03-14T12:13:18.515Z","message":{"model":"claude-haiku-4-5-20251001","id":"msg1","role":"assistant","content":[{"type":"text","text":"I will inspect the profiler."}],"usage":{"input_tokens":3,"cache_creation_input_tokens":22560,"cache_read_input_tokens":0,"output_tokens":3}}}',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const stat = await fs.promises.stat(filePath);
+    const service = new ProfilerService() as any;
+    const summary = await service.summarizeClaudeFile({ agent: 'claude', filePath, stat });
+    const detail = await service.analyzeClaudeSession({ agent: 'claude', filePath, stat }, summary);
+
+    assert.strictEqual(summary.model, 'claude-haiku-4-5-20251001');
+    assert.strictEqual(detail.timeline.length, 1);
+    assert.strictEqual(detail.timeline[0].maxTokens, 200000);
+    assert.strictEqual(
+      detail.rawEvents.find((event) => event.eventType === 'assistant')?.maxTokens,
+      200000,
+    );
+  });
+
   test('selects the most recently modified live session across agents', async () => {
     const codexRoot = path.join(tempRoot, '.codex', 'sessions');
     const claudeRoot = path.join(tempRoot, '.claude', 'projects');
