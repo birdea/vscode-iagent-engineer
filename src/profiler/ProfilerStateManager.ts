@@ -18,7 +18,7 @@ const EMPTY_AGGREGATE: ProfilerAggregate = {
 function createEmptyOverview(): ProfilerOverviewState {
   return {
     status: 'idle',
-    selectedAgent: 'codex',
+    selectedAgent: 'claude',
     aggregate: { ...EMPTY_AGGREGATE },
     sessionsByAgent: {
       claude: [],
@@ -63,6 +63,14 @@ export class ProfilerStateManager {
       ...this.overviewState,
       status,
       message,
+    };
+    this.emitOverview();
+  }
+
+  setSelectedAgent(agent: ProfilerOverviewState['selectedAgent']) {
+    this.overviewState = {
+      ...this.overviewState,
+      selectedAgent: agent,
     };
     this.emitOverview();
   }

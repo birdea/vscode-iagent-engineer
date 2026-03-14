@@ -11,10 +11,11 @@ import { getDocumentLocale, UiLocale } from '../../../i18n';
 
 type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
+const DEFAULT_SELECTED_AGENT: ProfilerAgentType = 'claude';
 
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
-  selectedAgent: 'codex',
+  selectedAgent: DEFAULT_SELECTED_AGENT,
   aggregate: {
     totalSessions: 0,
     totalInputTokens: 0,
@@ -95,7 +96,7 @@ export class ProfilerLayer {
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
   <div class="btn-row profiler-toolbar profiler-toolbar-inline">
-    <button class="primary" id="profiler-start-analysis">${this.msg('scan')}</button>
+    <button class="primary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
     <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
   </div>
   <div class="profiler-tab-row" id="profiler-tab-row" role="tablist" aria-label="Agents"></div>
@@ -132,6 +133,7 @@ export class ProfilerLayer {
       };
       this.notice = this.state.message ?? '';
       this.renderDynamicContent();
+      vscode.postMessage({ command: 'profiler.selectAgent', agent });
     });
     document.getElementById('profiler-sort-bar')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
@@ -171,7 +173,9 @@ export class ProfilerLayer {
   }
 
   onState(state: ProfilerOverviewState) {
-    const selectedAgent = this.isDisabledAgent(state.selectedAgent) ? 'codex' : state.selectedAgent;
+    const selectedAgent = this.isDisabledAgent(state.selectedAgent)
+      ? DEFAULT_SELECTED_AGENT
+      : state.selectedAgent;
     this.state = {
       ...state,
       selectedAgent,
@@ -278,7 +282,7 @@ export class ProfilerLayer {
       let cmp = 0;
       switch (this.sortField) {
         case 'name':
-          cmp = a.fileName.localeCompare(b.fileName);
+          cmp = this.getDisplayFileName(a).localeCompare(this.getDisplayFileName(b));
           break;
         case 'time': {
           const ta = a.startedAt ?? a.modifiedAt ?? '';
@@ -391,6 +395,11 @@ export class ProfilerLayer {
   }
 
   private getDisplayFileName(session: SessionSummary): string {
+    const title = session.title?.trim();
+    if (title) {
+      return title;
+    }
+
     const fileName = session.fileName?.trim();
     if (fileName) {
       return fileName;

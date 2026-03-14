@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import { CONFIG_KEYS } from '../../../src/constants';
 import { ProfilerLiveMonitor } from '../../../src/profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from '../../../src/profiler/ProfilerStateManager';
 import { ProfilerCommandHandler } from '../../../src/webview/handlers/ProfilerCommandHandler';
@@ -14,6 +15,7 @@ suite('ProfilerCommandHandler', () => {
   let liveMonitor: ProfilerLiveMonitor;
   let overviewHandler: ProfilerCommandHandler;
   let detailHandler: ProfilerCommandHandler;
+  let context: any;
 
   const liveSummary = {
     id: 'codex:live',
@@ -85,9 +87,51 @@ suite('ProfilerCommandHandler', () => {
     rawEvents: [],
   };
 
+  const startupSummary = {
+    id: 'codex:startup',
+    agent: 'codex' as const,
+    filePath: '/tmp/startup-session.jsonl',
+    fileName: 'startup-session.jsonl',
+    modifiedAt: '2026-03-10T10:00:00.000Z',
+    startedAt: '2026-03-10T09:58:00.000Z',
+    fileSizeBytes: 1536,
+    totalTokens: 180,
+    requestCount: 1,
+    parseStatus: 'ok' as const,
+    warnings: [],
+  };
+
+  const startupDetail = {
+    summary: startupSummary,
+    metadata: {
+      sourceFormat: 'jsonl',
+      provider: 'openai',
+      cwd: '/tmp/startup-project',
+    },
+    timeline: [
+      {
+        id: 'startup-1',
+        timestamp: '2026-03-10T09:58:00.000Z',
+        endTimestamp: '2026-03-10T10:00:00.000Z',
+        totalTokens: 180,
+        eventType: 'turn',
+        label: 'S01',
+        detail: 'Startup selection',
+      },
+    ],
+    eventBubbles: [],
+    rawEvents: [],
+  };
+
   setup(() => {
     sandbox = sinon.createSandbox();
     profilerStateManager = new ProfilerStateManager();
+    context = {
+      globalState: {
+        get: sandbox.stub(),
+        update: sandbox.stub().resolves(),
+      },
+    };
     profilerService = {
       getLatestSessionSummary: sandbox.stub().resolves(liveSummary),
       refreshSessionDetail: sandbox.stub().resolves({
@@ -95,8 +139,30 @@ suite('ProfilerCommandHandler', () => {
         detail: liveDetail,
         stat: { size: 1024, mtimeMs: 10 },
       }),
-      getDetail: sandbox.stub().resolves(manualDetail),
-      scan: sandbox.stub(),
+      getDetail: sandbox.stub().callsFake(async (id: string) => {
+        if (id === startupSummary.id) {
+          return startupDetail;
+        }
+        return manualDetail;
+      }),
+      scan: sandbox.stub().resolves({
+        status: 'ready',
+        selectedAgent: 'claude',
+        selectedSessionId: startupSummary.id,
+        aggregate: {
+          totalSessions: 2,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: startupSummary.fileSizeBytes + manualDetail.summary.fileSizeBytes,
+        },
+        sessionsByAgent: {
+          claude: [manualDetail.summary],
+          codex: [startupSummary],
+          gemini: [],
+        },
+      }),
       archiveAll: sandbox.stub(),
     };
     editorIntegration = {
@@ -105,6 +171,7 @@ suite('ProfilerCommandHandler', () => {
     liveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
     overviewHandler = new ProfilerCommandHandler(
       { postMessage: sandbox.spy() } as any,
+      context,
       profilerStateManager,
       profilerService,
       editorIntegration,
@@ -112,6 +179,7 @@ suite('ProfilerCommandHandler', () => {
     );
     detailHandler = new ProfilerCommandHandler(
       { postMessage: sandbox.spy() } as any,
+      context,
       profilerStateManager,
       profilerService,
       editorIntegration,
@@ -231,6 +299,7 @@ suite('ProfilerCommandHandler', () => {
     liveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
     overviewHandler = new ProfilerCommandHandler(
       { postMessage: sandbox.spy() } as any,
+      context,
       profilerStateManager,
       profilerService,
       editorIntegration,
@@ -238,6 +307,7 @@ suite('ProfilerCommandHandler', () => {
     );
     detailHandler = new ProfilerCommandHandler(
       { postMessage: sandbox.spy() } as any,
+      context,
       profilerStateManager,
       profilerService,
       editorIntegration,
@@ -261,5 +331,22 @@ suite('ProfilerCommandHandler', () => {
     assert.strictEqual(detailState.detail?.summary.id, 'claude:manual');
     assert.strictEqual(detailState.live?.active, false);
     assert.strictEqual(overviewState.selectedSessionId, 'claude:manual');
+  });
+
+  test('postCurrentState hydrates the saved tab and loads the first session on startup', async () => {
+    context.globalState.get.withArgs(CONFIG_KEYS.PROFILER_SELECTED_TAB, 'claude').returns('codex');
+
+    await overviewHandler.postCurrentState();
+
+    assert.ok(profilerService.scan.calledWith('codex'));
+    assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
+    assert.strictEqual(profilerStateManager.getDetailState().detail?.summary.id, startupSummary.id);
+  });
+
+  test('selectAgent persists the tab selection', async () => {
+    await overviewHandler.selectAgent('codex');
+
+    assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
+    assert.ok(context.globalState.update.calledWith(CONFIG_KEYS.PROFILER_SELECTED_TAB, 'codex'));
   });
 });

@@ -68,6 +68,7 @@ export class WebviewMessageHandler {
     if (profilerStateManager && profilerService && profilerLiveMonitor) {
       this.profilerHandler = new ProfilerCommandHandler(
         webview,
+        context,
         profilerStateManager,
         profilerService,
         this.editorIntegration,
@@ -166,10 +167,13 @@ export class WebviewMessageHandler {
           await this.promptHandler.saveFile(msg.code, msg.filename);
           break;
         case 'profiler.getState':
-          this.profilerHandler?.postCurrentState();
+          await this.profilerHandler?.postCurrentState();
           break;
         case 'profiler.scan':
           await this.profilerHandler?.scan();
+          break;
+        case 'profiler.selectAgent':
+          await this.profilerHandler?.selectAgent(msg.agent);
           break;
         case 'profiler.startLiveData':
           await this.profilerHandler?.startLiveData(msg.id, msg.agent);

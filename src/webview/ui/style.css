@@ -739,6 +739,15 @@ a:hover {
   white-space: nowrap;
 }
 
+.profiler-toolbar-inline .profiler-refresh-button {
+  flex: 0 0 38px;
+  padding: 0;
+}
+
+.profiler-refresh-button .codicon {
+  font-size: 16px;
+}
+
 .profiler-status-chip {
   display: inline-flex;
   align-items: center;
