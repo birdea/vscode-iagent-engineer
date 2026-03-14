@@ -72,6 +72,16 @@ export class ProfilerDetailLayer {
 
     document.getElementById('profiler-header-surface')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
+      const revealButton = target?.closest<HTMLButtonElement>('[data-profiler-reveal-file]');
+      if (revealButton) {
+        this.revealFileInFolder(revealButton);
+        return;
+      }
+      const copyButton = target?.closest<HTMLButtonElement>('[data-profiler-copy-file-path]');
+      if (copyButton) {
+        this.copyFilePath(copyButton);
+        return;
+      }
       const summaryToggle = target?.closest<HTMLElement>('[data-profiler-summary-toggle]');
       if (summaryToggle) {
         this.summaryCollapsed = !this.summaryCollapsed;
@@ -137,6 +147,22 @@ export class ProfilerDetailLayer {
       return;
     }
     vscode.postMessage({ command: 'profiler.openSource', filePath, lineNumber });
+  }
+
+  private copyFilePath(button: HTMLElement) {
+    const filePath = button.dataset.filePath;
+    if (!filePath) {
+      return;
+    }
+    vscode.postMessage({ command: 'profiler.copyFilePath', filePath });
+  }
+
+  private revealFileInFolder(button: HTMLElement) {
+    const filePath = button.dataset.filePath;
+    if (!filePath) {
+      return;
+    }
+    vscode.postMessage({ command: 'profiler.revealInFolder', filePath });
   }
 
   private renderDynamicContent() {
@@ -387,7 +413,7 @@ export class ProfilerDetailLayer {
   </button>
 </div>
 <div class="profiler-metric-board ${this.summaryCollapsed ? 'is-collapsed' : ''}">
-  ${this.metricItem('File', this.truncate(summary.fileName, 32), 'symbol-file')}
+  ${this.renderFileMetric(summary.fileName, summary.filePath)}
   ${this.metricItem('Size', this.formatBytes(summary.fileSizeBytes), 'database')}
   ${this.metricItem('Tokens', `${this.formatNumber(input)} / ${this.formatNumber(output)}`, 'symbol-number')}
   ${this.metricItem('Cost', cost > 0 ? `$${cost.toFixed(4)}` : '-', 'credit-card')}
@@ -443,6 +469,41 @@ export class ProfilerDetailLayer {
     <span class="metric-label">${label}</span>
   </div>
   <span class="metric-value">${this.escapeHtml(value)}</span>
+</div>`;
+  }
+
+  private renderFileMetric(fileName: string, filePath: string): string {
+    if (!filePath) {
+      return this.metricItem('File', fileName, 'symbol-file');
+    }
+
+    return `
+<div class="metric-item">
+  <div class="metric-label-row">
+    <i class="codicon codicon-symbol-file"></i>
+    <span class="metric-label">File</span>
+  </div>
+  <div class="metric-value-row">
+    <button
+      type="button"
+      class="profiler-summary-file-action"
+      data-profiler-reveal-file="true"
+      data-file-path="${this.escapeAttr(filePath)}"
+      title="${this.escapeAttr(filePath)}"
+    >
+      ${this.escapeHtml(fileName)}
+    </button>
+    <button
+      type="button"
+      class="profiler-summary-file-action profiler-summary-file-icon"
+      data-profiler-copy-file-path="true"
+      data-file-path="${this.escapeAttr(filePath)}"
+      aria-label="Copy file path"
+      title="Copy file path"
+    >
+      <i class="codicon codicon-copy"></i>
+    </button>
+  </div>
 </div>`;
   }
 

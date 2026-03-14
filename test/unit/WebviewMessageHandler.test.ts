@@ -511,6 +511,26 @@ suite('WebviewMessageHandler Comprehensive', () => {
     assert.ok(saveSpy.calledWith('c', 'f.ts'));
   });
 
+  test('handle profiler.copyFilePath', async () => {
+    (handler as any).profilerHandler = {
+      copyFilePath: sandbox.stub().resolves(),
+    };
+
+    await handler.handle({ command: 'profiler.copyFilePath', filePath: '/tmp/session.jsonl' });
+
+    assert.ok((handler as any).profilerHandler.copyFilePath.calledWith('/tmp/session.jsonl'));
+  });
+
+  test('handle profiler.revealInFolder', async () => {
+    (handler as any).profilerHandler = {
+      revealInFolder: sandbox.stub().resolves(),
+    };
+
+    await handler.handle({ command: 'profiler.revealInFolder', filePath: '/tmp/session.jsonl' });
+
+    assert.ok((handler as any).profilerHandler.revealInFolder.calledWith('/tmp/session.jsonl'));
+  });
+
   test('handle prompt.estimate', async () => {
     await handler.handle({
       command: 'prompt.estimate',

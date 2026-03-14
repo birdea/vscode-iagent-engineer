@@ -103,6 +103,18 @@ export class EditorIntegration {
     Logger.info('editor', `Opened profiler source (${filePath}:${lineNumber})`);
   }
 
+  async revealFileInFolder(filePath: string) {
+    const uri = vscode.Uri.file(filePath);
+    await vscode.commands.executeCommand('revealFileInOS', uri);
+    Logger.info('editor', `Revealed profiler file in OS (${filePath})`);
+  }
+
+  async copyFilePath(filePath: string) {
+    await vscode.env.clipboard.writeText(filePath);
+    vscode.window.showInformationMessage(`Copied file path: ${filePath}`);
+    Logger.info('editor', `Copied profiler file path (${filePath})`);
+  }
+
   async openProfilerInfoDocument(kind: 'profiler' | 'summary' | 'key-events') {
     if (kind !== 'profiler') {
       const fileName =

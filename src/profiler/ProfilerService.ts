@@ -6,6 +6,7 @@ import * as readline from 'readline';
 import * as vscode from 'vscode';
 import { CONFIG_KEYS } from '../constants';
 import { getProfilerAgentDescriptor } from './ProfilerCatalog';
+import { getProfilerModelTokenSpec } from './ProfilerModelCatalog';
 import {
   ProfilerAggregate,
   ProfilerAgentType,
@@ -122,6 +123,7 @@ interface ClaudeRequestDraft {
   cachedTokens: number;
   totalTokens: number;
   payloadKb: number;
+  maxTokens?: number;
   model?: string;
   label?: string;
   detail?: string;
@@ -602,7 +604,12 @@ export class ProfilerService {
     const parsed = await this.parseGeminiFile(file.filePath);
     if (parsed.kind === 'conversation' && parsed.conversation) {
       const conversation = parsed.conversation;
-      const totals = conversation.messages.reduce(
+      const totals = conversation.messages.reduce<{
+        input: number;
+        output: number;
+        cached: number;
+        total: number;
+      }>(
         (aggregate, message) => {
           const usage = this.extractGeminiUsage(message);
           aggregate.input += usage.inputTokens;
@@ -727,6 +734,7 @@ export class ProfilerService {
       cachedTokens: 0,
       totalTokens: 0,
     };
+    const fallbackMaxTokens = this.getModelContextWindow('codex', summary.model);
     let latestUserPromptPreview = '';
     let cwd = '';
     let provider = '';
@@ -776,7 +784,7 @@ export class ProfilerService {
         outputTokens: usageDelta?.outputTokens,
         cachedTokens: usageDelta?.cachedTokens,
         totalTokens: usageDelta?.totalTokens,
-        maxTokens: usageDelta?.maxTokens,
+        maxTokens: usageDelta?.maxTokens ?? fallbackMaxTokens,
         messagePreview:
           (isCodexToolResult ? latestUserPromptPreview : codexUserPrompt) ??
           rawCodexMessage ??
@@ -842,7 +850,10 @@ export class ProfilerService {
           turn.chartTotalTokens = delta.totalTokens || undefined;
           turn.lastTokenAt = timestamp ?? turn.lastTokenAt;
           turn.chartSourceEventId = rawEventId;
-          turn.maxTokens = Math.max(turn.maxTokens ?? 0, delta.maxTokens ?? 0) || turn.maxTokens;
+          turn.maxTokens =
+            Math.max(turn.maxTokens ?? 0, delta.maxTokens ?? fallbackMaxTokens ?? 0) ||
+            turn.maxTokens ||
+            fallbackMaxTokens;
           turn.payloadKb += record.payloadKb;
           turn.lastTimestamp = timestamp ?? turn.lastTimestamp;
         }
@@ -905,7 +916,7 @@ export class ProfilerService {
         chartOutputTokens: this.positiveOrUndefined(turn.chartOutputTokens),
         chartCachedTokens: this.positiveOrUndefined(turn.chartCachedTokens),
         chartTotalTokens: this.positiveOrUndefined(turn.chartTotalTokens),
-        maxTokens: turn.maxTokens,
+        maxTokens: turn.maxTokens ?? fallbackMaxTokens,
         payloadKb: this.positiveOrUndefined(turn.payloadKb),
         latencyMs: completedLatency ?? firstResponseLatency ?? undefined,
         latencyPhase: completedLatency
@@ -958,6 +969,7 @@ export class ProfilerService {
     const rawEvents: SessionRawEventRef[] = [];
     const recordsByUuid = new Map<string, ParsedRecord>();
     const requests = new Map<string, ClaudeRequestDraft>();
+    const summaryMaxTokens = this.getModelContextWindow('claude', summary.model);
     let cwd = '';
 
     for (const record of parsed.records) {
@@ -970,6 +982,11 @@ export class ProfilerService {
       const summaryLine = this.summarizeClaudeRecord(record);
       const rawUsage =
         record.recordType === 'assistant' ? this.extractClaudeUsage(record.data) : undefined;
+      const recordModel =
+        record.recordType === 'assistant'
+          ? (this.readString(record.data, 'message', 'model') ?? summary.model)
+          : summary.model;
+      const recordMaxTokens = this.getModelContextWindow('claude', recordModel) ?? summaryMaxTokens;
       const assistantSummary =
         record.recordType === 'assistant'
           ? this.extractClaudeAssistantSummary(record.data)
@@ -990,6 +1007,7 @@ export class ProfilerService {
         outputTokens: rawUsage?.outputTokens,
         cachedTokens: rawUsage?.cachedTokens,
         totalTokens: rawUsage?.totalTokens,
+        maxTokens: record.recordType === 'assistant' ? recordMaxTokens : undefined,
         messagePreview:
           this.extractClaudeUserPromptText(record.data) ??
           this.extractClaudeToolResultPreview(record.data) ??
@@ -1033,6 +1051,7 @@ export class ProfilerService {
         cachedTokens: 0,
         totalTokens: 0,
         payloadKb: 0,
+        maxTokens: recordMaxTokens,
         eventType: contentSummary.eventType,
       };
 
@@ -1045,6 +1064,11 @@ export class ProfilerService {
       draft.totalTokens = Math.max(draft.totalTokens, usage.totalTokens);
       draft.payloadKb += record.payloadKb;
       draft.model = this.readString(record.data, 'message', 'model') ?? draft.model;
+      draft.maxTokens =
+        Math.max(draft.maxTokens ?? 0, recordMaxTokens ?? summaryMaxTokens ?? 0) ||
+        draft.maxTokens ||
+        recordMaxTokens ||
+        summaryMaxTokens;
       draft.label = contentSummary.label;
       draft.detail = contentSummary.detail;
       draft.sourceEventId = rawEventId;
@@ -1067,6 +1091,7 @@ export class ProfilerService {
         outputTokens: this.positiveOrUndefined(request.outputTokens),
         cachedTokens: this.positiveOrUndefined(request.cachedTokens),
         totalTokens: this.positiveOrUndefined(request.totalTokens),
+        maxTokens: request.maxTokens ?? summaryMaxTokens,
         payloadKb: this.positiveOrUndefined(request.payloadKb),
         latencyMs: this.diffMs(startedAt, endedAt) ?? undefined,
         latencyPhase: 'response_completed',
@@ -1294,6 +1319,7 @@ export class ProfilerService {
     const timeline: SessionTimelinePoint[] = [];
     const eventBubbles: SessionEventBubble[] = [];
     const rawEvents: SessionRawEventRef[] = [];
+    const summaryMaxTokens = this.getModelContextWindow('gemini', summary.model);
     let turnIndex = 0;
 
     conversation.messages.forEach((message, index) => {
@@ -1304,6 +1330,9 @@ export class ProfilerService {
       const preview =
         this.extractGeminiMessagePreview(message) ?? `${message.type ?? 'message'} event`;
       const usage = this.extractGeminiUsage(message);
+      const messageModel = typeof message.model === 'string' ? message.model : summary.model;
+      const messageMaxTokens =
+        this.getModelContextWindow('gemini', messageModel) ?? summaryMaxTokens;
       const category = this.classifyGeminiMessage(message);
       const rawEventId = `${summary.id}:${index + 1}`;
       const serialized = JSON.stringify(message);
@@ -1324,6 +1353,8 @@ export class ProfilerService {
         outputTokens: usage.outputTokens || undefined,
         cachedTokens: usage.cachedTokens || undefined,
         totalTokens: usage.totalTokens || undefined,
+        maxTokens:
+          message.type === 'user' || message.type === 'gemini' ? messageMaxTokens : undefined,
       });
 
       if (message.type === 'user' || message.type === 'gemini' || category === 'tool') {
@@ -1348,6 +1379,7 @@ export class ProfilerService {
           outputTokens: usage.outputTokens || undefined,
           cachedTokens: usage.cachedTokens || undefined,
           totalTokens: usage.totalTokens || undefined,
+          maxTokens: messageMaxTokens,
           latencyMs:
             message.type === 'gemini'
               ? this.diffMs(
@@ -2530,6 +2562,10 @@ export class ProfilerService {
     }
 
     return Math.max(0, end - start);
+  }
+
+  private getModelContextWindow(agent: ProfilerAgentType, modelId?: string): number | undefined {
+    return getProfilerModelTokenSpec(agent, modelId)?.contextWindow;
   }
 
   private positiveOrUndefined(value?: number): number | undefined {

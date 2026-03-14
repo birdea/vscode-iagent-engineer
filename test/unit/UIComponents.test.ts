@@ -1023,6 +1023,37 @@ suite('UI Components Consolidated', () => {
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
 
+    test('file metric reveals folder and copies path', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      (
+        document.querySelector('[data-profiler-reveal-file="true"]') as HTMLButtonElement | null
+      )?.click();
+      (
+        document.querySelector('[data-profiler-copy-file-path="true"]') as HTMLButtonElement | null
+      )?.click();
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.revealInFolder',
+          filePath: '/tmp/session.jsonl',
+        }),
+      );
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.copyFilePath',
+          filePath: '/tmp/session.jsonl',
+        }),
+      );
+    });
+
     test('fits the full chart on initial load and pinch zoom adjusts x-axis range', async () => {
       const { act } = await import('react');
       act(() => {

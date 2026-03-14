@@ -166,6 +166,14 @@ export class ProfilerCommandHandler {
     await this.editorIntegration.openFileAtLine(filePath, lineNumber);
   }
 
+  async copyFilePath(filePath: string) {
+    await this.editorIntegration.copyFilePath(filePath);
+  }
+
+  async revealInFolder(filePath: string) {
+    await this.editorIntegration.revealFileInFolder(filePath);
+  }
+
   async openInfoDoc(kind: 'profiler' | 'summary' | 'key-events') {
     await this.editorIntegration.openProfilerInfoDocument(kind);
   }

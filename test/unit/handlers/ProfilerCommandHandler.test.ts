@@ -167,6 +167,8 @@ suite('ProfilerCommandHandler', () => {
     };
     editorIntegration = {
       openFileAtLine: sandbox.stub().resolves(),
+      copyFilePath: sandbox.stub().resolves(),
+      revealFileInFolder: sandbox.stub().resolves(),
     };
     liveMonitor = new ProfilerLiveMonitor(profilerStateManager, profilerService);
     overviewHandler = new ProfilerCommandHandler(
@@ -348,5 +350,17 @@ suite('ProfilerCommandHandler', () => {
 
     assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
     assert.ok(context.globalState.update.calledWith(CONFIG_KEYS.PROFILER_SELECTED_TAB, 'codex'));
+  });
+
+  test('copyFilePath delegates to editor integration', async () => {
+    await detailHandler.copyFilePath('/tmp/manual-session.jsonl');
+
+    assert.ok(editorIntegration.copyFilePath.calledWith('/tmp/manual-session.jsonl'));
+  });
+
+  test('revealInFolder delegates to editor integration', async () => {
+    await detailHandler.revealInFolder('/tmp/manual-session.jsonl');
+
+    assert.ok(editorIntegration.revealFileInFolder.calledWith('/tmp/manual-session.jsonl'));
   });
 });
