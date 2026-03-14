@@ -55,7 +55,6 @@ suite('SidebarProvider', () => {
   });
 
   test('resolveWebviewView sets options, handler and html', () => {
-    const onLog = sandbox.stub();
     provider = new SidebarProvider(
       'viewId',
       'figma',
@@ -63,7 +62,6 @@ suite('SidebarProvider', () => {
       asExtensionContext(mockContext),
       stateManager,
       remoteAuthService,
-      onLog,
     );
     provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
 
@@ -93,15 +91,13 @@ suite('SidebarProvider', () => {
   });
 
   test('onDidDispose callback disposes subscriptions', () => {
-    const onLog = sandbox.stub();
     provider = new SidebarProvider(
       'viewId',
-      'log',
+      'prompt',
       mockContext.extensionUri,
       asExtensionContext(mockContext),
       stateManager,
       remoteAuthService,
-      onLog,
     );
     provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
 

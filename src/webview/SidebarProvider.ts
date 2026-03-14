@@ -14,7 +14,6 @@ import { resolveLocale } from '../i18n';
 export class SidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private handler?: WebviewMessageHandler;
-  private logSubscription?: vscode.Disposable;
   private stateSubscription?: vscode.Disposable;
   private profilerOverviewSubscription?: vscode.Disposable;
   private profilerDetailSubscription?: vscode.Disposable;
@@ -28,7 +27,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     private readonly context: vscode.ExtensionContext,
     private readonly stateManager: StateManager,
     private readonly remoteAuthService: RemoteFigmaAuthService,
-    private readonly onLog?: (entry: import('../types').LogEntry) => void,
     private readonly profilerStateManager?: ProfilerStateManager,
     private readonly profilerService?: ProfilerService,
     private readonly profilerLiveMonitor?: ProfilerLiveMonitor,
@@ -65,13 +63,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       this.profilerService,
       this.profilerLiveMonitor,
     );
-
-    if (this.onLog) {
-      this.logSubscription?.dispose();
-      this.logSubscription = Logger.onLog(this.onLog);
-      const entries = Logger.getEntries();
-      entries.forEach((entry) => this.onLog?.(entry));
-    }
 
     if (this.section === 'prompt') {
       this.stateSubscription?.dispose();
@@ -170,9 +161,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 
   async dispose(): Promise<void> {
-    this.logSubscription?.dispose();
-    this.logSubscription = undefined;
-
     this.stateSubscription?.dispose();
     this.stateSubscription = undefined;
 

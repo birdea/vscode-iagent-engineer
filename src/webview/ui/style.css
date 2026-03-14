@@ -608,39 +608,6 @@ label {
   border-radius: var(--iagent-radius);
 }
 
-/* Log terminal */
-.log-terminal {
-  background: var(--vscode-terminal-background, var(--vscode-editor-background));
-  color: var(--vscode-terminal-foreground, var(--vscode-editor-foreground));
-  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 65%, transparent);
-  border-radius: var(--iagent-radius);
-  margin: 0;
-  padding: 6px 8px;
-  font-family: var(--vscode-editor-font-family);
-  font-size: 11px;
-  line-height: 1.5;
-  white-space: pre;
-  overflow: auto;
-  max-height: calc(10 * 1.5em + 12px);
-}
-
-.log-shell {
-  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 45%, transparent);
-  border-radius: var(--iagent-radius);
-  overflow: auto;
-  resize: vertical;
-  min-height: calc(4 * 1.5em + 14px);
-  max-height: calc(10 * 1.5em + 14px);
-}
-
-.prompt-log-terminal {
-  border: 0;
-  border-radius: 0;
-  min-height: calc(4 * 1.5em + 12px);
-  max-height: none;
-  margin: 0;
-}
-
 /* Code output */
 .code-output {
   background: var(--vscode-editor-background);

@@ -4,7 +4,6 @@
   "view.setup.name": "Setup",
   "view.prompt.name": "Prompt",
   "view.profiler.name": "Profiler",
-  "view.log.name": "Log",
   "view.profilerDetail.name": "iProfiler",
   "command.connect.title": "Connect MCP",
   "command.generate.title": "iAgent Engineer: Generate Code",

@@ -5,7 +5,6 @@ export const EXTENSION_ID = 'iagent-engineer';
 export const VIEW_IDS = {
   SETUP: 'iagent-engineer.setup',
   PROMPT: 'iagent-engineer.prompt',
-  LOG: 'iagent-engineer.log',
   PROFILER: 'iagent-engineer.profiler',
   PROFILER_DETAIL: 'iagent-engineer.profiler-detail',
 } as const;

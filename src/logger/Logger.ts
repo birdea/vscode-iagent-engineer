@@ -7,19 +7,9 @@ export class Logger {
   private static entryCount = 0;
   private static nextIndex = 0;
   private static outputChannel: vscode.OutputChannel;
-  private static subscribers: Set<(entry: LogEntry) => void> = new Set();
 
   static initialize(channel: vscode.OutputChannel) {
     this.outputChannel = channel;
-  }
-
-  static onLog(callback: (entry: LogEntry) => void): vscode.Disposable {
-    this.subscribers.add(callback);
-    return {
-      dispose: () => {
-        this.subscribers.delete(callback);
-      },
-    };
   }
 
   static log(level: LogLevel, layer: LayerType, message: string, detail?: string): LogEntry {
@@ -42,7 +32,6 @@ export class Logger {
       this.outputChannel?.appendLine(`  ${detail}`);
     }
 
-    this.subscribers.forEach((callback) => callback(entry));
     return entry;
   }
 

@@ -1,7 +1,6 @@
 import { FigmaLayer } from './components/FigmaLayer';
 import { AgentLayer } from './components/AgentLayer';
 import { PromptLayer } from './components/PromptLayer';
-import { LogLayer } from './components/LogLayer';
 import { ProfilerLayer } from './components/ProfilerLayer';
 import { ProfilerDetailLayer } from './components/ProfilerDetailLayer';
 import { HostToWebviewMessage } from '../../types';
@@ -117,22 +116,6 @@ export function init() {
             if (msg.source === 'prompt' || msg.source === 'system') {
               layer.onHostError(msg.message);
             }
-            break;
-        }
-      });
-      break;
-    }
-    case 'log': {
-      const layer = new LogLayer();
-      app.innerHTML = layer.render();
-      layer.mount();
-      bindMessageHandler((msg) => {
-        switch (msg.event) {
-          case 'log.append':
-            layer.appendEntry(msg.entry);
-            break;
-          case 'log.clear':
-            layer.clear();
             break;
         }
       });

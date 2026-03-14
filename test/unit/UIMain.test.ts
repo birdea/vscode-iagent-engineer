@@ -6,7 +6,7 @@ import { installDom } from './helpers/dom';
 suite('UI Main Initialization', () => {
   let dom: JSDOM;
 
-  const sections = ['setup', 'prompt', 'log', 'profiler', 'profiler-detail'];
+  const sections = ['setup', 'prompt', 'profiler', 'profiler-detail'];
 
   function setupDom(section: string) {
     dom = installDom(section).dom;
@@ -79,18 +79,6 @@ suite('UI Main Initialization', () => {
     dispatch({ event: 'prompt.error', message: 'prompt error' });
     dispatch({ event: 'error', source: 'prompt', message: 'prompt host error' });
     dispatch({ event: 'error', source: 'system', message: 'system error' });
-    dispatch({ event: 'unknown.event' });
-  });
-
-  test('log section — all message branches', () => {
-    setupDom('log');
-    MainModule.init();
-
-    dispatch({
-      event: 'log.append',
-      entry: { id: '1', timestamp: '', level: 'info', layer: 'system', message: 'hi' },
-    });
-    dispatch({ event: 'log.clear' });
     dispatch({ event: 'unknown.event' });
   });
 
