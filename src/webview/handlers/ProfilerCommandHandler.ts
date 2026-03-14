@@ -93,9 +93,17 @@ export class ProfilerCommandHandler {
     }
   }
 
-  async startLiveData() {
+  async startLiveData(id?: string, agent?: ProfilerAgentType) {
     if (this.isScanning || this.isArchiving) {
       return;
+    }
+    if (id && agent) {
+      const sessions = this.profilerStateManager.getOverviewState().sessionsByAgent[agent] ?? [];
+      const summary = sessions.find((session) => session.id === id);
+      if (summary) {
+        await this.profilerLiveMonitor.startSession(summary, { focusPanel: false });
+        return;
+      }
     }
     await this.profilerLiveMonitor.start();
   }

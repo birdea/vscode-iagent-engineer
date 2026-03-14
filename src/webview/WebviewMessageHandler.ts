@@ -172,7 +172,7 @@ export class WebviewMessageHandler {
           await this.profilerHandler?.scan();
           break;
         case 'profiler.startLiveData':
-          await this.profilerHandler?.startLiveData();
+          await this.profilerHandler?.startLiveData(msg.id, msg.agent);
           break;
         case 'profiler.stopLiveData':
           this.profilerHandler?.stopLiveData();

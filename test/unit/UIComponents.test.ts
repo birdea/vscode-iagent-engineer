@@ -1270,7 +1270,7 @@ suite('UI Components Consolidated', () => {
       );
     });
 
-    test('renders live updates and allows stopping live mode', async () => {
+    test('renders live updates and toggles live mode off', async () => {
       const { act } = await import('react');
       act(() => {
         layer.onState({
@@ -1301,9 +1301,52 @@ suite('UI Components Consolidated', () => {
 
       assert.ok(document.getElementById('profiler-header-surface')?.textContent?.includes('Live'));
 
-      (document.querySelector('[data-profiler-live-stop]') as HTMLButtonElement | null)?.click();
+      const liveButton = document.querySelector(
+        '[data-profiler-live-toggle]',
+      ) as HTMLButtonElement | null;
+      assert.strictEqual(liveButton?.dataset.liveActive, 'true');
+      assert.ok(liveButton?.querySelector('.status-dot.connected'));
+      liveButton?.click();
 
       assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.stopLiveData' }));
+    });
+
+    test('renders a red live badge and toggles live mode on for the current session', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+          live: {
+            active: false,
+            status: 'stopped',
+            agent: 'codex',
+            filePath: '/tmp/session.jsonl',
+            fileName: 'session.jsonl',
+            startedAt: '2026-03-11T10:00:00.000Z',
+            updatedAt: '2026-03-11T10:01:05.000Z',
+            messages: [],
+          },
+        });
+      });
+
+      const liveButton = document.querySelector(
+        '[data-profiler-live-toggle]',
+      ) as HTMLButtonElement | null;
+      assert.ok(liveButton);
+      assert.strictEqual(liveButton?.dataset.liveActive, 'false');
+      assert.ok(liveButton?.querySelector('.status-dot.disconnected'));
+
+      liveButton?.click();
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.startLiveData',
+          id: 'codex:test',
+          agent: 'codex',
+        }),
+      );
     });
 
     test('events are correctly categorized in columns', async () => {

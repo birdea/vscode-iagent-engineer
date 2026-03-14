@@ -179,6 +179,36 @@ suite('ProfilerCommandHandler', () => {
     assert.strictEqual(profilerService.refreshSessionDetail.called, true);
   });
 
+  test('startLiveData reconnects the selected session when an id and agent are provided', async () => {
+    profilerStateManager.setOverviewState({
+      status: 'ready',
+      selectedAgent: 'codex',
+      selectedSessionId: liveSummary.id,
+      aggregate: {
+        totalSessions: 1,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: liveSummary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [],
+        codex: [liveSummary],
+        gemini: [],
+      },
+    });
+
+    await detailHandler.startLiveData(liveSummary.id, liveSummary.agent);
+
+    const state = profilerStateManager.getDetailState();
+    assert.strictEqual(state.sessionId, liveSummary.id);
+    assert.strictEqual(state.live?.active, true);
+    assert.strictEqual(state.live?.status, 'streaming');
+    assert.strictEqual(profilerService.getLatestSessionSummary.called, false);
+    assert.strictEqual(profilerService.refreshSessionDetail.called, true);
+  });
+
   test('stale live refresh cannot overwrite a manually selected session', async () => {
     const clock = sandbox.useFakeTimers();
     let resolveRefresh: ((value: unknown) => void) | undefined;

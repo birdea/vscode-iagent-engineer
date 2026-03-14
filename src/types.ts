@@ -268,7 +268,7 @@ export type WebviewToHostMessage =
   | { command: 'editor.saveFile'; code: string; filename: string }
   | { command: 'profiler.getState' }
   | { command: 'profiler.scan' }
-  | { command: 'profiler.startLiveData' }
+  | { command: 'profiler.startLiveData'; id?: string; agent?: ProfilerAgentType }
   | { command: 'profiler.stopLiveData' }
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }

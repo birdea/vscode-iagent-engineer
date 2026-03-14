@@ -78,9 +78,25 @@ export class ProfilerDetailLayer {
         this.renderDynamicContent();
         return;
       }
-      const stopButton = target?.closest<HTMLElement>('[data-profiler-live-stop]');
-      if (stopButton) {
-        vscode.postMessage({ command: 'profiler.stopLiveData' });
+      const liveButton = target?.closest<HTMLElement>('[data-profiler-live-toggle]');
+      if (liveButton) {
+        const isLiveActive = liveButton.dataset.liveActive === 'true';
+        if (isLiveActive) {
+          vscode.postMessage({ command: 'profiler.stopLiveData' });
+          return;
+        }
+
+        const summary = this.state.detail?.summary;
+        if (summary) {
+          vscode.postMessage({
+            command: 'profiler.startLiveData',
+            id: summary.id,
+            agent: summary.agent,
+          });
+          return;
+        }
+
+        vscode.postMessage({ command: 'profiler.startLiveData' });
         return;
       }
       const infoButton = target?.closest<HTMLButtonElement>('[data-info-doc]');
@@ -296,6 +312,9 @@ export class ProfilerDetailLayer {
     const summary = detail.summary;
     const descriptor = getProfilerAgentDescriptor(summary.agent);
     const start = summary.startedAt ?? detail.timeline[0]?.timestamp;
+    const isLiveActive = Boolean(this.state.live?.active);
+    const liveStatusClass = isLiveActive ? 'connected' : 'disconnected';
+    const liveStatusTitle = isLiveActive ? 'Turn live monitoring off' : 'Turn live monitoring on';
 
     const input = summary.totalInputTokens ?? 0;
     const output = summary.totalOutputTokens ?? 0;
@@ -336,11 +355,17 @@ export class ProfilerDetailLayer {
       <i class="codicon codicon-info"></i>
       <span class="profiler-header-action-label">Info</span>
     </button>
-    ${
-      this.state.live?.active
-        ? '<button type="button" class="profiler-header-action profiler-live-badge" data-profiler-live-stop="true"><span class="status-dot connected"></span><span class="profiler-header-action-label">Live</span></button>'
-        : ''
-    }
+    <button
+      type="button"
+      class="profiler-header-action profiler-live-badge ${isLiveActive ? 'is-active' : 'is-inactive'}"
+      data-profiler-live-toggle="true"
+      data-live-active="${isLiveActive ? 'true' : 'false'}"
+      title="${liveStatusTitle}"
+      aria-pressed="${isLiveActive ? 'true' : 'false'}"
+    >
+      <span class="status-dot ${liveStatusClass}"></span>
+      <span class="profiler-header-action-label">Live</span>
+    </button>
   </div>
 </div>
 
