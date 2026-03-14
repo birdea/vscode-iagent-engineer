@@ -1124,7 +1124,7 @@ suite('UI Components Consolidated', () => {
         scroll.dispatchEvent(
           new (global as any).window.MouseEvent('mousemove', {
             bubbles: true,
-            clientX: 540,
+            clientX: 618,
             clientY: 64,
           }),
         );
@@ -1170,6 +1170,99 @@ suite('UI Components Consolidated', () => {
           command: 'profiler.openInfoDoc',
           kind: 'profiler',
         }),
+      );
+    });
+
+    test('toggles summary, chart, and event log fold state from the header icons', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      const summaryToggle = document.querySelector(
+        '[data-profiler-summary-toggle]',
+      ) as HTMLButtonElement | null;
+      const chartToggle = document.querySelector(
+        '[data-profiler-chart-toggle]',
+      ) as HTMLButtonElement | null;
+      const logToggle = document.getElementById('profiler-log-toggle') as HTMLButtonElement | null;
+      const logSurface = document.querySelector('.profiler-log-surface') as HTMLElement | null;
+
+      assert.ok(summaryToggle);
+      assert.ok(chartToggle);
+      assert.ok(logToggle);
+      assert.ok(document.querySelector('.profiler-metric-board'));
+      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Input'));
+      assert.ok(
+        document.getElementById('profiler-log-table')?.textContent?.includes('Turn completed'),
+      );
+
+      act(() => {
+        summaryToggle?.click();
+      });
+      assert.ok(document.querySelector('.profiler-metric-board.is-collapsed'));
+      assert.strictEqual(
+        document.querySelector('[data-profiler-summary-toggle]')?.getAttribute('aria-expanded'),
+        'false',
+      );
+
+      act(() => {
+        (
+          document.querySelector('[data-profiler-summary-toggle]') as HTMLButtonElement | null
+        )?.click();
+      });
+      assert.ok(!document.querySelector('.profiler-metric-board.is-collapsed'));
+      assert.strictEqual(
+        document.querySelector('[data-profiler-summary-toggle]')?.getAttribute('aria-expanded'),
+        'true',
+      );
+
+      act(() => {
+        chartToggle?.click();
+      });
+      assert.strictEqual(
+        document.querySelector('[data-profiler-chart-toggle]')?.getAttribute('aria-expanded'),
+        'false',
+      );
+      assert.strictEqual(
+        document.getElementById('profiler-chart-shell')?.textContent?.trim() ?? '',
+        '',
+      );
+
+      act(() => {
+        (
+          document.querySelector('[data-profiler-chart-toggle]') as HTMLButtonElement | null
+        )?.click();
+      });
+      assert.strictEqual(
+        document.querySelector('[data-profiler-chart-toggle]')?.getAttribute('aria-expanded'),
+        'true',
+      );
+      assert.ok(document.getElementById('profiler-chart-shell')?.textContent?.includes('Input'));
+
+      act(() => {
+        logToggle?.click();
+      });
+      assert.ok(logSurface?.classList.contains('is-collapsed'));
+      assert.strictEqual(
+        document.getElementById('profiler-log-toggle')?.getAttribute('aria-expanded'),
+        'false',
+      );
+
+      act(() => {
+        (document.getElementById('profiler-log-toggle') as HTMLButtonElement | null)?.click();
+      });
+      assert.ok(!logSurface?.classList.contains('is-collapsed'));
+      assert.strictEqual(
+        document.getElementById('profiler-log-toggle')?.getAttribute('aria-expanded'),
+        'true',
+      );
+      assert.ok(
+        document.getElementById('profiler-log-table')?.textContent?.includes('Turn completed'),
       );
     });
 

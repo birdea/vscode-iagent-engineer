@@ -21,6 +21,9 @@ export class ProfilerDetailLayer {
   private metric: ProfilerMetricType = 'tokens';
   private readonly locale: UiLocale = getDocumentLocale();
   private chartRoot: Root | null = null;
+  private summaryCollapsed = false;
+  private chartCollapsed = false;
+  private eventLogCollapsed = false;
 
   render(): string {
     return `
@@ -31,9 +34,21 @@ export class ProfilerDetailLayer {
     <div class="profiler-chart-wrapper" id="profiler-chart-shell"></div>
   </div>
   <div class="profiler-log-surface">
-    <div class="profiler-log-header-row">
-      <h3 class="profiler-surface-title">Event Log</h3>
-      <span class="profiler-log-count" id="profiler-log-count"></span>
+    <div class="profiler-log-header-row profiler-section-header-row" id="profiler-log-header-row">
+      <div class="profiler-log-header-copy">
+        <h3 class="profiler-surface-title">Event Log</h3>
+        <span class="profiler-log-count" id="profiler-log-count"></span>
+      </div>
+      <button
+        type="button"
+        class="profiler-section-toggle"
+        id="profiler-log-toggle"
+        data-profiler-log-toggle="true"
+        aria-label="Toggle event log"
+        aria-expanded="true"
+      >
+        <i class="codicon codicon-chevron-down"></i>
+      </button>
     </div>
     <div class="profiler-log-table" id="profiler-log-table"></div>
   </div>
@@ -57,6 +72,12 @@ export class ProfilerDetailLayer {
 
     document.getElementById('profiler-header-surface')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
+      const summaryToggle = target?.closest<HTMLElement>('[data-profiler-summary-toggle]');
+      if (summaryToggle) {
+        this.summaryCollapsed = !this.summaryCollapsed;
+        this.renderDynamicContent();
+        return;
+      }
       const stopButton = target?.closest<HTMLElement>('[data-profiler-live-stop]');
       if (stopButton) {
         vscode.postMessage({ command: 'profiler.stopLiveData' });
@@ -73,6 +94,15 @@ export class ProfilerDetailLayer {
           vscode.postMessage({ command: 'profiler.openInfoDoc', kind });
         }
       }
+    });
+    document.getElementById('profiler-log-header-row')?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const logToggle = target?.closest<HTMLElement>('[data-profiler-log-toggle]');
+      if (!logToggle) {
+        return;
+      }
+      this.eventLogCollapsed = !this.eventLogCollapsed;
+      this.renderDynamicContent();
     });
 
     vscode.postMessage({ command: 'profiler.getState' });
@@ -95,20 +125,32 @@ export class ProfilerDetailLayer {
 
   private renderDynamicContent() {
     const headerSurface = document.getElementById('profiler-header-surface');
+    const chartHeader = document.getElementById('profiler-chart-header');
     const chartShell = document.getElementById('profiler-chart-shell');
     const logTable = document.getElementById('profiler-log-table');
     const logCount = document.getElementById('profiler-log-count');
+    const chartSurface = document.querySelector('.profiler-chart-surface');
+    const logToggle = document.getElementById('profiler-log-toggle');
+    const logSurface = document.querySelector('.profiler-log-surface');
 
-    if (!headerSurface || !chartShell || !logTable) {
+    if (!headerSurface || !chartHeader || !chartShell || !logTable) {
       return;
     }
 
     if (this.state.status === 'loading') {
       this.unmountChart();
       headerSurface.innerHTML = this.renderStatusPanel(this.state.message ?? '로딩중..');
-      chartShell.innerHTML = this.renderLoadingState();
+      chartHeader.innerHTML = this.renderChartSectionHeader();
+      this.bindChartToggle(chartHeader);
+      chartShell.innerHTML = this.chartCollapsed ? '' : this.renderLoadingState();
       logTable.innerHTML = '';
       if (logCount) logCount.textContent = '';
+      chartSurface?.classList.toggle('is-collapsed', this.chartCollapsed);
+      if (logToggle) {
+        logToggle.setAttribute('aria-expanded', this.eventLogCollapsed ? 'false' : 'true');
+        logToggle.innerHTML = this.getToggleIconMarkup(this.eventLogCollapsed);
+      }
+      logSurface?.classList.toggle('is-collapsed', this.eventLogCollapsed);
       return;
     }
 
@@ -117,17 +159,32 @@ export class ProfilerDetailLayer {
         this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.',
       );
       this.unmountChart();
-      chartShell.innerHTML = this.renderEmptyState(
-        this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.',
-      );
+      chartHeader.innerHTML = this.renderChartSectionHeader();
+      this.bindChartToggle(chartHeader);
+      chartShell.innerHTML = this.chartCollapsed
+        ? ''
+        : this.renderEmptyState(this.state.message ?? '세션을 선택하면 상세 분석이 표시됩니다.');
       logTable.innerHTML = '';
       if (logCount) logCount.textContent = '';
+      chartSurface?.classList.toggle('is-collapsed', this.chartCollapsed);
+      if (logToggle) {
+        logToggle.setAttribute('aria-expanded', this.eventLogCollapsed ? 'false' : 'true');
+        logToggle.innerHTML = this.getToggleIconMarkup(this.eventLogCollapsed);
+      }
+      logSurface?.classList.toggle('is-collapsed', this.eventLogCollapsed);
       return;
     }
 
     const detail = this.state.detail;
     headerSurface.innerHTML = this.renderOverview(detail);
-    this.mountChart(chartShell, detail);
+    chartHeader.innerHTML = this.renderChartSectionHeader();
+    this.bindChartToggle(chartHeader);
+    if (this.chartCollapsed) {
+      this.unmountChart();
+      chartShell.innerHTML = '';
+    } else {
+      this.mountChart(chartShell, detail);
+    }
 
     const allEvents = [...detail.rawEvents];
     if (this.state.live?.messages) {
@@ -150,8 +207,14 @@ export class ProfilerDetailLayer {
       (a, b) => (a.timestamp ?? '').localeCompare(b.timestamp ?? '') || a.lineNumber - b.lineNumber,
     );
 
-    logTable.innerHTML = this.renderLogTable(allEvents);
+    chartSurface?.classList.toggle('is-collapsed', this.chartCollapsed);
+    logTable.innerHTML = this.eventLogCollapsed ? '' : this.renderLogTable(allEvents);
     if (logCount) logCount.textContent = `(${allEvents.length} events)`;
+    if (logToggle) {
+      logToggle.setAttribute('aria-expanded', this.eventLogCollapsed ? 'false' : 'true');
+      logToggle.innerHTML = this.getToggleIconMarkup(this.eventLogCollapsed);
+    }
+    logSurface?.classList.toggle('is-collapsed', this.eventLogCollapsed);
   }
 
   private renderLogTable(events: SessionRawEventRef[]): string {
@@ -256,28 +319,46 @@ export class ProfilerDetailLayer {
 
     return `
 <div class="profiler-hero">
-  <div class="profiler-hero-brand">
-    <div class="brand-icon">${descriptor.iconMarkup}</div>
-    <div class="brand-text">
-      <span class="vendor">${this.escapeHtml(descriptor.vendor)}</span>
-      <h1 class="model-title">${this.escapeHtml(summary.model ?? descriptor.label)}</h1>
-      <span class="session-id">${this.escapeHtml(summary.id)}</span>
+  <div class="profiler-hero-main">
+    <div class="profiler-hero-brand">
+      <div class="brand-icon">${descriptor.iconMarkup}</div>
+      <div class="brand-text">
+        <span class="vendor">${this.escapeHtml(descriptor.vendor)}</span>
+        <div class="profiler-model-row">
+          <h1 class="model-title">${this.escapeHtml(summary.model ?? descriptor.label)}</h1>
+          <span class="session-id">${this.escapeHtml(summary.id)}</span>
+        </div>
+      </div>
     </div>
   </div>
   <div class="profiler-header-actions">
+    <button type="button" class="profiler-header-action profiler-info-button" data-info-doc="profiler">
+      <i class="codicon codicon-info"></i>
+      <span class="profiler-header-action-label">Info</span>
+    </button>
     ${
       this.state.live?.active
         ? '<button type="button" class="profiler-header-action profiler-live-badge" data-profiler-live-stop="true"><span class="status-dot connected"></span><span class="profiler-header-action-label">Live</span></button>'
         : ''
     }
-    <button type="button" class="profiler-header-action profiler-info-button" data-info-doc="profiler">
-      <i class="codicon codicon-info"></i>
-      <span class="profiler-header-action-label">Info</span>
-    </button>
   </div>
 </div>
 
-<div class="profiler-metric-board">
+<div class="profiler-section-header-row">
+  <div class="profiler-section-header-copy">
+    <h3 class="profiler-surface-title">Summary</h3>
+  </div>
+  <button
+    type="button"
+    class="profiler-section-toggle"
+    data-profiler-summary-toggle="true"
+    aria-label="Toggle summary"
+    aria-expanded="${this.summaryCollapsed ? 'false' : 'true'}"
+  >
+    ${this.getToggleIconMarkup(this.summaryCollapsed)}
+  </button>
+</div>
+<div class="profiler-metric-board ${this.summaryCollapsed ? 'is-collapsed' : ''}">
   ${this.metricItem('File', this.truncate(summary.fileName, 32), 'symbol-file')}
   ${this.metricItem('Size', this.formatBytes(summary.fileSizeBytes), 'database')}
   ${this.metricItem('Tokens', `${this.formatNumber(input)} / ${this.formatNumber(output)}`, 'symbol-number')}
@@ -291,6 +372,39 @@ export class ProfilerDetailLayer {
   ${this.metricItem('Total Tok', this.formatNumber(total), 'layers')}
   ${this.metricItem('Date', start ? this.formatStamp(start).split(' ')[0] : '-', 'calendar')}
 </div>`;
+  }
+
+  private renderChartSectionHeader(): string {
+    return `
+<div class="profiler-section-header-row">
+  <div class="profiler-section-header-copy">
+    <h3 class="profiler-surface-title">Chart</h3>
+  </div>
+  <button
+    type="button"
+    class="profiler-section-toggle"
+    data-profiler-chart-toggle="true"
+    aria-label="Toggle chart"
+    aria-expanded="${this.chartCollapsed ? 'false' : 'true'}"
+  >
+    ${this.getToggleIconMarkup(this.chartCollapsed)}
+  </button>
+</div>`;
+  }
+
+  private bindChartToggle(container: HTMLElement) {
+    const button = container.querySelector<HTMLButtonElement>('[data-profiler-chart-toggle]');
+    if (!button) {
+      return;
+    }
+    button.onclick = () => {
+      this.chartCollapsed = !this.chartCollapsed;
+      this.renderDynamicContent();
+    };
+  }
+
+  private getToggleIconMarkup(collapsed: boolean): string {
+    return `<i class="codicon codicon-${collapsed ? 'chevron-right' : 'chevron-down'}"></i>`;
   }
 
   private metricItem(label: string, value: string, icon: string): string {
