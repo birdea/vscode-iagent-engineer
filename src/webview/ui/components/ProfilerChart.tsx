@@ -44,12 +44,13 @@ interface ProfilerChartProps {
 const CHART_HEIGHT = 252;
 const AXIS_RAIL_WIDTH = 60;
 const PADDING = { top: 18, right: 18, bottom: 34, left: 18 };
-const PIXELS_PER_MINUTE = 14;
 const MIN_WIDTH = 640;
-const MIN_POINT_SPACING = 72;
 const BAR_WIDTH = 8;
 const TOOLTIP_MARGIN = 12;
 const TOOLTIP_APPROX_WIDTH = 380;
+const MIN_RANGE_SCALE = 1;
+const MAX_RANGE_SCALE = 8;
+const PINCH_SCALE_SENSITIVITY = 0.004;
 
 function getPointAnchorTimestamp(point: SessionTimelinePoint): string {
   return point.endTimestamp ?? point.timestamp;
@@ -335,12 +336,15 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
   const [scrollLeft, setScrollLeft] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(MIN_WIDTH);
+  const [rangeScale, setRangeScale] = useState(MIN_RANGE_SCALE);
   const [tooltip, setTooltip] = useState<{
     x: number;
     point: SessionTimelinePoint;
     index: number;
   } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const previousChartWidthRef = useRef<number | null>(null);
+  const pinchAnchorRef = useRef<{ ratio: number; viewportOffset: number } | null>(null);
 
   const toggleSeries = useCallback((key: string) => {
     setHiddenSeries((prev) => {
@@ -354,19 +358,16 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     });
   }, []);
 
-  // Compute chart width based on fixed time intervals
+  const resolvedViewportWidth = viewportWidth > 1 ? viewportWidth : MIN_WIDTH;
+
+  // Fit the full timeline into the viewport by default, then expand horizontally while pinching.
   const { chartWidth, minTime, maxTime } = useMemo(() => {
     const ts = timeline.map((p) => new Date(getPointChartTimestamp(p, metric)).valueOf());
     const min = Math.min(...ts);
     const max = Math.max(...ts);
-    const spanMinutes = Math.max(1, (max - min) / 60_000);
-    const w = Math.max(
-      MIN_WIDTH,
-      timeline.length * MIN_POINT_SPACING,
-      Math.round(spanMinutes * PIXELS_PER_MINUTE),
-    );
+    const w = Math.max(resolvedViewportWidth, Math.round(resolvedViewportWidth * rangeScale));
     return { chartWidth: w, minTime: min, maxTime: max };
-  }, [metric, timeline]);
+  }, [metric, rangeScale, resolvedViewportWidth, timeline]);
 
   const plotWidth = chartWidth - PADDING.left - PADDING.right;
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
@@ -505,14 +506,63 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     [metric, plotWidth, timeline, xScale],
   );
 
-  // Scroll to end on mount
+  const handleWheel = useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      if (!event.ctrlKey) {
+        return;
+      }
+
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) {
+        return;
+      }
+
+      event.preventDefault();
+      const bounds = scrollElement.getBoundingClientRect();
+      const viewportOffset = Math.max(
+        PADDING.left,
+        Math.min(
+          event.clientX - bounds.left,
+          Math.max(PADDING.left, scrollElement.clientWidth - PADDING.right),
+        ),
+      );
+      const currentWidth = previousChartWidthRef.current ?? chartWidth;
+      pinchAnchorRef.current = {
+        ratio: Math.max(0, Math.min(1, (scrollElement.scrollLeft + viewportOffset) / currentWidth)),
+        viewportOffset,
+      };
+
+      setRangeScale((prev) => {
+        const next = prev * Math.exp(-event.deltaY * PINCH_SCALE_SENSITIVITY);
+        return Math.max(MIN_RANGE_SCALE, Math.min(MAX_RANGE_SCALE, next));
+      });
+    },
+    [chartWidth],
+  );
+
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (scrollElement) {
-      const nextViewportWidth = Math.max(scrollElement.clientWidth || 0, MIN_WIDTH);
+      const nextViewportWidth = Math.max(scrollElement.clientWidth || 0, 1);
       setViewportWidth(nextViewportWidth);
-      scrollElement.scrollLeft = scrollElement.scrollWidth;
-      setScrollLeft(scrollElement.scrollLeft);
+      const previousChartWidth = previousChartWidthRef.current;
+      const maxPreviousScroll =
+        previousChartWidth !== null ? Math.max(0, previousChartWidth - nextViewportWidth) : 0;
+      const maxNextScroll = Math.max(0, chartWidth - nextViewportWidth);
+
+      let nextScrollLeft = 0;
+      if (pinchAnchorRef.current && maxNextScroll > 0) {
+        nextScrollLeft =
+          pinchAnchorRef.current.ratio * chartWidth - pinchAnchorRef.current.viewportOffset;
+      } else if (previousChartWidth !== null && maxPreviousScroll > 0 && maxNextScroll > 0) {
+        nextScrollLeft = (scrollElement.scrollLeft / maxPreviousScroll) * maxNextScroll;
+      }
+
+      const clampedScrollLeft = Math.max(0, Math.min(maxNextScroll, nextScrollLeft));
+      scrollElement.scrollLeft = clampedScrollLeft;
+      setScrollLeft(clampedScrollLeft);
+      previousChartWidthRef.current = chartWidth;
+      pinchAnchorRef.current = null;
     }
   }, [chartWidth]);
 
@@ -522,7 +572,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
       if (!scrollElement) {
         return;
       }
-      setViewportWidth(Math.max(scrollElement.clientWidth || 0, MIN_WIDTH));
+      setViewportWidth(Math.max(scrollElement.clientWidth || 0, 1));
       setScrollLeft(scrollElement.scrollLeft);
     };
 
@@ -619,8 +669,9 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
           onScroll={(event) => {
             const target = event.currentTarget;
             setScrollLeft(target.scrollLeft);
-            setViewportWidth(Math.max(target.clientWidth || 0, MIN_WIDTH));
+            setViewportWidth(Math.max(target.clientWidth || 0, 1));
           }}
+          onWheel={handleWheel}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setTooltip(null)}
         >
@@ -730,22 +781,6 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                   opacity={s.opacity}
                 />
               ))}
-
-              {/* Endpoint markers */}
-              {visibleSeries.map((s) => {
-                const last = s.points[s.points.length - 1];
-                if (!last) return null;
-                return (
-                  <MarkerIcon
-                    key={`marker-${s.key}`}
-                    shape={s.marker}
-                    color={s.color}
-                    x={last.x}
-                    y={last.y}
-                    size={7.5}
-                  />
-                );
-              })}
 
               {/* Baseline */}
               <line

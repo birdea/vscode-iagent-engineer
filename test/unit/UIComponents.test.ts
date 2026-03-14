@@ -997,6 +997,78 @@ suite('UI Components Consolidated', () => {
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
 
+    test('fits the full chart on initial load and pinch zoom adjusts x-axis range', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      const scroll = document.querySelector('.profiler-chart-scroll') as HTMLDivElement | null;
+      assert.ok(scroll);
+
+      Object.defineProperty(scroll, 'clientWidth', {
+        configurable: true,
+        value: 720,
+      });
+      sandbox.stub(scroll, 'getBoundingClientRect').returns({
+        left: 0,
+        top: 0,
+        right: 720,
+        bottom: 252,
+        width: 720,
+        height: 252,
+        x: 0,
+        y: 0,
+        toJSON: () => '',
+      } as DOMRect);
+
+      act(() => {
+        window.dispatchEvent(new (global as any).window.Event('resize'));
+      });
+
+      const chartInner = document.querySelector('.profiler-chart-inner') as HTMLDivElement | null;
+      assert.ok(chartInner);
+      assert.strictEqual(chartInner?.style.width, '720px');
+      assert.strictEqual(scroll?.scrollLeft, 0);
+
+      act(() => {
+        scroll?.dispatchEvent(
+          new (global as any).window.WheelEvent('wheel', {
+            bubbles: true,
+            ctrlKey: true,
+            clientX: 360,
+            deltaY: -120,
+          }),
+        );
+      });
+
+      const zoomedChartInner = document.querySelector(
+        '.profiler-chart-inner',
+      ) as HTMLDivElement | null;
+      const zoomedWidth = Number.parseFloat(zoomedChartInner?.style.width ?? '0');
+      assert.ok(zoomedWidth > 720);
+
+      act(() => {
+        scroll?.dispatchEvent(
+          new (global as any).window.WheelEvent('wheel', {
+            bubbles: true,
+            ctrlKey: true,
+            clientX: 360,
+            deltaY: 120,
+          }),
+        );
+      });
+
+      const resetChartInner = document.querySelector(
+        '.profiler-chart-inner',
+      ) as HTMLDivElement | null;
+      assert.strictEqual(resetChartInner?.style.width, '720px');
+    });
+
     test('re-renders chart after loading transition without leaving spinner behind', async () => {
       const { act } = await import('react');
       const detail = createProfilerDetail();
