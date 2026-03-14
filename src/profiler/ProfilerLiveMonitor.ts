@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { Logger } from '../logger/Logger';
 import { ProfilerService } from './ProfilerService';
 import { ProfilerStateManager } from './ProfilerStateManager';
-import { LogEntry, ProfilerAgentType, ProfilerDetailState } from '../types';
+import { LogEntry, ProfilerAgentType, ProfilerDetailState, SessionSummary } from '../types';
 
 const LIVE_POLL_INTERVAL_MS = 1500;
 const MAX_LIVE_MESSAGES = 40;
@@ -51,31 +51,7 @@ export class ProfilerLiveMonitor {
       if (!summary) {
         throw new Error('현재 진행 중인 세션 파일을 찾지 못했습니다.');
       }
-
-      const target: LiveSessionTarget = {
-        agent: summary.agent,
-        filePath: summary.filePath,
-        fileName: summary.fileName,
-        sessionId: summary.id,
-        startedAt: new Date().toISOString(),
-      };
-      this.target = target;
-
-      this.profilerStateManager.setSelectedSession(summary.agent, summary.id);
-      this.appendMessage(
-        'success',
-        'Live session attached',
-        `${summary.agent.toUpperCase()} · ${summary.fileName}`,
-      );
-
-      const refreshed = await this.refreshLiveData(revision, target, true);
-      if (!refreshed || !this.isCurrentTarget(revision, target)) {
-        return;
-      }
-
-      this.pollTimer = setInterval(() => {
-        void this.refreshLiveData(revision, target);
-      }, LIVE_POLL_INTERVAL_MS);
+      await this.attachToSummary(revision, summary);
     } catch (error) {
       if (!this.isCurrentRevision(revision)) {
         return;
@@ -92,6 +68,52 @@ export class ProfilerLiveMonitor {
         }),
       });
       Logger.error('profiler', 'Failed to start live profiler data', message);
+      this.stopTimer();
+      this.target = undefined;
+    }
+  }
+
+  async startSession(summary: SessionSummary, options?: { focusPanel?: boolean }) {
+    const revision = this.beginSession();
+
+    if (options?.focusPanel !== false) {
+      await this.focusDetailPanel();
+    }
+
+    this.appendMessage('info', 'Connecting to the selected live session');
+    this.profilerStateManager.setDetailState({
+      status: 'loading',
+      sessionId: summary.id,
+      message: '라이브 세션을 연결하는 중입니다.',
+      live: this.getLiveState({
+        active: true,
+        status: 'connecting',
+        agent: summary.agent,
+        filePath: summary.filePath,
+        fileName: summary.fileName,
+        updatedAt: summary.modifiedAt,
+      }),
+    });
+
+    try {
+      await this.attachToSummary(revision, summary);
+    } catch (error) {
+      if (!this.isCurrentRevision(revision)) {
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : String(error);
+      this.appendMessage('error', 'Live session attach failed', message);
+      this.profilerStateManager.setDetailState({
+        status: 'error',
+        sessionId: summary.id,
+        message,
+        live: this.getLiveState({
+          active: false,
+          status: 'error',
+        }),
+      });
+      Logger.error('profiler', 'Failed to attach selected live session', message);
       this.stopTimer();
       this.target = undefined;
     }
@@ -246,6 +268,33 @@ export class ProfilerLiveMonitor {
       Logger.error('profiler', 'Live profiler refresh failed', message);
       return false;
     }
+  }
+
+  private async attachToSummary(revision: number, summary: SessionSummary) {
+    const target: LiveSessionTarget = {
+      agent: summary.agent,
+      filePath: summary.filePath,
+      fileName: summary.fileName,
+      sessionId: summary.id,
+      startedAt: new Date().toISOString(),
+    };
+    this.target = target;
+
+    this.profilerStateManager.setSelectedSession(summary.agent, summary.id);
+    this.appendMessage(
+      'success',
+      'Live session attached',
+      `${summary.agent.toUpperCase()} · ${summary.fileName}`,
+    );
+
+    const refreshed = await this.refreshLiveData(revision, target, true);
+    if (!refreshed || !this.isCurrentTarget(revision, target)) {
+      return;
+    }
+
+    this.pollTimer = setInterval(() => {
+      void this.refreshLiveData(revision, target);
+    }, LIVE_POLL_INTERVAL_MS);
   }
 
   private isCurrentRevision(revision: number): boolean {
