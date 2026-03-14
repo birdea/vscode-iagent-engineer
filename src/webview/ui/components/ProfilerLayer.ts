@@ -282,23 +282,30 @@ export class ProfilerLayer {
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
     const liveBadge = this.isLiveSession(session)
-      ? '<span class="profiler-session-live">(live)</span>'
+      ? '<span class="profiler-session-card-badge">Live</span>'
       : '';
     return `
 <button
-  class="profiler-session-row ${isSelected ? 'selected' : ''}"
+  class="profiler-session-card ${isSelected ? 'selected' : ''}"
   data-session-id="${session.id}"
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
-  ${liveBadge}
-  <span class="profiler-session-head">
-    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}"><span class="profiler-session-name">${this.escapeHtml(fileName)}</span></span>
-    <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
-  </span>
-  <span class="profiler-session-meta">
-    <span class="profiler-session-stamp">${this.formatDate(timestamp)}</span>
-    <span class="profiler-session-tokens">IN ${inK} · OUT ${outK}</span>
+  <span class="profiler-session-card-main">
+    <span class="profiler-session-card-title-row">
+      <span class="profiler-session-card-title-wrap">
+        <span class="profiler-session-card-name" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
+        ${liveBadge}
+      </span>
+      <span class="profiler-session-card-size">${this.formatBytes(session.fileSizeBytes)}</span>
+    </span>
+    <span class="profiler-session-card-meta-row">
+      <span class="profiler-session-card-stamp">${this.formatDate(timestamp)}</span>
+      <span class="profiler-session-card-token-group">
+        <span class="profiler-session-card-token profiler-session-card-token-in">IN ${inK}</span>
+        <span class="profiler-session-card-token profiler-session-card-token-out">OUT ${outK}</span>
+      </span>
+    </span>
   </span>
 </button>`;
   }

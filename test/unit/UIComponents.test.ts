@@ -1269,20 +1269,22 @@ suite('UI Components Consolidated', () => {
         },
       });
 
-      const row = document.querySelector('.profiler-session-row') as HTMLButtonElement;
-      const head = row?.querySelector('.profiler-session-head') as HTMLElement | null;
-      const fileCell = row?.querySelector('.profiler-session-file') as HTMLElement | null;
-      const meta = row?.querySelector('.profiler-session-meta') as HTMLElement | null;
-      const stampCell = row?.querySelector('.profiler-session-stamp') as HTMLElement | null;
-      const sizeCell = row?.querySelector('.profiler-session-size') as HTMLElement | null;
+      const row = document.querySelector('.profiler-session-card') as HTMLButtonElement;
+      const main = row?.querySelector('.profiler-session-card-main') as HTMLElement | null;
+      const titleRow = row?.querySelector('.profiler-session-card-title-row') as HTMLElement | null;
+      const fileCell = row?.querySelector('.profiler-session-card-name') as HTMLElement | null;
+      const meta = row?.querySelector('.profiler-session-card-meta-row') as HTMLElement | null;
+      const stampCell = row?.querySelector('.profiler-session-card-stamp') as HTMLElement | null;
+      const sizeCell = row?.querySelector('.profiler-session-card-size') as HTMLElement | null;
       const sortButtons = Array.from(document.querySelectorAll('.profiler-sort-btn')).map(
         (button) => button.textContent?.trim(),
       );
 
       assert.ok(row);
-      assert.strictEqual(document.querySelectorAll('.profiler-session-row').length, 1);
+      assert.strictEqual(document.querySelectorAll('.profiler-session-card').length, 1);
       assert.deepStrictEqual(sortButtons, ['Name', 'Time ↓', 'tin', 'tout', 'Size']);
-      assert.ok(head);
+      assert.ok(main);
+      assert.ok(titleRow);
       assert.ok(fileCell);
       assert.ok(meta);
       assert.ok(stampCell);
@@ -1339,12 +1341,12 @@ suite('UI Components Consolidated', () => {
         },
       });
 
-      const badges = Array.from(document.querySelectorAll('.profiler-session-live')).map((node) =>
-        node.textContent?.trim(),
+      const badges = Array.from(document.querySelectorAll('.profiler-session-card-badge')).map(
+        (node) => node.textContent?.trim(),
       );
 
-      assert.deepStrictEqual(badges, ['(live)']);
-      assert.ok(document.querySelector('.profiler-session-row')?.textContent?.includes('(live)'));
+      assert.deepStrictEqual(badges, ['Live']);
+      assert.ok(document.querySelector('.profiler-session-card')?.textContent?.includes('Live'));
     });
 
     test('falls back to the session path basename when fileName is blank', () => {
@@ -1378,7 +1380,7 @@ suite('UI Components Consolidated', () => {
         },
       });
 
-      const fileCell = document.querySelector('.profiler-session-file') as HTMLElement | null;
+      const fileCell = document.querySelector('.profiler-session-card-name') as HTMLElement | null;
 
       assert.ok(fileCell);
       assert.strictEqual(fileCell.textContent, 'fallback-session-name.jsonl');
