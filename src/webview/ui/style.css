@@ -819,6 +819,10 @@ a:hover {
   align-items: stretch;
   gap: 0;
   margin-top: 6px;
+  background: var(
+    --vscode-editorGroupHeader-tabsBackground,
+    var(--vscode-tab-inactiveBackground, var(--vscode-editor-background))
+  );
   border-bottom: 1px solid
     var(--vscode-tab-border, var(--vscode-panel-border, rgba(255, 255, 255, 0.08)));
   overflow-x: auto;
@@ -841,7 +845,8 @@ a:hover {
   padding: 8px 12px 7px;
   min-width: 0;
   min-height: 36px;
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  max-width: 220px;
 }
 
 .profiler-tab:hover {
