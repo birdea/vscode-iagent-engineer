@@ -1643,30 +1643,36 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 .profiler-header-surface {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 10px 12px 8px;
 }
 
 .profiler-hero {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.profiler-hero-main {
+  min-width: 0;
 }
 
 .profiler-hero-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
 .brand-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: color-mix(in srgb, var(--vscode-icon-foreground) 72%, var(--vscode-foreground) 28%);
+  flex-shrink: 0;
 }
 
 .brand-icon svg {
@@ -1684,29 +1690,47 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 }
 
 .brand-text .vendor {
-  font-size: 10px;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9px;
   color: var(--vscode-descriptionForeground);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profiler-model-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
 }
 
 .brand-text .model-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .brand-text .session-id {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
   font-size: 10px;
   font-family: var(--vscode-editor-font-family);
   color: var(--vscode-descriptionForeground);
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .profiler-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-self: start;
 }
 
 .profiler-header-action {
@@ -1715,12 +1739,12 @@ body[data-section='profiler'] .profiler-session-card-token-out {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 30px;
-  padding: 0 11px;
+  min-height: 26px;
+  padding: 0 9px;
   border-radius: 4px;
   border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 88%, transparent);
   font: inherit;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
@@ -1770,82 +1794,103 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 }
 
 .profiler-info-button i {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
 }
 
 .profiler-metric-board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px 16px;
-  background: var(--vscode-sideBar-background);
-  padding: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--vscode-panel-border) 40%, transparent);
+  padding: 1px;
   border: 1px solid var(--vscode-panel-border);
   border-radius: 4px;
+  overflow: hidden;
+}
+
+.profiler-metric-board.is-collapsed {
+  display: none;
 }
 
 .metric-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 10px;
+  background: color-mix(
+    in srgb,
+    var(--vscode-editorWidget-background, var(--vscode-editor-background)) 82%,
+    transparent
+  );
 }
 
 .metric-label-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: var(--vscode-descriptionForeground);
+  min-width: 0;
 }
 
 .metric-label-row i {
-  font-size: 14px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 .metric-label {
-  font-size: 11px;
+  min-width: 0;
+  font-size: 10px;
   text-transform: none;
+  line-height: 1.25;
 }
 
 .metric-value {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--vscode-foreground);
-  padding-left: 20px; /* Align with label text after icon */
+  padding-left: 17px;
+  line-height: 1.25;
+  word-break: break-word;
 }
 
 /* 2. Chart Section */
 .profiler-chart-surface {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 0 12px 10px;
+}
+
+.profiler-chart-surface.is-collapsed .profiler-chart-wrapper {
+  display: none;
 }
 
 .profiler-chart-header {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .profiler-chart-wrapper {
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 /* 3. Log Stream (Problems/Search View style) */
 .profiler-log-surface {
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 0 12px 10px;
 }
 
-.profiler-log-header-row {
-  display: flex;
+.profiler-log-surface.is-collapsed .profiler-log-table {
+  display: none;
+}
+
+.profiler-log-header-copy,
+.profiler-section-header-copy {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: var(--vscode-editorWidget-background);
-  border-bottom: 1px solid var(--vscode-panel-border);
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  min-width: 0;
 }
 
 .profiler-surface-title {
@@ -1862,9 +1907,70 @@ body[data-section='profiler'] .profiler-session-card-token-out {
   color: var(--vscode-descriptionForeground);
 }
 
+.profiler-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+}
+
+.profiler-header-surface .profiler-section-header-row {
+  margin-bottom: 6px;
+}
+
+.profiler-chart-header .profiler-section-header-row {
+  margin: 0 0 6px;
+}
+
+.profiler-log-header-row {
+  margin: 0 0 6px;
+}
+
+.profiler-section-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+}
+
+.profiler-section-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+  color: var(--vscode-foreground);
+}
+
+.profiler-section-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.profiler-section-toggle .codicon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .profiler-log-table {
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(
+    in srgb,
+    var(--vscode-editorWidget-background, var(--vscode-editor-background)) 88%,
+    transparent
+  );
 }
 
 .profiler-table-row {
@@ -1964,11 +2070,6 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 }
 
 @media (max-width: 1024px) {
-  .profiler-hero {
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .profiler-header-actions,
   .profiler-chart-legend {
     justify-content: flex-start;
@@ -1976,6 +2077,20 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 
   .profiler-metric-board {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .profiler-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .profiler-header-actions {
+    justify-content: flex-start;
+  }
+
+  .profiler-metric-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
