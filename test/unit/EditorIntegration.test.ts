@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sinon from 'sinon';
@@ -153,6 +154,35 @@ suite('EditorIntegration', () => {
     );
 
     assert.ok(vscode.window.showTextDocument.calledOnce);
+  });
+
+  test('openProfilerInfoDocument opens the Korean profiler guide section', async () => {
+    const vscode = require('vscode');
+    const guidePath = path.join(process.cwd(), 'docs', 'info-profiler.md');
+    const lines = fs.readFileSync(guidePath, 'utf8').split(/\r?\n/);
+    const expectedLine = lines.findIndex((line) => line.trim() === '## 한국어') + 1;
+    const openStub = sandbox.stub(integration as any, 'openFileAtLine').resolves();
+    vscode.window.showQuickPick.resolves({ locale: 'ko' });
+
+    await integration.openProfilerInfoDocument('profiler');
+
+    assert.ok(vscode.window.showQuickPick.calledOnce);
+    assert.ok(
+      openStub.calledWith(
+        path.join(process.cwd(), 'docs', 'info-profiler.md'),
+        expectedLine > 0 ? expectedLine : 1,
+      ),
+    );
+  });
+
+  test('openProfilerInfoDocument returns early when language selection is cancelled', async () => {
+    const vscode = require('vscode');
+    const openStub = sandbox.stub(integration as any, 'openFileAtLine').resolves();
+    vscode.window.showQuickPick.resolves(undefined);
+
+    await integration.openProfilerInfoDocument('profiler');
+
+    assert.ok(openStub.notCalled);
   });
 
   test('openBinaryInEditor writes a file and opens it with vscode.open', async () => {

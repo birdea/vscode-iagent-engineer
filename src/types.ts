@@ -273,7 +273,7 @@ export type WebviewToHostMessage =
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }
   | { command: 'profiler.openSource'; filePath: string; lineNumber?: number }
-  | { command: 'profiler.openInfoDoc'; kind: 'summary' | 'key-events' };
+  | { command: 'profiler.openInfoDoc'; kind: 'profiler' | 'summary' | 'key-events' };
 
 // Host → Webview messages
 export type HostToWebviewMessage =

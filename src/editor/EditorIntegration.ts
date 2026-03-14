@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Logger } from '../logger/Logger';
+import { resolveLocale, UiLocale } from '../i18n';
 import { OutputFormat } from '../types';
 import { BrowserPreviewService, isBrowserPreviewUnavailableError } from './BrowserPreviewService';
 import { PreviewPanelService } from './PreviewPanelService';
@@ -102,10 +103,23 @@ export class EditorIntegration {
     Logger.info('editor', `Opened profiler source (${filePath}:${lineNumber})`);
   }
 
-  async openProfilerInfoDocument(kind: 'summary' | 'key-events') {
-    const fileName =
-      kind === 'summary' ? 'iprofiler-summary-data.md' : 'iprofiler-key-events-data.md';
-    await this.openFileAtLine(path.join(this.extensionPath, 'docs', fileName), 1);
+  async openProfilerInfoDocument(kind: 'profiler' | 'summary' | 'key-events') {
+    if (kind !== 'profiler') {
+      const fileName =
+        kind === 'summary' ? 'iprofiler-summary-data.md' : 'iprofiler-key-events-data.md';
+      await this.openFileAtLine(path.join(this.extensionPath, 'docs', fileName), 1);
+      return;
+    }
+
+    const locale = await this.pickProfilerInfoLocale();
+    if (!locale) {
+      return;
+    }
+
+    const filePath = path.join(this.extensionPath, 'docs', 'info-profiler.md');
+    const heading = locale === 'ko' ? '## 한국어' : '## English';
+    const lineNumber = await this.findHeadingLine(filePath, heading);
+    await this.openFileAtLine(filePath, lineNumber);
   }
 
   async openPreviewPanel(
@@ -226,6 +240,61 @@ export class EditorIntegration {
     const filename =
       path.basename(suggestedName).replace(/[<>:"/\\|?*\x00-\x1F]+/g, '-') || 'asset.bin';
     return vscode.Uri.file(path.join(dir, filename));
+  }
+
+  private async pickProfilerInfoLocale(): Promise<UiLocale | undefined> {
+    const preferred = resolveLocale(vscode.env.language);
+    const options =
+      preferred === 'ko'
+        ? [
+            {
+              label: '한국어',
+              description: 'Profiler 설명서를 한국어로 엽니다.',
+              locale: 'ko' as const,
+            },
+            {
+              label: 'English',
+              description: 'Open the Profiler guide in English.',
+              locale: 'en' as const,
+            },
+          ]
+        : [
+            {
+              label: 'English',
+              description: 'Open the Profiler guide in English.',
+              locale: 'en' as const,
+            },
+            {
+              label: '한국어',
+              description: 'Profiler 설명서를 한국어로 엽니다.',
+              locale: 'ko' as const,
+            },
+          ];
+
+    const picked = await vscode.window.showQuickPick(options, {
+      placeHolder:
+        preferred === 'ko'
+          ? 'Profiler 설명서 언어를 선택하세요.'
+          : 'Choose the Profiler guide language.',
+      ignoreFocusOut: true,
+    });
+
+    return picked?.locale;
+  }
+
+  private async findHeadingLine(filePath: string, heading: string): Promise<number> {
+    try {
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      const lines = content.split(/\r?\n/);
+      const index = lines.findIndex((line) => line.trim() === heading);
+      return index >= 0 ? index + 1 : 1;
+    } catch (error) {
+      Logger.warn(
+        'editor',
+        `Profiler info heading lookup failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return 1;
+    }
   }
 
   private async resolveGeneratedContent(code?: string, format?: OutputFormat) {

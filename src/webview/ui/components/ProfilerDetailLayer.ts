@@ -62,9 +62,13 @@ export class ProfilerDetailLayer {
         vscode.postMessage({ command: 'profiler.stopLiveData' });
         return;
       }
-      const infoButton = target?.closest<HTMLButtonElement>('[data-info-kind]');
+      const infoButton = target?.closest<HTMLButtonElement>('[data-info-doc]');
       if (infoButton) {
-        const kind = infoButton.dataset.infoKind as 'summary' | 'key-events' | undefined;
+        const kind = infoButton.dataset.infoDoc as
+          | 'profiler'
+          | 'summary'
+          | 'key-events'
+          | undefined;
         if (kind) {
           vscode.postMessage({ command: 'profiler.openInfoDoc', kind });
         }
@@ -260,8 +264,16 @@ export class ProfilerDetailLayer {
       <span class="session-id">${this.escapeHtml(summary.id)}</span>
     </div>
   </div>
-  <div class="profiler-live-indicator">
-    ${this.state.live?.active ? '<span class="status-dot connected"></span> <strong data-profiler-live-stop="true" style="cursor:pointer">Live</strong>' : '<span>Archive</span>'}
+  <div class="profiler-header-actions">
+    ${
+      this.state.live?.active
+        ? '<button type="button" class="profiler-live-badge" data-profiler-live-stop="true"><span class="status-dot connected"></span><strong>Live</strong></button>'
+        : ''
+    }
+    <button type="button" class="profiler-info-button" data-info-doc="profiler">
+      <i class="codicon codicon-info"></i>
+      <span>Info</span>
+    </button>
   </div>
 </div>
 
