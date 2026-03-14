@@ -1263,7 +1263,10 @@ export class ProfilerService {
     summary: SessionSummary,
     parsed: ParsedGeminiFile,
   ): SessionDetail {
-    const conversation = parsed.conversation!;
+    const conversation = parsed.conversation;
+    if (!conversation) {
+      throw new Error('Gemini conversation detail requested without conversation data.');
+    }
     const timeline: SessionTimelinePoint[] = [];
     const eventBubbles: SessionEventBubble[] = [];
     const rawEvents: SessionRawEventRef[] = [];
@@ -1396,7 +1399,10 @@ export class ProfilerService {
     summary: SessionSummary,
     parsed: ParsedGeminiFile,
   ): SessionDetail {
-    const checkpoint = parsed.checkpoint!;
+    const checkpoint = parsed.checkpoint;
+    if (!checkpoint) {
+      throw new Error('Gemini checkpoint detail requested without checkpoint data.');
+    }
     const toolCall = this.readRecord(checkpoint, 'toolCall');
     const toolName = this.readString(toolCall, 'name') ?? 'Checkpointed tool call';
     const messageId = this.readString(checkpoint, 'messageId');

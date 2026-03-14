@@ -200,6 +200,112 @@ suite('ProfilerService', () => {
     assert.strictEqual(second.detail.timeline[1].detail, 'Second prompt');
   });
 
+  test('summarizes and analyzes gemini conversation files', async () => {
+    const filePath = path.join(tempRoot, 'gemini-conversation.json');
+    await fs.promises.writeFile(
+      filePath,
+      JSON.stringify(
+        {
+          sessionId: 'gemini-session-1',
+          projectHash: 'project-abc',
+          startTime: '2026-03-11T09:00:00.000Z',
+          lastUpdated: '2026-03-11T09:00:03.000Z',
+          summary: 'Build a login form',
+          directories: ['/tmp/project'],
+          kind: 'main',
+          messages: [
+            {
+              id: 'u1',
+              timestamp: '2026-03-11T09:00:00.000Z',
+              type: 'user',
+              content: 'Build a login form',
+              tokens: {
+                input: 120,
+                output: 0,
+                cached: 0,
+                total: 120,
+              },
+            },
+            {
+              id: 'g1',
+              timestamp: '2026-03-11T09:00:03.000Z',
+              type: 'gemini',
+              model: 'gemini-2.5-pro',
+              displayContent: 'Here is a responsive login form.',
+              tokens: {
+                input: 0,
+                output: 80,
+                cached: 10,
+                total: 90,
+              },
+              toolCalls: [{ name: 'Read workspace' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    const stat = await fs.promises.stat(filePath);
+    const service = new ProfilerService() as any;
+    const summary = await service.summarizeGeminiFile({ agent: 'gemini', filePath, stat });
+    const detail = await service.analyzeGeminiSession({ agent: 'gemini', filePath, stat }, summary);
+
+    assert.match(summary.id, /^gemini:[0-9a-f]{12}$/);
+    assert.strictEqual(summary.title, 'Build a login form');
+    assert.strictEqual(summary.model, 'gemini-2.5-pro');
+    assert.strictEqual(summary.requestCount, 1);
+    assert.strictEqual(summary.totalInputTokens, 120);
+    assert.strictEqual(summary.totalOutputTokens, 80);
+    assert.strictEqual(summary.totalCachedTokens, 10);
+    assert.strictEqual(summary.totalTokens, 210);
+    assert.strictEqual(detail.metadata.sessionId, 'gemini-session-1');
+    assert.strictEqual(detail.timeline.length, 2);
+    assert.strictEqual(detail.timeline[0].label, 'M01');
+    assert.strictEqual(detail.timeline[1].label, 'M02');
+    assert.strictEqual(detail.timeline[1].latencyMs, 3000);
+    assert.strictEqual(detail.timeline[1].detail, 'Here is a responsive login form.');
+    assert.ok(detail.eventBubbles.some((event) => event.title === 'Tool call'));
+  });
+
+  test('summarizes and analyzes gemini checkpoint files', async () => {
+    const filePath = path.join(tempRoot, 'gemini-checkpoint.json');
+    await fs.promises.writeFile(
+      filePath,
+      JSON.stringify(
+        {
+          messageId: 'checkpoint-1',
+          toolCall: {
+            name: 'WriteFile',
+          },
+          history: [{ id: 1 }, { id: 2 }],
+          clientHistory: [{ id: 'client-1' }],
+          commitHash: 'abc123',
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    const stat = await fs.promises.stat(filePath);
+    const service = new ProfilerService() as any;
+    const summary = await service.summarizeGeminiFile({ agent: 'gemini', filePath, stat });
+    const detail = await service.analyzeGeminiSession({ agent: 'gemini', filePath, stat }, summary);
+
+    assert.match(summary.id, /^gemini:[0-9a-f]{12}$/);
+    assert.strictEqual(summary.title, 'WriteFile');
+    assert.strictEqual(summary.requestCount, 1);
+    assert.strictEqual(summary.parseStatus, 'partial');
+    assert.strictEqual(detail.metadata.sessionId, 'checkpoint-1');
+    assert.strictEqual(detail.timeline.length, 1);
+    assert.strictEqual(detail.timeline[0].label, 'C01');
+    assert.strictEqual(detail.timeline[0].detail, 'WriteFile');
+    assert.match(detail.rawEvents[0].messagePreview ?? '', /history 2 · client 1/);
+  });
+
   test('scan limits concurrent session summarization per agent', async () => {
     const service = new ProfilerService() as any;
     const files = Array.from({ length: 12 }, (_, index) => ({
