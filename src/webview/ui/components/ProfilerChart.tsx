@@ -271,30 +271,51 @@ function LegendMarker({ shape, color }: { shape: MarkerShape; color: string }) {
 }
 
 function buildTokenSampleTimeline(detail: SessionDetail): SessionTimelinePoint[] {
-  return detail.rawEvents
-    .filter((event) => event.eventType === 'token_count' && event.timestamp)
-    .map((event, index) => ({
-      id: `${detail.summary.id}:token:${index + 1}`,
-      timestamp: event.timestamp!,
-      endTimestamp: event.timestamp,
-      inputTokens: event.inputTokens,
-      outputTokens: event.outputTokens,
-      cachedTokens: event.cachedTokens,
-      totalTokens: event.totalTokens,
-      maxTokens: event.maxTokens,
-      eventType: 'token_count',
-      label: `S${String(index + 1).padStart(2, '0')}`,
-      detail: event.summary,
-      sourceEventId: event.id,
-    }));
+  const tokenEvents = detail.rawEvents.filter((event) => {
+    const hasTokenSnapshot =
+      event.totalTokens !== undefined ||
+      event.inputTokens !== undefined ||
+      event.outputTokens !== undefined ||
+      event.cachedTokens !== undefined;
+
+    if (!event.timestamp || !hasTokenSnapshot) {
+      return false;
+    }
+
+    switch (detail.summary.agent) {
+      case 'codex':
+        return event.eventType === 'token_count';
+      case 'claude':
+        return event.eventType === 'assistant';
+      case 'gemini':
+        return event.eventType !== 'tool_call';
+      default:
+        return false;
+    }
+  });
+
+  return tokenEvents.map((event, index) => ({
+    id: `${detail.summary.id}:token:${index + 1}`,
+    timestamp: event.timestamp!,
+    endTimestamp: event.timestamp,
+    inputTokens: event.inputTokens,
+    outputTokens: event.outputTokens,
+    cachedTokens: event.cachedTokens,
+    totalTokens:
+      event.totalTokens ??
+      (event.inputTokens ?? 0) + (event.outputTokens ?? 0) + (event.cachedTokens ?? 0),
+    maxTokens: event.maxTokens,
+    eventType: 'token_count',
+    label: `S${String(index + 1).padStart(2, '0')}`,
+    detail: event.summary,
+    sourceEventId: event.id,
+  }));
 }
 
 export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartProps) {
   const tokenTimeline = buildTokenSampleTimeline(detail);
   const chartTimeline =
-    metric === 'tokens' && detail.summary.agent === 'codex' && tokenTimeline.length > 0
-      ? tokenTimeline
-      : detail.timeline;
+    metric === 'tokens' && tokenTimeline.length > 0 ? tokenTimeline : detail.timeline;
 
   const timeline = [...chartTimeline].sort((a, b) =>
     getPointChartTimestamp(a, metric).localeCompare(getPointChartTimestamp(b, metric)),

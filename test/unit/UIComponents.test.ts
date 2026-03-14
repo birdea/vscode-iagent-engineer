@@ -1100,6 +1100,136 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 2);
     });
 
+    test('claude token chart uses assistant usage snapshots instead of request totals', async () => {
+      const { act } = await import('react');
+      const detail = createProfilerDetail();
+      detail.summary.agent = 'claude';
+      detail.timeline = [
+        {
+          id: 'r1',
+          timestamp: '2026-03-11T10:00:00.000Z',
+          endTimestamp: '2026-03-11T10:00:08.000Z',
+          inputTokens: 720,
+          outputTokens: 240,
+          cachedTokens: 350,
+          totalTokens: 1310,
+          eventType: 'assistant',
+          label: 'R01',
+          detail: 'Grouped request',
+          sourceEventId: 'claude-raw-2',
+        },
+      ];
+      detail.rawEvents = [
+        {
+          id: 'claude-raw-1',
+          filePath: '/tmp/claude.jsonl',
+          lineNumber: 2,
+          timestamp: '2026-03-11T10:00:02.000Z',
+          eventType: 'assistant',
+          category: 'conversation' as const,
+          summary: 'Assistant reply',
+          excerpt: '{"sample":1}',
+          messagePreview: 'First assistant reply',
+          inputTokens: 300,
+          outputTokens: 60,
+          cachedTokens: 150,
+          totalTokens: 510,
+        },
+        {
+          id: 'claude-raw-2',
+          filePath: '/tmp/claude.jsonl',
+          lineNumber: 4,
+          timestamp: '2026-03-11T10:00:08.000Z',
+          eventType: 'assistant',
+          category: 'conversation' as const,
+          summary: 'Assistant reply',
+          excerpt: '{"sample":2}',
+          messagePreview: 'Second assistant reply',
+          inputTokens: 420,
+          outputTokens: 180,
+          cachedTokens: 200,
+          totalTokens: 800,
+        },
+      ];
+
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'claude:test',
+          detail,
+        });
+      });
+
+      const chartShell = document.getElementById('profiler-chart-shell');
+      assert.ok(chartShell?.textContent?.includes('2 samples'));
+      assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 2);
+    });
+
+    test('gemini token chart uses message usage snapshots instead of session totals', async () => {
+      const { act } = await import('react');
+      const detail = createProfilerDetail();
+      detail.summary.agent = 'gemini';
+      detail.timeline = [
+        {
+          id: 'm1',
+          timestamp: '2026-03-11T10:00:00.000Z',
+          endTimestamp: '2026-03-11T10:00:06.000Z',
+          inputTokens: 220,
+          outputTokens: 90,
+          cachedTokens: 40,
+          totalTokens: 350,
+          eventType: 'gemini',
+          label: 'M01',
+          detail: 'Grouped message',
+          sourceEventId: 'gemini-raw-2',
+        },
+      ];
+      detail.rawEvents = [
+        {
+          id: 'gemini-raw-1',
+          filePath: '/tmp/gemini.json',
+          lineNumber: 1,
+          timestamp: '2026-03-11T10:00:01.000Z',
+          eventType: 'user',
+          category: 'conversation' as const,
+          summary: 'User prompt',
+          excerpt: '{"sample":1}',
+          messagePreview: 'First Gemini prompt',
+          inputTokens: 100,
+          outputTokens: 0,
+          cachedTokens: 20,
+          totalTokens: 120,
+        },
+        {
+          id: 'gemini-raw-2',
+          filePath: '/tmp/gemini.json',
+          lineNumber: 2,
+          timestamp: '2026-03-11T10:00:06.000Z',
+          eventType: 'gemini',
+          category: 'conversation' as const,
+          summary: 'Gemini reply',
+          excerpt: '{"sample":2}',
+          messagePreview: 'Gemini reply',
+          inputTokens: 120,
+          outputTokens: 90,
+          cachedTokens: 20,
+          totalTokens: 230,
+        },
+      ];
+
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'gemini:test',
+          detail,
+        });
+      });
+
+      const chartShell = document.getElementById('profiler-chart-shell');
+      assert.ok(chartShell?.textContent?.includes('2 samples'));
+      assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 2);
+    });
+
     test('updates the chart when live detail grows in place', async () => {
       const { act } = await import('react');
       const detail = createProfilerDetail();
