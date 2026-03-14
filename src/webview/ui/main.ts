@@ -138,7 +138,7 @@ export function init() {
               layer.onState({
                 status: 'error',
                 message: msg.message,
-                selectedAgent: 'codex',
+                selectedAgent: 'claude',
                 aggregate: {
                   totalSessions: 0,
                   totalInputTokens: 0,

@@ -164,10 +164,11 @@ export class ProfilerService {
   private detailCache = new Map<string, SessionDetail>();
   private codexThreadTitles?: Map<string, string>;
 
-  async scan(): Promise<ProfilerOverviewState> {
+  async scan(preferredSelectedAgent: ProfilerAgentType = 'claude'): Promise<ProfilerOverviewState> {
     this.summaryCache.clear();
     this.fileCache.clear();
     this.detailCache.clear();
+    this.codexThreadTitles = undefined;
 
     const sessionsByAgent: Record<ProfilerAgentType, SessionSummary[]> = {
       claude: [],
@@ -191,13 +192,9 @@ export class ProfilerService {
     }
 
     const aggregate = this.buildAggregate(Object.values(sessionsByAgent).flat());
-    const selectedAgent =
-      (['codex', 'claude', 'gemini'] as const).find((agent) => sessionsByAgent[agent].length > 0) ??
-      'codex';
-
     return {
       status: 'ready',
-      selectedAgent,
+      selectedAgent: preferredSelectedAgent,
       aggregate,
       sessionsByAgent,
       message:

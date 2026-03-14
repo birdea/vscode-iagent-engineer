@@ -1814,16 +1814,60 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(fileCell.getAttribute('title'), 'fallback-session-name.jsonl');
     });
 
+    test('prefers the loaded thread title over the raw file name', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:thread',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 1024,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:thread',
+              agent: 'codex',
+              filePath: '/tmp/thread-session.jsonl',
+              fileName: 'thread-session.jsonl',
+              title: 'Refactor profiler startup flow',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const fileCell = document.querySelector('.profiler-session-card-name') as HTMLElement | null;
+
+      assert.ok(fileCell);
+      assert.strictEqual(fileCell.textContent, 'Refactor profiler startup flow');
+      assert.strictEqual(fileCell.getAttribute('title'), 'Refactor profiler startup flow');
+    });
+
     test('find button posts scan command', () => {
+      const button = document.getElementById('profiler-start-analysis') as HTMLButtonElement | null;
+
+      assert.ok(button?.querySelector('.codicon-refresh'));
+      assert.strictEqual(button?.textContent?.trim() ?? '', '');
+
       document.getElementById('profiler-start-analysis')?.click();
 
       assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.scan' }));
     });
 
-    test('claude and gemini tabs stay disabled and show a coming soon notice', () => {
+    test('gemini tab stays disabled and tab selection is posted for enabled agents', () => {
       layer.onState({
         status: 'ready',
-        selectedAgent: 'codex',
+        selectedAgent: 'claude',
         selectedSessionId: 'codex:1',
         aggregate: {
           totalSessions: 1,
@@ -1869,19 +1913,16 @@ suite('UI Components Consolidated', () => {
         '.profiler-tab[data-agent="claude"]',
       ) as HTMLButtonElement | null;
       assert.ok(geminiTab?.classList.contains('is-disabled'));
-      assert.ok(claudeTab?.classList.contains('is-disabled'));
+      assert.ok(!claudeTab?.classList.contains('is-disabled'));
 
       claudeTab?.click();
 
       assert.ok(
-        document
-          .getElementById('profiler-status-badge')
-          ?.textContent?.toLowerCase()
-          .includes('claude'),
+        postMessageStub.calledWithMatch({ command: 'profiler.selectAgent', agent: 'claude' }),
       );
       assert.strictEqual(
         document.querySelector('.profiler-tab.active')?.getAttribute('data-agent'),
-        'codex',
+        'claude',
       );
 
       const refreshedGeminiTab = document.querySelector(

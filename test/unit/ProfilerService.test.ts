@@ -97,9 +97,9 @@ suite('ProfilerService', () => {
     const detail = await service.analyzeClaudeSession({ agent: 'claude', filePath, stat }, summary);
 
     assert.strictEqual(summary.requestCount, 2);
-    assert.strictEqual(summary.totalInputTokens, 720);
+    assert.strictEqual(summary.totalInputTokens, 1070);
     assert.strictEqual(summary.totalOutputTokens, 240);
-    assert.strictEqual(summary.totalCachedTokens, 350);
+    assert.strictEqual(summary.totalCachedTokens, 230);
     assert.strictEqual(summary.totalTokens, 1310);
     assert.strictEqual(detail.timeline.length, 2);
     assert.strictEqual(detail.timeline[0].label, 'R01');

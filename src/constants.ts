@@ -17,6 +17,7 @@ export const COMMANDS = {
 export const CONFIG_KEYS = {
   DEFAULT_AGENT: 'iagent-engineer.defaultAgent',
   DEFAULT_MODEL: 'iagent-engineer.defaultModel',
+  PROFILER_SELECTED_TAB: 'iagent-engineer.profiler.selectedTab',
   MCP_CONNECTION_MODE: 'iagent-engineer.mcpConnectionMode',
   MCP_ENDPOINT: 'iagent-engineer.mcpEndpoint',
   REMOTE_MCP_ENDPOINT: 'iagent-engineer.remoteMcpEndpoint',
