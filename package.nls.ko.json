@@ -4,7 +4,6 @@
   "view.setup.name": "설정",
   "view.prompt.name": "프롬프트",
   "view.profiler.name": "프로파일러",
-  "view.log.name": "로그",
   "view.profilerDetail.name": "iProfiler",
   "command.connect.title": "MCP 연결",
   "command.generate.title": "iAgent Engineer: 코드 생성",

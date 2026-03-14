@@ -4,7 +4,6 @@ import { vscode } from '../../src/webview/ui/vscodeApi';
 
 import { AgentLayer } from '../../src/webview/ui/components/AgentLayer';
 import { FigmaLayer } from '../../src/webview/ui/components/FigmaLayer';
-import { LogLayer } from '../../src/webview/ui/components/LogLayer';
 import { ProfilerDetailLayer } from '../../src/webview/ui/components/ProfilerDetailLayer';
 import { ProfilerLayer } from '../../src/webview/ui/components/ProfilerLayer';
 import { PromptLayer } from '../../src/webview/ui/components/PromptLayer';
@@ -475,64 +474,6 @@ suite('UI Components Consolidated', () => {
       assert.ok(screenshotBtn.title.length > 0);
       assert.ok(metadataBtn.title.length > 0);
       assert.ok(variableDefsBtn.title.length > 0);
-    });
-  });
-
-  suite('LogLayer', () => {
-    let layer: LogLayer;
-    setup(() => {
-      layer = new LogLayer();
-      document.getElementById('app')!.innerHTML = layer.render();
-      layer.mount();
-    });
-
-    test('appendEntry adds to log area', () => {
-      layer.appendEntry({
-        id: '1',
-        timestamp: '12:00',
-        level: 'info',
-        layer: 'system',
-        message: 'hello',
-      });
-      const area = document.getElementById('log-area');
-      assert.ok(area?.textContent?.includes('hello'));
-    });
-
-    test('appendEntry with detail appends detail line', () => {
-      layer.appendEntry({
-        id: '1',
-        timestamp: '12:00',
-        level: 'error',
-        layer: 'figma',
-        message: 'failed',
-        detail: 'stack trace',
-      });
-      const area = document.getElementById('log-area');
-      assert.ok(area?.textContent?.includes('stack trace'));
-    });
-
-    test('appendEntry second entry adds newline separator', () => {
-      layer.appendEntry({
-        id: '1',
-        timestamp: '',
-        level: 'info',
-        layer: 'system',
-        message: 'first',
-      });
-      layer.appendEntry({
-        id: '2',
-        timestamp: '',
-        level: 'info',
-        layer: 'system',
-        message: 'second',
-      });
-      const area = document.getElementById('log-area');
-      assert.ok(area?.textContent?.includes('\n'));
-    });
-
-    test('clear resets log area', () => {
-      layer.clear();
-      assert.strictEqual(document.getElementById('log-area')?.textContent, '');
     });
   });
 

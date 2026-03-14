@@ -302,8 +302,6 @@ export type HostToWebviewMessage =
     }
   | { event: 'prompt.estimateResult'; tokens: number; kb: number }
   | { event: 'prompt.error'; message: string; code?: 'cancelled' | 'failed' }
-  | { event: 'log.append'; entry: LogEntry }
-  | { event: 'log.clear' }
   | { event: 'profiler.state'; state: ProfilerOverviewState }
   | { event: 'profiler.detailState'; state: ProfilerDetailState }
   | { event: 'profiler.archiveResult'; result: ProfilerArchiveResult }

@@ -11,7 +11,6 @@ suite('Logger', () => {
     sandbox = sinon.createSandbox();
     mockOutputChannel = createOutputChannelStub(sandbox);
     Logger.initialize(asOutputChannel(mockOutputChannel));
-    (Logger as unknown as { subscribers: Set<(entry: unknown) => void> }).subscribers = new Set();
     mockOutputChannel.appendLine.reset();
     mockOutputChannel.clear.reset();
     Logger.clear();
@@ -59,38 +58,12 @@ suite('Logger', () => {
     assert.strictEqual(json[0].message, 'msg');
   });
 
-  test('onLog callback', () => {
-    const callback = sinon.spy();
-    const disposable = Logger.onLog(callback);
-    Logger.info('system', 'test');
-    assert.ok(callback.calledOnce);
-    assert.strictEqual(callback.firstCall.args[0].message, 'test');
-    disposable.dispose();
-  });
-
-  test('supports multiple log subscribers', () => {
-    const cb1 = sinon.spy();
-    const cb2 = sinon.spy();
-    const d1 = Logger.onLog(cb1);
-    Logger.onLog(cb2);
-
-    Logger.info('system', 'fanout');
-    assert.ok(cb1.calledOnce);
-    assert.ok(cb2.calledOnce);
-
-    d1.dispose();
-    Logger.info('system', 'after-dispose');
-    assert.ok(cb1.calledOnce);
-    assert.strictEqual(cb2.callCount, 2);
-  });
-
   test('max entries limit', () => {
-    // Fill up enough to trigger shift
     for (let i = 0; i < 1100; i++) {
       Logger.info('system', `msg ${i}`);
     }
     const entries = Logger.getEntries();
-    assert.ok(entries.length <= 1000);
+    assert.ok(entries.length <= 500);
   });
 
   test('clear', () => {
