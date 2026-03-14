@@ -280,6 +280,8 @@ export type WebviewToHostMessage =
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }
   | { command: 'profiler.openSource'; filePath: string; lineNumber?: number }
+  | { command: 'profiler.copyFilePath'; filePath: string }
+  | { command: 'profiler.revealInFolder'; filePath: string }
   | { command: 'profiler.openInfoDoc'; kind: 'profiler' | 'summary' | 'key-events' };
 
 // Host → Webview messages

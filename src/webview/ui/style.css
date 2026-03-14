@@ -1914,6 +1914,81 @@ body[data-section='profiler'] .profiler-session-card-token-out {
   word-break: break-word;
 }
 
+.metric-value-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding-left: 17px;
+}
+
+button.profiler-summary-file-action {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+  background: transparent !important;
+  background-color: var(
+    --vscode-button-secondaryBackground,
+    var(--vscode-editorWidget-background, rgba(255, 255, 255, 0.06))
+  ) !important;
+  background-image: none;
+  color: var(--vscode-foreground) !important;
+  border: 1px solid var(--vscode-button-border, var(--vscode-panel-border)) !important;
+  box-shadow: none;
+}
+
+button.profiler-summary-file-action:hover {
+  background: transparent !important;
+  background-color: var(
+    --vscode-button-secondaryHoverBackground,
+    var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground))
+  ) !important;
+  background-image: none;
+}
+
+button.profiler-summary-file-action:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+button.profiler-summary-file-action:not(.profiler-summary-file-icon) {
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button.profiler-summary-file-action.profiler-summary-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  flex: 0 0 auto;
+}
+
+.profiler-summary-file-icon .codicon {
+  margin: 0;
+}
+
 /* 2. Chart Section */
 .profiler-chart-surface {
   padding: 0 12px 10px;

@@ -190,6 +190,12 @@ export class WebviewMessageHandler {
         case 'profiler.openSource':
           await this.profilerHandler?.openSource(msg.filePath, msg.lineNumber);
           break;
+        case 'profiler.copyFilePath':
+          await this.profilerHandler?.copyFilePath(msg.filePath);
+          break;
+        case 'profiler.revealInFolder':
+          await this.profilerHandler?.revealInFolder(msg.filePath);
+          break;
         case 'profiler.openInfoDoc':
           await this.profilerHandler?.openInfoDoc(msg.kind);
           break;

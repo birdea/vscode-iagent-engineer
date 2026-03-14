@@ -137,10 +137,16 @@ suite('ProfilerService', () => {
     assert.strictEqual(summary.totalTokens, 1310);
     assert.strictEqual(detail.timeline.length, 2);
     assert.strictEqual(detail.timeline[0].label, 'R01');
+    assert.strictEqual(detail.timeline[0].maxTokens, 200000);
     assert.strictEqual(detail.timeline[0].detail, 'Read');
+    assert.strictEqual(detail.timeline[1].maxTokens, 200000);
     assert.strictEqual(detail.timeline[1].detail, 'Profiler looks better.');
     assert.strictEqual(detail.timeline[1].latencyMs, 5000);
     assert.strictEqual(detail.rawEvents[0].messagePreview, 'Review profiler');
+    assert.strictEqual(
+      detail.rawEvents.find((event) => event.eventType === 'assistant')?.maxTokens,
+      200000,
+    );
     assert.strictEqual(detail.rawEvents[2].category, 'tool');
     assert.strictEqual(detail.rawEvents[2].messagePreview, 'file contents');
   });
@@ -304,6 +310,13 @@ suite('ProfilerService', () => {
     assert.strictEqual(detail.timeline[1].label, 'M02');
     assert.strictEqual(detail.timeline[1].latencyMs, 3000);
     assert.strictEqual(detail.timeline[1].detail, 'Here is a responsive login form.');
+    assert.strictEqual(detail.timeline[0].maxTokens, 1048576);
+    assert.strictEqual(detail.timeline[1].maxTokens, 1048576);
+    assert.strictEqual(detail.rawEvents[0].maxTokens, 1048576);
+    assert.strictEqual(
+      detail.rawEvents.find((event) => event.eventType === 'gemini')?.maxTokens,
+      1048576,
+    );
     assert.ok(detail.eventBubbles.some((event) => event.title === 'Tool call'));
   });
 

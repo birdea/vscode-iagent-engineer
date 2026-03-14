@@ -185,6 +185,32 @@ suite('EditorIntegration', () => {
     assert.ok(openStub.notCalled);
   });
 
+  test('revealFileInFolder delegates to revealFileInOS', async () => {
+    const vscode = require('vscode');
+    vscode.commands.executeCommand.resetHistory();
+
+    await integration.revealFileInFolder('/tmp/session.jsonl');
+
+    assert.ok(vscode.commands.executeCommand.calledWith('revealFileInOS'));
+    assert.strictEqual(
+      vscode.commands.executeCommand.firstCall.args[1].fsPath,
+      '/tmp/session.jsonl',
+    );
+  });
+
+  test('copyFilePath writes to clipboard and shows a notice', async () => {
+    const vscode = require('vscode');
+    vscode.env.clipboard.writeText.resetHistory();
+    vscode.window.showInformationMessage.resetHistory();
+
+    await integration.copyFilePath('/tmp/session.jsonl');
+
+    assert.ok(vscode.env.clipboard.writeText.calledWith('/tmp/session.jsonl'));
+    assert.ok(
+      vscode.window.showInformationMessage.calledWith('Copied file path: /tmp/session.jsonl'),
+    );
+  });
+
   test('openBinaryInEditor writes a file and opens it with vscode.open', async () => {
     const vscode = require('vscode');
     const uri = { fsPath: '/tmp/image.svg', toString: () => 'file:///tmp/image.svg' };
