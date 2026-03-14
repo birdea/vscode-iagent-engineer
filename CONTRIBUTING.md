@@ -1,172 +1,104 @@
 # Contributing to iAgent Engineer
 
-Thank you for your interest in contributing! This document covers how to set up the development environment, run tests, build the extension, and submit changes.
-
-## Table of Contents
-
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Building](#building)
-- [Running Tests](#running-tests)
-- [Code Style](#code-style)
-- [Pull Request Guidelines](#pull-request-guidelines)
-- [Reporting Issues](#reporting-issues)
-
----
+This guide reflects the current `0.7.x` codebase and development workflow.
 
 ## Development Setup
 
 ### Prerequisites
 
-- **Node.js** 18 or later
-- **npm** 9 or later
-- **VS Code** 1.85 or later
+- **Node.js** `20+`
+- **npm** `10+` recommended
+- **VS Code** `1.85+`
 
-### Steps
+### Initial Setup
 
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/birdea/vscode-iagent-engineer.git
-   cd vscode-iagent-engineer
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Open in VS Code**
-
-   ```bash
-   code .
-   ```
-
-4. **Launch the Extension Development Host**
-
-   Press `F5` (or select **Run > Start Debugging**). This opens a new VS Code window with the extension loaded from source.
-
----
-
-## Project Structure
-
+```bash
+git clone https://github.com/birdea/vscode-iagent-engineer.git
+cd vscode-iagent-engineer
+npm ci
+code .
 ```
+
+Press `F5` to launch an Extension Development Host.
+
+## Project Layout
+
+```text
 .
 ├── src/
-│   ├── agent/          # AI agent implementations (Gemini, Claude)
-│   ├── figma/          # MCP client and screenshot service
-│   ├── logger/         # Output channel logger
-│   ├── prompt/         # Prompt builder and token estimator
-│   ├── state/          # Runtime state manager
-│   ├── webview/        # Sidebar providers and message handlers
-│   │   ├── handlers/   # Command handlers per feature area
-│   │   └── ui/         # Webview-side TypeScript (compiled into the webview bundle)
-│   ├── constants.ts    # Shared constants
-│   ├── extension.ts    # Extension entry point
-│   ├── i18n.ts         # Internationalisation (EN / KO)
-│   └── types.ts        # Shared TypeScript types
-├── test/unit/          # Mocha unit tests
-├── resources/          # Extension icons
+│   ├── agent/          # Gemini, Claude, and OpenAI-compatible providers
+│   ├── editor/         # Editor handoff and preview services
+│   ├── figma/          # MCP client, parser, screenshots, source-data helpers
+│   ├── logger/         # Output channel logging
+│   ├── preview/        # Preview panel and browser-preview runtime builders
+│   ├── profiler/       # Session discovery, parsing, live monitoring, state
+│   ├── prompt/         # Prompt templates and token estimation
+│   ├── state/          # Shared extension runtime state
+│   ├── webview/        # Sidebar providers, handlers, and UI layers
+│   ├── constants.ts
+│   ├── extension.ts
+│   ├── i18n.ts
+│   └── types.ts
+├── workers/            # Cloudflare Worker for the remote Figma prototype
+├── test/unit/          # Unit tests
+├── test/e2e/           # E2E workflow tests
+├── docs/               # Product docs, profiler guides, historical notes
 ├── images/             # Marketplace screenshots
-├── package.json        # Extension manifest
-├── package.nls.json    # English NLS strings
-├── package.nls.ko.json # Korean NLS strings
-└── esbuild.config.js   # Build script
+└── esbuild.config.js   # Host + webview bundling
 ```
 
----
+## Build and Validation
 
-## Building
+| Command                     | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `npm run build`             | Production build into `dist/`                 |
+| `npm run watch`             | Incremental development build                 |
+| `npm run lint`              | ESLint for `src/`                             |
+| `npm run test:unit`         | Unit tests                                    |
+| `npm run test:e2e`          | E2E tests                                     |
+| `npm run typecheck:workers` | Typecheck the Worker project                  |
+| `npm run verify`            | Build + lint + unit tests + worker typecheck  |
+| `npm run verify:coverage`   | Full validation gate with coverage thresholds |
+| `npm run package`           | Build a local `.vsix`                         |
 
-| Command           | Description                                    |
-| ----------------- | ---------------------------------------------- |
-| `npm run build`   | Production build (minified, output to `dist/`) |
-| `npm run watch`   | Incremental watch build for development        |
-| `npm run package` | Package as `.vsix` for manual installation     |
+The release workflow builds platform-specific VSIX packages for `linux-x64`, `win32-x64`, `darwin-arm64`, and `darwin-x64`.
 
-The build uses **esbuild** to bundle `src/extension.ts` (Node host) and `src/webview/ui/main.ts` (webview browser bundle) separately.
+## Current Product Notes for Contributors
 
----
+- The supported Figma workflow in the extension is currently `local` MCP mode.
+- The remote Figma Worker remains in the repository, but remote auth/fetch flows are intentionally disabled in the shipped extension UI.
+- The profiler sidebar currently targets `Claude` and `Codex` in the UI. Gemini parsing support exists in the service layer but is not exposed as an active tab.
+- There is no dedicated Log webview. Runtime logs go to the `iAgent Engineer` output channel.
 
-## Running Tests
+## Testing Notes
 
-### Unit Tests
-
-```bash
-npm test
-```
-
-Tests are written with **Mocha** (TDD UI) and run directly against TypeScript source via `tsx`. There is no VS Code runtime dependency in the unit test suite — the VS Code API is fully mocked in `test/unit/mocks/vscode.ts`.
-
-### Coverage
-
-```bash
-npm run test:coverage
-```
-
-HTML coverage report is written to `coverage/`.
-
-### Linting
-
-```bash
-npm run lint          # Report lint errors
-npm run lint:fix      # Auto-fix where possible
-```
-
-### Formatting
-
-```bash
-npm run format:check  # Check formatting
-npm run format        # Apply formatting (Prettier)
-```
-
-After `npm install`, a `pre-commit` hook is installed automatically and runs Prettier on staged files.
-
----
+- Unit tests run against TypeScript source through `tsx`.
+- The VS Code API is mocked in `test/unit/mocks/vscode.ts`.
+- Coverage reports are written to `coverage/` when running `npm run test:coverage` or `npm run verify:coverage`.
 
 ## Code Style
 
-- **TypeScript strict mode** is enabled. All code must type-check without errors.
-- **Prettier** is used for formatting (config in `package.json` / `.prettierrc` if present).
-- **ESLint** enforces additional rules (see `eslint.config.js`).
-- Keep functions small and focused. Prefer composition over inheritance.
-- All user-visible strings must go through `i18n.ts` using the `t()` helper. Add both `en` and `ko` translations.
-- NLS keys for `package.json` labels must be added to both `package.nls.json` and `package.nls.ko.json`.
-
----
+- TypeScript strictness is expected throughout the extension.
+- Use `i18n.ts` for user-facing webview/host strings and keep both `en` and `ko` translations in sync.
+- Keep `package.nls.json` and `package.nls.ko.json` aligned when adding or renaming contribution labels.
+- Add or update tests for behavior changes, especially in handlers, agents, preview services, and profiler parsing.
 
 ## Pull Request Guidelines
 
-1. **Branch naming**: `feat/<short-description>`, `fix/<short-description>`, `chore/<short-description>`
-
-2. **One concern per PR**: Keep changes focused. Avoid mixing unrelated refactors with features.
-
-3. **Tests required**: New features must include unit tests. Bug fixes should include a regression test.
-
-4. **All checks must pass** before requesting review:
-   - `npm run lint`
-   - `npm test`
-   - `npm run build`
-
-5. **Commit messages**: Use the conventional commit format:
-
-   ```
-   feat: add screenshot caching
-   fix: handle MCP timeout correctly
-   chore: update dependencies
-   ```
-
-6. **PR description**: Explain _why_ the change is needed and summarise _what_ was changed. Include screenshots for UI changes.
-
----
+1. Keep each PR focused on one concern.
+2. Include tests for new behavior or regressions.
+3. Run `npm run verify` before requesting review.
+4. Use conventional commits where practical.
+5. Include screenshots when changing the webview UI.
+6. Update the relevant markdown docs when user-facing behavior changes.
 
 ## Reporting Issues
 
-Please use the [GitHub Issues](https://github.com/birdea/vscode-iagent-engineer/issues) tracker. When reporting a bug, include:
+Use the [GitHub Issues](https://github.com/birdea/vscode-iagent-engineer/issues) tracker and include:
 
 - VS Code version
 - Extension version
 - Steps to reproduce
-- Expected vs. actual behaviour
-- Relevant logs from the **iAgent Engineer** output channel
+- Expected behavior
+- Actual behavior
+- Relevant logs from the `iAgent Engineer` output channel

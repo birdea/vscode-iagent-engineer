@@ -4,14 +4,18 @@ Reviewed on 2026-03-12.
 
 This document explains what the Summary area in iProfiler is showing, and which parts come from official agent docs versus the local session files that iProfiler parsed.
 
+Current UI note:
+
+- The current sidebar flow is focused on `Claude` and `Codex`.
+- Gemini format parsing is still documented here because the summary/detail pipeline knows how to classify Gemini file families, even though the Gemini tab is disabled in the current sidebar UI.
+
 ## Summary Layout
 
 - Agent identity: the selected agent family and vendor.
 - Session headline: thread title, saved summary, session id, or file name depending on what the source file contains.
 - Metric board: total tokens, turn count, session span, file size, peak token point, slowest response, and largest payload found in the selected file.
 - Source profile cards: the storage family, source file path, and parser coverage for the selected format.
-- Documented format cards: the fields that the official docs or official source code confirm can exist in that agent's local session format family.
-- Extracted now cards: the values iProfiler actually found in the selected file.
+- Extracted fields: the values iProfiler actually found in the selected file.
 
 ## CODEX
 
@@ -104,7 +108,6 @@ Official references:
 
 ## Parsing Policy
 
-- If a value is shown in "Extracted now", it was present in the selected file.
-- If a value is shown in "Documented format fields", it is part of the supported format family for that agent even if the current file did not contain it.
-- If parser coverage says `Deep parser`, iProfiler is classifying turns/events from structured records.
+- If a value is shown in the summary board, it was present in the selected file or inferred from the parsed timeline.
+- If parser coverage says `Deep parser`, iProfiler is classifying turns and events from structured records.
 - If parser coverage says `Basic parser`, iProfiler could only read high-level JSON metadata safely.

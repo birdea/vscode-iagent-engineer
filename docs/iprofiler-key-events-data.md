@@ -4,6 +4,11 @@ Reviewed on 2026-03-12.
 
 The Key Event area is a categorized layer on top of the raw session records. It does not invent new data. It groups important records so that a human can scan the session faster.
 
+Current UI note:
+
+- The profiler sidebar currently exposes `Claude` and `Codex` as active tabs.
+- Gemini format support still exists in the parser layer and is documented here for completeness, but the Gemini tab is currently disabled in the shipped sidebar UI.
+
 ## Event Categories
 
 - Lifecycle: session start/end, turn boundaries, and restore/checkpoint markers
@@ -86,7 +91,6 @@ Official references:
 
 ## How To Read The Panel
 
-- The section cards at the top describe what the selected format family can expose.
-- The grouped event cards underneath show only events that actually appeared in the selected file.
-- Clicking any event card opens the original file at the linked source line.
-- Raw Event is still the source of truth; Key Event is the curated view.
+- The grouped event cards highlight meaningful records that actually appeared in the selected file.
+- Raw Event is still the source of truth.
+- Clicking an event row opens the original file at the linked source line.
