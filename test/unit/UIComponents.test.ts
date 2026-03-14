@@ -850,6 +850,7 @@ suite('UI Components Consolidated', () => {
           id: 'p1',
           timestamp: '2026-03-11T10:00:00.000Z',
           endTimestamp: '2026-03-11T10:00:03.000Z',
+          maxTokens: 200000,
           inputTokens: 100,
           outputTokens: 40,
           cachedTokens: 20,
@@ -866,6 +867,7 @@ suite('UI Components Consolidated', () => {
           id: 'p2',
           timestamp: '2026-03-11T10:01:00.000Z',
           endTimestamp: '2026-03-11T10:01:05.000Z',
+          maxTokens: 200000,
           inputTokens: 220,
           outputTokens: 100,
           cachedTokens: 40,
@@ -972,6 +974,8 @@ suite('UI Components Consolidated', () => {
       assert.ok(
         document.getElementById('profiler-header-surface')?.textContent?.includes('Tokens'),
       );
+      assert.ok(chartShell?.querySelector('.profiler-chart-limit-line'));
+      assert.ok(chartShell?.querySelector('.profiler-chart-limit-label'));
       // visx chart renders bar rects for each timeline point
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });

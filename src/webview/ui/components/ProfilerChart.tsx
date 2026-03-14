@@ -268,6 +268,10 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     getPointAnchorTimestamp(a).localeCompare(getPointAnchorTimestamp(b)),
   );
   const rawEventById = new Map(detail.rawEvents.map((event) => [event.id, event] as const));
+  const contextWindowLimit = useMemo(
+    () => timeline.reduce((max, point) => Math.max(max, point.maxTokens ?? 0), 0),
+    [timeline],
+  );
 
   const seriesDefs = useMemo(() => buildSeriesDefs(metric, timeline), [metric, timeline]);
 
@@ -351,14 +355,19 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     return max;
   }, [hiddenSeries, seriesDefs, timeline, visibleWindow.leftEdge, visibleWindow.rightEdge, xScale]);
 
+  const chartMaxValue =
+    metric === 'tokens' && contextWindowLimit > 0
+      ? Math.max(maxValue, contextWindowLimit)
+      : maxValue;
+
   const yScale = useMemo(
     () =>
       scaleLinear({
-        domain: [0, maxValue],
+        domain: [0, chartMaxValue],
         range: [PADDING.top + plotHeight, PADDING.top],
         nice: true,
       }),
-    [maxValue, plotHeight],
+    [chartMaxValue, plotHeight],
   );
 
   // Build point arrays for each visible series
@@ -517,6 +526,26 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 dx: '-0.35em',
               }}
             />
+            {metric === 'tokens' && contextWindowLimit > 0 && (
+              <Group>
+                <line
+                  x1={AXIS_RAIL_WIDTH - 22}
+                  y1={yScale(contextWindowLimit)}
+                  x2={AXIS_RAIL_WIDTH - 10}
+                  y2={yScale(contextWindowLimit)}
+                  className="profiler-chart-limit-axis-line"
+                />
+                <text
+                  x={AXIS_RAIL_WIDTH - 24}
+                  y={yScale(contextWindowLimit)}
+                  className="profiler-chart-limit-label"
+                  textAnchor="end"
+                  dominantBaseline="central"
+                >
+                  {formatAxisValue(contextWindowLimit, metric)}
+                </text>
+              </Group>
+            )}
           </svg>
         </div>
         <div
@@ -558,6 +587,16 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 strokeDasharray="3 8"
               />
 
+              {metric === 'tokens' && contextWindowLimit > 0 && (
+                <line
+                  x1={PADDING.left}
+                  y1={yScale(contextWindowLimit)}
+                  x2={PADDING.left + plotWidth}
+                  y2={yScale(contextWindowLimit)}
+                  className="profiler-chart-limit-line"
+                />
+              )}
+
               {/* Bar chart layer: each timeline point gets a bar */}
               <Group>
                 {timeline.map((point, i) => {
@@ -570,7 +609,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                         : (point.totalTokens ?? getTokenTotal(point));
                   const barHeight = Math.max(
                     1,
-                    (primaryValue / Math.max(1, maxValue)) * plotHeight,
+                    (primaryValue / Math.max(1, chartMaxValue)) * plotHeight,
                   );
                   const barY = PADDING.top + plotHeight - barHeight;
                   const raw = findRawEvent(point);
