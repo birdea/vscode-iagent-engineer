@@ -237,4 +237,21 @@ suite('ProfilerService', () => {
     assert.strictEqual(overview.sessionsByAgent.codex.length, 12);
     assert.ok(maxActive <= 8, `expected max concurrency <= 8, received ${maxActive}`);
   });
+
+  test('createSessionId hashes sensitive seeds without exposing raw values', () => {
+    const service = new ProfilerService() as any;
+    const sessionId = service.createSessionId(
+      'claude',
+      'session-secret-123',
+      '/tmp/private/chat.jsonl',
+    );
+
+    assert.match(sessionId, /^claude:[0-9a-f]{12}$/);
+    assert.ok(!sessionId.includes('session-secret-123'));
+    assert.ok(!sessionId.includes('/tmp/private/chat.jsonl'));
+    assert.strictEqual(
+      sessionId,
+      service.createSessionId('claude', 'session-secret-123', '/tmp/private/chat.jsonl'),
+    );
+  });
 });

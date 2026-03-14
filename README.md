@@ -6,6 +6,14 @@ iAgent Engineer is a VS Code extension for moving from Figma context to generate
 
 Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=YmeUWzeAsxw)
 
+## Release Highlights
+
+### v0.7.1
+
+- Refreshed the repository docs so the current `0.7.x` implementation, supported workflows, and known limitations are documented consistently.
+- Clarified the supported Figma path as local MCP, while remote Figma remains a disabled prototype in the current UI.
+- Expanded the profiler guides to match the current sidebar scan flow and the bottom-panel `iProfiler` detail experience.
+
 ## Current Product Scope
 
 - Local Figma MCP connection and design-data retrieval
