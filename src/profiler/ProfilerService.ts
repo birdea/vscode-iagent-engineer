@@ -2428,7 +2428,7 @@ export class ProfilerService {
 
   private createSessionId(agent: ProfilerAgentType, seed: string, filePath: string): string {
     const digest = crypto
-      .createHash('sha1')
+      .createHash('sha256')
       .update(`${seed}:${filePath}`)
       .digest('hex')
       .slice(0, 12);

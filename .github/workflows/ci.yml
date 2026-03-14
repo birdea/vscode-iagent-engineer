@@ -61,14 +61,16 @@ jobs:
             exit 0
           fi
 
-          mapfile -t changed_files < <(git diff --name-only "${diff_base}" "${GITHUB_SHA}")
+          mapfile -d '' -t changed_files < <(
+            git diff --name-only --diff-filter=ACMR -z "${diff_base}" "${GITHUB_SHA}"
+          )
 
           if [[ ${#changed_files[@]} -eq 0 ]]; then
             echo "No changed files to format-check."
             exit 0
           fi
 
-          printf '%s\n' "${changed_files[@]}" | xargs npx prettier --check --ignore-unknown
+          printf '%s\0' "${changed_files[@]}" | xargs -0 -r npx prettier --check --ignore-unknown
 
       - name: Lint
         if: matrix.run-lint

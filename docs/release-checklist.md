@@ -7,6 +7,7 @@ Use this checklist before packaging or publishing a production release.
 Run the full validation gate locally before creating a tag or triggering the release workflow.
 
 ```bash
+npm --prefix workers install
 npm run verify:coverage
 ```
 
@@ -16,6 +17,8 @@ This gate covers:
 - ESLint
 - unit tests with coverage thresholds
 - Cloudflare Worker TypeScript typecheck
+
+The repository-level install does not populate `workers/node_modules`, so run the dedicated worker install step first on a fresh checkout.
 
 ## Functional Smoke Tests
 

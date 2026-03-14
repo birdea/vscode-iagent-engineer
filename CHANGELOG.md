@@ -4,6 +4,8 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-03-14
+
 - Refreshed the repository markdown docs so the current `0.7.x` implementation, supported workflows, and known limitations are described consistently.
 - Clarified that local Figma MCP is the supported integration path, while remote Figma remains scaffolded but disabled in the extension UI.
 - Updated profiler and release documentation to match the current sidebar and bottom-panel experience.
