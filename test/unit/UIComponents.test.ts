@@ -1665,7 +1665,7 @@ suite('UI Components Consolidated', () => {
       layer.mount();
     });
 
-    test('renders session rows with an explicit filename header and metadata line', () => {
+    test('renders session rows with a clamped session label and metadata line', () => {
       layer.onState({
         status: 'ready',
         selectedAgent: 'codex',
@@ -1853,11 +1853,24 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(fileCell.getAttribute('title'), 'Refactor profiler startup flow');
     });
 
-    test('find button posts scan command', () => {
+    test('find button stays in the header, archive button is removed, and scan posts correctly', () => {
       const button = document.getElementById('profiler-start-analysis') as HTMLButtonElement | null;
+      const statusBadge = document.getElementById('profiler-status-badge') as HTMLElement | null;
+      const archiveButton = document.getElementById(
+        'profiler-archive-all',
+      ) as HTMLButtonElement | null;
 
       assert.ok(button?.querySelector('.codicon-refresh'));
       assert.strictEqual(button?.textContent?.trim() ?? '', '');
+      assert.ok(statusBadge);
+      assert.strictEqual(archiveButton, null);
+      assert.ok(
+        Boolean(
+          button &&
+          statusBadge &&
+          button.compareDocumentPosition(statusBadge) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      );
 
       document.getElementById('profiler-start-analysis')?.click();
 

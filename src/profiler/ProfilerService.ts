@@ -462,9 +462,10 @@ export class ProfilerService {
       this.readString(sessionMeta?.data.payload, 'id') ??
       this.createFallbackId(file.agent, file.filePath);
     const titleMap = await this.loadCodexThreadTitles();
-    const title = titleMap.get(sessionId);
+    const fallbackTitle = titleMap.get(sessionId);
 
     let model = '';
+    let title = '';
     let startedAt = '';
     let endedAt = '';
     let latestUsage: TokenUsageSnapshot | undefined;
@@ -480,6 +481,10 @@ export class ProfilerService {
 
       if (record.recordType === 'turn_context') {
         model = this.readString(record.data.payload, 'model') ?? model;
+      }
+
+      if (!title && record.payloadType === 'user_message') {
+        title = this.extractCodexUserPrompt(record) ?? title;
       }
 
       if (record.payloadType === 'task_started') {
@@ -499,7 +504,7 @@ export class ProfilerService {
       agent: file.agent,
       filePath: file.filePath,
       fileName: path.basename(file.filePath),
-      title,
+      title: this.normalizeSessionTitle(title) ?? this.normalizeSessionTitle(fallbackTitle),
       modifiedAt: file.stat.mtime.toISOString(),
       startedAt: startedAt || undefined,
       endedAt: endedAt || undefined,
@@ -536,7 +541,7 @@ export class ProfilerService {
       sessionId = this.readString(record.data, 'sessionId') ?? sessionId;
 
       if (!title && record.recordType === 'user') {
-        title = this.extractClaudeUserPrompt(record.data) ?? title;
+        title = this.extractClaudeSessionTitle(record.data) ?? title;
       }
 
       if (record.recordType === 'assistant') {
@@ -577,7 +582,7 @@ export class ProfilerService {
       agent: file.agent,
       filePath: file.filePath,
       fileName: path.basename(file.filePath),
-      title: title || undefined,
+      title: this.normalizeSessionTitle(title),
       modifiedAt: file.stat.mtime.toISOString(),
       startedAt: startedAt || undefined,
       endedAt: endedAt || undefined,
@@ -613,11 +618,11 @@ export class ProfilerService {
         .map((message) => (typeof message.model === 'string' ? message.model : undefined))
         .find(Boolean);
       const title =
-        (typeof conversation.summary === 'string' ? conversation.summary : undefined) ??
         conversation.messages
           .filter((message) => message.type === 'user')
-          .map((message) => this.extractGeminiMessagePreview(message))
-          .find(Boolean);
+          .map((message) => this.extractGeminiSessionTitle(message))
+          .find(Boolean) ??
+        (typeof conversation.summary === 'string' ? conversation.summary : undefined);
       const id = this.createSessionId(
         file.agent,
         conversation.sessionId ?? this.createFallbackId(file.agent, file.filePath),
@@ -630,7 +635,7 @@ export class ProfilerService {
         agent: file.agent,
         filePath: file.filePath,
         fileName: path.basename(file.filePath),
-        title,
+        title: this.normalizeSessionTitle(title),
         modifiedAt: file.stat.mtime.toISOString(),
         startedAt: conversation.startTime,
         endedAt: conversation.lastUpdated,
@@ -662,10 +667,11 @@ export class ProfilerService {
         agent: file.agent,
         filePath: file.filePath,
         fileName: path.basename(file.filePath),
-        title:
+        title: this.normalizeSessionTitle(
           this.readString(toolCall, 'name') ??
-          this.readString(checkpoint, 'messageId') ??
-          path.basename(file.filePath),
+            this.readString(checkpoint, 'messageId') ??
+            path.basename(file.filePath),
+        ),
         modifiedAt: file.stat.mtime.toISOString(),
         startedAt: file.stat.mtime.toISOString(),
         endedAt: file.stat.mtime.toISOString(),
@@ -689,7 +695,7 @@ export class ProfilerService {
       agent: file.agent,
       filePath: file.filePath,
       fileName: path.basename(file.filePath),
-      title: fallback.title,
+      title: this.normalizeSessionTitle(fallback.title),
       modifiedAt: file.stat.mtime.toISOString(),
       startedAt: fallback.startedAt,
       endedAt: fallback.endedAt,
@@ -2062,6 +2068,12 @@ export class ProfilerService {
     return undefined;
   }
 
+  private extractGeminiSessionTitle(message: GeminiConversationMessage): string | undefined {
+    return this.normalizeSessionTitle(
+      this.extractTextSnippet(message.displayContent) ?? this.extractTextSnippet(message.content),
+    );
+  }
+
   private extractTextSnippet(value: unknown): string | undefined {
     if (typeof value === 'string') {
       return value;
@@ -2289,6 +2301,34 @@ export class ProfilerService {
     return undefined;
   }
 
+  private extractCodexUserPrompt(record: ParsedRecord): string | undefined {
+    return this.normalizeSessionTitle(this.readString(record.data, 'payload', 'message'));
+  }
+
+  private extractClaudeSessionTitle(record: Record<string, unknown>): string | undefined {
+    const direct = this.normalizeSessionTitle(this.readString(record, 'message', 'content'));
+    if (direct) {
+      return direct;
+    }
+
+    const content = this.readUnknown(record, 'message', 'content');
+    if (!Array.isArray(content)) {
+      return undefined;
+    }
+
+    for (const item of content) {
+      if (this.readString(item, 'type') !== 'text') {
+        continue;
+      }
+      const text = this.normalizeSessionTitle(this.readString(item, 'text'));
+      if (text) {
+        return text;
+      }
+    }
+
+    return undefined;
+  }
+
   private extractClaudeAssistantSummary(record: Record<string, unknown>): {
     label: string;
     detail: string;
@@ -2454,6 +2494,14 @@ export class ProfilerService {
 
   private truncate(value: string, length = 120): string {
     return value.length > length ? `${value.slice(0, length)}...` : value;
+  }
+
+  private normalizeSessionTitle(value?: string): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized || undefined;
   }
 
   private readString(value: unknown, ...keys: string[]): string | undefined {

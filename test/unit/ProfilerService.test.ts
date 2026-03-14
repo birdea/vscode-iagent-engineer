@@ -50,9 +50,11 @@ suite('ProfilerService', () => {
 
     const stat = await fs.promises.stat(filePath);
     const service = new ProfilerService() as any;
+    sandbox.stub(service, 'loadCodexThreadTitles').resolves(new Map([['sess-1', 'Thread title']]));
     const summary = await service.summarizeCodexFile({ agent: 'codex', filePath, stat });
     const detail = await service.analyzeCodexSession({ agent: 'codex', filePath, stat }, summary);
 
+    assert.strictEqual(summary.title, 'First prompt');
     assert.strictEqual(summary.totalTokens, 330);
     assert.strictEqual(summary.requestCount, 2);
     assert.strictEqual(detail.timeline.length, 2);
@@ -96,6 +98,7 @@ suite('ProfilerService', () => {
     const summary = await service.summarizeClaudeFile({ agent: 'claude', filePath, stat });
     const detail = await service.analyzeClaudeSession({ agent: 'claude', filePath, stat }, summary);
 
+    assert.strictEqual(summary.title, 'Review profiler');
     assert.strictEqual(summary.requestCount, 2);
     assert.strictEqual(summary.totalInputTokens, 1070);
     assert.strictEqual(summary.totalOutputTokens, 240);
@@ -210,7 +213,7 @@ suite('ProfilerService', () => {
           projectHash: 'project-abc',
           startTime: '2026-03-11T09:00:00.000Z',
           lastUpdated: '2026-03-11T09:00:03.000Z',
-          summary: 'Build a login form',
+          summary: 'Gemini generated summary',
           directories: ['/tmp/project'],
           kind: 'main',
           messages: [
