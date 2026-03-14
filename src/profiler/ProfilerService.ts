@@ -760,6 +760,7 @@ export class ProfilerService {
         outputTokens: usageDelta?.outputTokens,
         cachedTokens: usageDelta?.cachedTokens,
         totalTokens: usageDelta?.totalTokens,
+        maxTokens: usageDelta?.maxTokens,
         messagePreview:
           this.readString(payload, 'message') ??
           this.readString(payload, 'last_agent_message') ??
