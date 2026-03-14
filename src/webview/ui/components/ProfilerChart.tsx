@@ -270,14 +270,43 @@ function LegendMarker({ shape, color }: { shape: MarkerShape; color: string }) {
   );
 }
 
+function buildTokenSampleTimeline(detail: SessionDetail): SessionTimelinePoint[] {
+  return detail.rawEvents
+    .filter((event) => event.eventType === 'token_count' && event.timestamp)
+    .map((event, index) => ({
+      id: `${detail.summary.id}:token:${index + 1}`,
+      timestamp: event.timestamp!,
+      endTimestamp: event.timestamp,
+      inputTokens: event.inputTokens,
+      outputTokens: event.outputTokens,
+      cachedTokens: event.cachedTokens,
+      totalTokens: event.totalTokens,
+      maxTokens: event.maxTokens,
+      eventType: 'token_count',
+      label: `S${String(index + 1).padStart(2, '0')}`,
+      detail: event.summary,
+      sourceEventId: event.id,
+    }));
+}
+
 export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartProps) {
-  const timeline = [...detail.timeline].sort((a, b) =>
+  const tokenTimeline = buildTokenSampleTimeline(detail);
+  const chartTimeline =
+    metric === 'tokens' && detail.summary.agent === 'codex' && tokenTimeline.length > 0
+      ? tokenTimeline
+      : detail.timeline;
+
+  const timeline = [...chartTimeline].sort((a, b) =>
     getPointChartTimestamp(a, metric).localeCompare(getPointChartTimestamp(b, metric)),
   );
   const rawEventById = new Map(detail.rawEvents.map((event) => [event.id, event] as const));
   const contextWindowLimit = useMemo(
-    () => timeline.reduce((max, point) => Math.max(max, point.maxTokens ?? 0), 0),
-    [timeline],
+    () =>
+      [...detail.timeline, ...tokenTimeline].reduce(
+        (max, point) => Math.max(max, point.maxTokens ?? 0),
+        0,
+      ),
+    [detail.timeline, tokenTimeline],
   );
 
   const seriesDefs = useMemo(() => buildSeriesDefs(metric, timeline), [metric, timeline]);

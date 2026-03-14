@@ -143,6 +143,7 @@ export interface SessionRawEventRef {
   outputTokens?: number;
   cachedTokens?: number;
   totalTokens?: number;
+  maxTokens?: number;
 }
 
 export interface SessionTimelinePoint {

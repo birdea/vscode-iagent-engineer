@@ -878,7 +878,7 @@ suite('UI Components Consolidated', () => {
           eventType: 'turn',
           label: 'T02',
           detail: 'Render profiler chart',
-          sourceEventId: 'raw-2',
+          sourceEventId: 'raw-3',
         },
       ],
       eventBubbles: [
@@ -888,7 +888,7 @@ suite('UI Components Consolidated', () => {
           title: 'Turn completed',
           detail: 'Render profiler chart',
           category: 'conversation' as const,
-          rawEventId: 'raw-2',
+          rawEventId: 'raw-3',
         },
       ],
       rawEvents: [
@@ -913,6 +913,23 @@ suite('UI Components Consolidated', () => {
           id: 'raw-2',
           filePath: '/tmp/session.jsonl',
           lineNumber: 8,
+          timestamp: '2026-03-11T10:01:04.000Z',
+          eventType: 'token_count',
+          category: 'usage' as const,
+          summary: 'Token snapshot',
+          excerpt: '{"sample":2}',
+          messagePreview: 'Second token snapshot',
+          payloadKb: 7.8,
+          payloadBytes: 7987,
+          inputTokens: 120,
+          outputTokens: 60,
+          cachedTokens: 20,
+          totalTokens: 200,
+        },
+        {
+          id: 'raw-3',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 9,
           timestamp: '2026-03-11T10:01:05.000Z',
           eventType: 'task_complete',
           category: 'conversation' as const,
@@ -1016,6 +1033,73 @@ suite('UI Components Consolidated', () => {
       assert.ok((chartShell?.querySelectorAll('.profiler-chart-bar').length ?? 0) >= 2);
     });
 
+    test('codex token chart uses raw token snapshots instead of turn count', async () => {
+      const { act } = await import('react');
+      const detail = createProfilerDetail();
+      detail.timeline = [
+        {
+          id: 'p1',
+          timestamp: '2026-03-11T10:00:00.000Z',
+          endTimestamp: '2026-03-11T10:00:08.000Z',
+          maxTokens: 200000,
+          inputTokens: 220,
+          outputTokens: 70,
+          cachedTokens: 40,
+          totalTokens: 330,
+          eventType: 'turn',
+          label: 'T01',
+          detail: 'Single long task',
+          sourceEventId: 'raw-2',
+        },
+      ];
+      detail.rawEvents = [
+        {
+          id: 'raw-token-1',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 4,
+          timestamp: '2026-03-11T10:00:03.000Z',
+          eventType: 'token_count',
+          category: 'usage' as const,
+          summary: 'Token snapshot',
+          excerpt: '{"sample":1}',
+          messagePreview: 'snapshot-1',
+          inputTokens: 100,
+          outputTokens: 40,
+          cachedTokens: 20,
+          totalTokens: 160,
+          maxTokens: 200000,
+        },
+        {
+          id: 'raw-token-2',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 8,
+          timestamp: '2026-03-11T10:00:06.000Z',
+          eventType: 'token_count',
+          category: 'usage' as const,
+          summary: 'Token snapshot',
+          excerpt: '{"sample":2}',
+          messagePreview: 'snapshot-2',
+          inputTokens: 120,
+          outputTokens: 30,
+          cachedTokens: 20,
+          totalTokens: 170,
+          maxTokens: 200000,
+        },
+      ];
+
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail,
+        });
+      });
+
+      const chartShell = document.getElementById('profiler-chart-shell');
+      assert.ok(chartShell?.textContent?.includes('2 samples'));
+      assert.strictEqual(chartShell?.querySelectorAll('.profiler-chart-bar').length, 2);
+    });
+
     test('updates the chart when live detail grows in place', async () => {
       const { act } = await import('react');
       const detail = createProfilerDetail();
@@ -1056,10 +1140,10 @@ suite('UI Components Consolidated', () => {
         id: 'raw-3',
         filePath: '/tmp/session.jsonl',
         lineNumber: 12,
-        timestamp: '2026-03-11T10:02:06.000Z',
-        eventType: 'task_complete',
-        category: 'conversation' as const,
-        summary: 'Live turn completed',
+        timestamp: '2026-03-11T10:02:05.000Z',
+        eventType: 'token_count',
+        category: 'usage' as const,
+        summary: 'Live token snapshot',
         excerpt: '{"sample":3}',
         payloadKb: 9.6,
         payloadBytes: 9830,
@@ -1067,6 +1151,7 @@ suite('UI Components Consolidated', () => {
         outputTokens: 120,
         cachedTokens: 40,
         totalTokens: 420,
+        maxTokens: 200000,
       });
 
       act(() => {
