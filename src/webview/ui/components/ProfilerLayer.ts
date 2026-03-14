@@ -10,6 +10,7 @@ import { getDocumentLocale, UiLocale } from '../../../i18n';
 
 type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
+const LIVE_SESSION_WINDOW_MS = 15 * 60 * 1000;
 
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
@@ -34,7 +35,6 @@ const MESSAGES: Record<
   Record<
     | 'title'
     | 'scan'
-    | 'live'
     | 'archive'
     | 'loading'
     | 'empty'
@@ -49,8 +49,7 @@ const MESSAGES: Record<
 > = {
   en: {
     title: 'Agent Session Profiler',
-    scan: 'See OldData',
-    live: 'See LiveData',
+    scan: 'Find',
     archive: 'Archive All',
     loading: '로딩중..',
     empty: 'No sessions found.',
@@ -63,8 +62,7 @@ const MESSAGES: Record<
   },
   ko: {
     title: 'Agent 세션 프로파일러',
-    scan: 'See OldData',
-    live: 'See LiveData',
+    scan: 'Find',
     archive: 'Archive All',
     loading: '로딩중..',
     empty: '검색된 세션이 없습니다.',
@@ -94,20 +92,16 @@ export class ProfilerLayer {
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
   <div class="btn-row profiler-toolbar profiler-toolbar-inline">
-    <button class="primary" id="profiler-see-livedata">${this.msg('live')}</button>
     <button class="primary" id="profiler-start-analysis">${this.msg('scan')}</button>
     <button class="secondary" id="profiler-archive-all">${this.msg('archive')}</button>
   </div>
-  <div class="profiler-tab-row" id="profiler-tab-row"></div>
+  <div class="profiler-tab-row" id="profiler-tab-row" role="tablist" aria-label="Agents"></div>
   <div class="profiler-sort-bar" id="profiler-sort-bar"></div>
   <div class="profiler-list" id="profiler-session-list"></div>
 </section>`;
   }
 
   mount() {
-    document
-      .getElementById('profiler-see-livedata')
-      ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.startLiveData' }));
     document
       .getElementById('profiler-start-analysis')
       ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.scan' }));
@@ -183,7 +177,6 @@ export class ProfilerLayer {
     const startButton = document.getElementById(
       'profiler-start-analysis',
     ) as HTMLButtonElement | null;
-    const liveButton = document.getElementById('profiler-see-livedata') as HTMLButtonElement | null;
     const archiveButton = document.getElementById(
       'profiler-archive-all',
     ) as HTMLButtonElement | null;
@@ -192,7 +185,6 @@ export class ProfilerLayer {
     const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
-    if (liveButton) liveButton.disabled = loading;
     if (startButton) startButton.disabled = loading;
     if (archiveButton) archiveButton.disabled = loading || this.state.aggregate.totalSessions === 0;
     if (badge) badge.innerHTML = this.renderStatusBadge();
@@ -213,9 +205,9 @@ export class ProfilerLayer {
         const isActive = this.state.selectedAgent === agent;
         const count = this.state.sessionsByAgent[agent].length;
         const descriptor = getProfilerAgentDescriptor(agent);
-        return `<button class="profiler-tab ${isActive ? 'active' : ''}" data-agent="${agent}">
+        return `<button class="profiler-tab ${isActive ? 'active' : ''}" data-agent="${agent}" role="tab" aria-selected="${isActive ? 'true' : 'false'}">
   <span class="profiler-tab-brand">
-    <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconSvg}</span>
+    <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconMarkup}</span>
     <span class="profiler-tab-label">${descriptor.label}</span>
   </span>
   <span>${count}</span>
@@ -289,6 +281,9 @@ export class ProfilerLayer {
     const fileName = this.getDisplayFileName(session);
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
+    const liveBadge = this.isLiveSession(session)
+      ? '<span class="profiler-session-live">(live)</span>'
+      : '';
     return `
 <button
   class="profiler-session-row ${isSelected ? 'selected' : ''}"
@@ -297,7 +292,7 @@ export class ProfilerLayer {
   title="${this.escapeAttr(session.filePath)}"
 >
   <span class="profiler-session-head">
-    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}">${this.escapeHtml(fileName)}</span>
+    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}"><span class="profiler-session-name">${this.escapeHtml(fileName)}</span>${liveBadge}</span>
     <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
   </span>
   <span class="profiler-session-meta">
@@ -305,6 +300,28 @@ export class ProfilerLayer {
     <span class="profiler-session-tokens">IN ${inK} · OUT ${outK}</span>
   </span>
 </button>`;
+  }
+
+  private isLiveSession(session: SessionSummary): boolean {
+    const sessions = this.state.sessionsByAgent[session.agent] ?? [];
+    if (sessions.length === 0) {
+      return false;
+    }
+
+    const latestModifiedMs = sessions.reduce((latest, candidate) => {
+      const candidateMs = Date.parse(candidate.modifiedAt);
+      return Number.isFinite(candidateMs) ? Math.max(latest, candidateMs) : latest;
+    }, 0);
+    const sessionModifiedMs = Date.parse(session.modifiedAt);
+
+    if (!Number.isFinite(sessionModifiedMs) || latestModifiedMs === 0) {
+      return false;
+    }
+
+    return (
+      sessionModifiedMs === latestModifiedMs &&
+      Date.now() - sessionModifiedMs <= LIVE_SESSION_WINDOW_MS
+    );
   }
 
   private renderStatusBadge(): string {
