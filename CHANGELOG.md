@@ -4,6 +4,12 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-03-14
+
+- Added direct file actions in the `iProfiler` summary so the selected session file can be revealed in Finder / Explorer or copied to the clipboard.
+- Restored Claude Haiku 4.5 context-window limit mapping so the profiler chart can render limit lines for newer Claude Haiku session files.
+- Added fallback timeline handling for Claude `history.jsonl` logs, including numeric timestamp normalization and payload-based chart rendering when token samples are unavailable.
+
 ## [0.7.1] - 2026-03-14
 
 - Refreshed the repository markdown docs so the current `0.7.x` implementation, supported workflows, and known limitations are described consistently.
