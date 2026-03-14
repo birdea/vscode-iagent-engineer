@@ -42,7 +42,7 @@ const MESSAGES: Record<
     | 'input'
     | 'output'
     | 'fileSize'
-    | 'geminiSoon'
+    | 'agentSoon'
     | 'noSelection'
     | 'archiveDone',
     string
@@ -58,7 +58,7 @@ const MESSAGES: Record<
     input: 'Input',
     output: 'Output',
     fileSize: 'Size',
-    geminiSoon: 'Gemini profiler support is coming soon.',
+    agentSoon: 'Profiler support is coming soon.',
     noSelection: 'Select a session to inspect details.',
     archiveDone: 'Archive completed',
   },
@@ -72,7 +72,7 @@ const MESSAGES: Record<
     input: 'Input',
     output: 'Output',
     fileSize: '크기',
-    geminiSoon: 'Gemini profiler는 추후 지원 예정입니다.',
+    agentSoon: '추후 지원 예정입니다.',
     noSelection: '세션을 선택하면 상세 분석이 표시됩니다.',
     archiveDone: '아카이브 완료',
   },
@@ -121,8 +121,8 @@ export class ProfilerLayer {
       if (!agent) {
         return;
       }
-      if (agent === 'gemini') {
-        this.notice = this.msg('geminiSoon');
+      if (this.isDisabledAgent(agent)) {
+        this.notice = this.getDisabledAgentNotice(agent);
         this.renderDynamicContent();
         return;
       }
@@ -171,12 +171,16 @@ export class ProfilerLayer {
   }
 
   onState(state: ProfilerOverviewState) {
-    const selectedAgent = state.selectedAgent === 'gemini' ? 'codex' : state.selectedAgent;
+    const selectedAgent = this.isDisabledAgent(state.selectedAgent) ? 'codex' : state.selectedAgent;
     this.state = {
       ...state,
       selectedAgent,
     };
-    this.notice = state.message ?? (state.selectedAgent === 'gemini' ? this.msg('geminiSoon') : '');
+    this.notice =
+      state.message ??
+      (this.isDisabledAgent(state.selectedAgent)
+        ? this.getDisabledAgentNotice(state.selectedAgent)
+        : '');
     this.renderDynamicContent();
   }
 
@@ -216,10 +220,10 @@ export class ProfilerLayer {
     return (['claude', 'codex', 'gemini'] as const)
       .map((agent) => {
         const isActive = this.state.selectedAgent === agent;
-        const isDisabled = agent === 'gemini';
+        const isDisabled = this.isDisabledAgent(agent);
         const count = this.state.sessionsByAgent[agent].length;
         const descriptor = getProfilerAgentDescriptor(agent);
-        return `<button class="profiler-tab ${isActive ? 'active' : ''} ${isDisabled ? 'is-disabled' : ''}" data-agent="${agent}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" aria-disabled="${isDisabled ? 'true' : 'false'}" title="${isDisabled ? this.msg('geminiSoon') : descriptor.label}">
+        return `<button class="profiler-tab ${isActive ? 'active' : ''} ${isDisabled ? 'is-disabled' : ''}" data-agent="${agent}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" aria-disabled="${isDisabled ? 'true' : 'false'}" title="${isDisabled ? this.getDisabledAgentNotice(agent) : descriptor.label}">
   <span class="profiler-tab-brand">
     <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconMarkup}</span>
     <span class="profiler-tab-label">${descriptor.label}</span>
@@ -228,6 +232,15 @@ export class ProfilerLayer {
 </button>`;
       })
       .join('');
+  }
+
+  private isDisabledAgent(agent: ProfilerAgentType): boolean {
+    return agent !== 'codex';
+  }
+
+  private getDisabledAgentNotice(agent: ProfilerAgentType): string {
+    const descriptor = getProfilerAgentDescriptor(agent);
+    return `${descriptor.label} ${this.msg('agentSoon')}`;
   }
 
   private renderSortBar(): string {

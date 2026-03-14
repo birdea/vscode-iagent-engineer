@@ -1533,7 +1533,7 @@ suite('UI Components Consolidated', () => {
       assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.scan' }));
     });
 
-    test('gemini tab stays disabled and shows a coming soon notice', () => {
+    test('claude and gemini tabs stay disabled and show a coming soon notice', () => {
       layer.onState({
         status: 'ready',
         selectedAgent: 'codex',
@@ -1547,7 +1547,18 @@ suite('UI Components Consolidated', () => {
           totalFileSizeBytes: 1024,
         },
         sessionsByAgent: {
-          claude: [],
+          claude: [
+            {
+              id: 'claude:1',
+              agent: 'claude',
+              filePath: '/tmp/claude-session.json',
+              fileName: 'claude-session.json',
+              modifiedAt: '2026-03-11T14:04:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
           codex: [],
           gemini: [
             {
@@ -1567,16 +1578,35 @@ suite('UI Components Consolidated', () => {
       const geminiTab = document.querySelector(
         '.profiler-tab[data-agent="gemini"]',
       ) as HTMLButtonElement | null;
+      const claudeTab = document.querySelector(
+        '.profiler-tab[data-agent="claude"]',
+      ) as HTMLButtonElement | null;
       assert.ok(geminiTab?.classList.contains('is-disabled'));
+      assert.ok(claudeTab?.classList.contains('is-disabled'));
 
-      geminiTab?.click();
+      claudeTab?.click();
 
       assert.ok(
-        document.getElementById('profiler-status-badge')?.textContent?.includes('Gemini profiler'),
+        document
+          .getElementById('profiler-status-badge')
+          ?.textContent?.toLowerCase()
+          .includes('claude'),
       );
       assert.strictEqual(
         document.querySelector('.profiler-tab.active')?.getAttribute('data-agent'),
         'codex',
+      );
+
+      const refreshedGeminiTab = document.querySelector(
+        '.profiler-tab[data-agent="gemini"]',
+      ) as HTMLButtonElement | null;
+      refreshedGeminiTab?.click();
+
+      assert.ok(
+        document
+          .getElementById('profiler-status-badge')
+          ?.textContent?.toLowerCase()
+          .includes('gemini'),
       );
     });
   });
