@@ -267,12 +267,12 @@ export class ProfilerDetailLayer {
   <div class="profiler-header-actions">
     ${
       this.state.live?.active
-        ? '<button type="button" class="profiler-live-badge" data-profiler-live-stop="true"><span class="status-dot connected"></span><strong>Live</strong></button>'
+        ? '<button type="button" class="profiler-header-action profiler-live-badge" data-profiler-live-stop="true"><span class="status-dot connected"></span><span class="profiler-header-action-label">Live</span></button>'
         : ''
     }
-    <button type="button" class="profiler-info-button" data-info-doc="profiler">
+    <button type="button" class="profiler-header-action profiler-info-button" data-info-doc="profiler">
       <i class="codicon codicon-info"></i>
-      <span>Info</span>
+      <span class="profiler-header-action-label">Info</span>
     </button>
   </div>
 </div>
