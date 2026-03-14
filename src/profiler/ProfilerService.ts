@@ -407,7 +407,7 @@ export class ProfilerService {
     }
 
     if (agent === 'claude') {
-      return lower.endsWith('.jsonl') && lower.includes(`${path.sep}.claude${path.sep}`);
+      return lower.endsWith('.jsonl');
     }
 
     if (!lower.endsWith('.json') && !lower.endsWith('.jsonl')) {
@@ -996,6 +996,7 @@ export class ProfilerService {
       const requestId =
         this.readString(record.data, 'requestId') ??
         this.readString(record.data, 'message', 'id') ??
+        this.readString(record.data, 'uuid') ??
         rawEventId;
       const usage = this.extractClaudeUsage(record.data);
       const contentSummary = this.extractClaudeAssistantSummary(record.data);
@@ -2219,11 +2220,13 @@ export class ProfilerService {
       return undefined;
     }
 
+    // input_tokens = full prompt context (fresh + cached), per OpenAI API semantics.
     const inputTokens = this.readNumber(usage, 'input_tokens') ?? 0;
     const outputTokens = this.readNumber(usage, 'output_tokens') ?? 0;
+    // cached_input_tokens = cache hits only — subset of inputTokens, not separate.
     const cachedTokens = this.readNumber(usage, 'cached_input_tokens') ?? 0;
-    const totalTokens =
-      this.readNumber(usage, 'total_tokens') ?? inputTokens + outputTokens + cachedTokens;
+    // total_tokens = input_tokens + output_tokens (cached is already inside input_tokens).
+    const totalTokens = this.readNumber(usage, 'total_tokens') ?? inputTokens + outputTokens;
 
     return {
       inputTokens,
@@ -2236,17 +2239,23 @@ export class ProfilerService {
 
   private extractClaudeUsage(record: Record<string, unknown>): TokenUsageSnapshot {
     const usage = this.readRecord(record, 'message', 'usage');
-    const inputTokens = this.readNumber(usage, 'input_tokens') ?? 0;
+    // input_tokens = non-cached tokens only (after last cache breakpoint).
+    // Full context = input_tokens + cache_creation_input_tokens + cache_read_input_tokens.
+    const rawInput = this.readNumber(usage, 'input_tokens') ?? 0;
+    const cacheCreation = this.readNumber(usage, 'cache_creation_input_tokens') ?? 0;
+    const cacheRead = this.readNumber(usage, 'cache_read_input_tokens') ?? 0;
     const outputTokens = this.readNumber(usage, 'output_tokens') ?? 0;
-    const cachedTokens =
-      (this.readNumber(usage, 'cache_creation_input_tokens') ?? 0) +
-      (this.readNumber(usage, 'cache_read_input_tokens') ?? 0);
+
+    // inputTokens = total tokens the model processed as input (full context size).
+    const inputTokens = rawInput + cacheCreation + cacheRead;
+    // cachedTokens = cache hits only — subset of inputTokens, used as cache efficiency indicator.
+    const cachedTokens = cacheRead;
 
     return {
       inputTokens,
       outputTokens,
       cachedTokens,
-      totalTokens: inputTokens + outputTokens + cachedTokens,
+      totalTokens: inputTokens + outputTokens,
     };
   }
 

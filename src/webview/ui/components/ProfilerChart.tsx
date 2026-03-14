@@ -64,7 +64,7 @@ function getPointChartTimestamp(point: SessionTimelinePoint, metric: ProfilerMet
 }
 
 function getTokenTotal(p: SessionTimelinePoint): number {
-  return (p.inputTokens ?? 0) + (p.outputTokens ?? 0) + (p.cachedTokens ?? 0);
+  return p.totalTokens ?? (p.inputTokens ?? 0) + (p.outputTokens ?? 0);
 }
 
 function computeMovingAverage(values: number[], windowSize: number): number[] {
