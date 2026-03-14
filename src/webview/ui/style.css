@@ -862,6 +862,18 @@ a:hover {
   );
 }
 
+.profiler-tab.is-disabled {
+  opacity: 0.6;
+}
+
+.profiler-tab.is-disabled:hover {
+  color: var(--vscode-tab-inactiveForeground, var(--vscode-descriptionForeground));
+  background: var(
+    --vscode-tab-inactiveBackground,
+    var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-editor-background))
+  );
+}
+
 .profiler-tab.active {
   color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
   background: var(--vscode-tab-activeBackground, var(--vscode-editor-background));

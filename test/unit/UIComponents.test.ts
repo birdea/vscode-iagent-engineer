@@ -1532,6 +1532,53 @@ suite('UI Components Consolidated', () => {
 
       assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.scan' }));
     });
+
+    test('gemini tab stays disabled and shows a coming soon notice', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:1',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 1024,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [],
+          gemini: [
+            {
+              id: 'gemini:1',
+              agent: 'gemini',
+              filePath: '/tmp/gemini-session.json',
+              fileName: 'gemini-session.json',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+        },
+      });
+
+      const geminiTab = document.querySelector(
+        '.profiler-tab[data-agent="gemini"]',
+      ) as HTMLButtonElement | null;
+      assert.ok(geminiTab?.classList.contains('is-disabled'));
+
+      geminiTab?.click();
+
+      assert.ok(
+        document.getElementById('profiler-status-badge')?.textContent?.includes('Gemini profiler'),
+      );
+      assert.strictEqual(
+        document.querySelector('.profiler-tab.active')?.getAttribute('data-agent'),
+        'codex',
+      );
+    });
   });
 });
 

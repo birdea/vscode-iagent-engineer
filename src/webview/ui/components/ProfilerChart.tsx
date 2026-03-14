@@ -55,6 +55,13 @@ function getPointAnchorTimestamp(point: SessionTimelinePoint): string {
   return point.endTimestamp ?? point.timestamp;
 }
 
+function getPointChartTimestamp(point: SessionTimelinePoint, metric: ProfilerMetricType): string {
+  if (metric === 'tokens' && point.chartTimestamp) {
+    return point.chartTimestamp;
+  }
+  return getPointAnchorTimestamp(point);
+}
+
 function getTokenTotal(p: SessionTimelinePoint): number {
   return (p.inputTokens ?? 0) + (p.outputTokens ?? 0) + (p.cachedTokens ?? 0);
 }
@@ -72,7 +79,7 @@ function buildSeriesDefs(
   timeline: SessionTimelinePoint[],
 ): SeriesDef[] {
   if (metric === 'tokens') {
-    const totals = timeline.map((p) => p.totalTokens ?? getTokenTotal(p));
+    const totals = timeline.map((p) => p.chartTotalTokens ?? p.totalTokens ?? getTokenTotal(p));
     const trend = computeMovingAverage(totals, 3);
     return [
       {
@@ -82,7 +89,7 @@ function buildSeriesDefs(
         marker: 'circle',
         lineWidth: 3.2,
         opacity: 1,
-        getValue: (p) => p.totalTokens ?? getTokenTotal(p),
+        getValue: (p) => p.chartTotalTokens ?? p.totalTokens ?? getTokenTotal(p),
       },
       {
         key: 'output',
@@ -91,7 +98,7 @@ function buildSeriesDefs(
         marker: 'square',
         lineWidth: 2.4,
         opacity: 1,
-        getValue: (p) => p.outputTokens ?? 0,
+        getValue: (p) => p.chartOutputTokens ?? p.outputTokens ?? 0,
       },
       {
         key: 'input',
@@ -100,7 +107,7 @@ function buildSeriesDefs(
         marker: 'diamond',
         lineWidth: 2.4,
         opacity: 1,
-        getValue: (p) => p.inputTokens ?? 0,
+        getValue: (p) => p.chartInputTokens ?? p.inputTokens ?? 0,
       },
       {
         key: 'cached',
@@ -109,7 +116,7 @@ function buildSeriesDefs(
         marker: 'triangleDown',
         lineWidth: 2.4,
         opacity: 1,
-        getValue: (p) => p.cachedTokens ?? 0,
+        getValue: (p) => p.chartCachedTokens ?? p.cachedTokens ?? 0,
       },
       {
         key: 'trend',
@@ -265,7 +272,7 @@ function LegendMarker({ shape, color }: { shape: MarkerShape; color: string }) {
 
 export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartProps) {
   const timeline = [...detail.timeline].sort((a, b) =>
-    getPointAnchorTimestamp(a).localeCompare(getPointAnchorTimestamp(b)),
+    getPointChartTimestamp(a, metric).localeCompare(getPointChartTimestamp(b, metric)),
   );
   const rawEventById = new Map(detail.rawEvents.map((event) => [event.id, event] as const));
   const contextWindowLimit = useMemo(
@@ -299,7 +306,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
 
   // Compute chart width based on fixed time intervals
   const { chartWidth, minTime, maxTime } = useMemo(() => {
-    const ts = timeline.map((p) => new Date(getPointAnchorTimestamp(p)).valueOf());
+    const ts = timeline.map((p) => new Date(getPointChartTimestamp(p, metric)).valueOf());
     const min = Math.min(...ts);
     const max = Math.max(...ts);
     const spanMinutes = Math.max(1, (max - min) / 60_000);
@@ -309,7 +316,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
       Math.round(spanMinutes * PIXELS_PER_MINUTE),
     );
     return { chartWidth: w, minTime: min, maxTime: max };
-  }, [timeline]);
+  }, [metric, timeline]);
 
   const plotWidth = chartWidth - PADDING.left - PADDING.right;
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
@@ -337,7 +344,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
   const maxValue = useMemo(() => {
     const visibleIndexes = timeline
       .map((point, index) => {
-        const x = xScale(new Date(getPointAnchorTimestamp(point))) ?? PADDING.left;
+        const x = xScale(new Date(getPointChartTimestamp(point, metric))) ?? PADDING.left;
         return { index, x };
       })
       .filter(({ x }) => x >= visibleWindow.leftEdge && x <= visibleWindow.rightEdge)
@@ -353,7 +360,15 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
       }
     }
     return max;
-  }, [hiddenSeries, seriesDefs, timeline, visibleWindow.leftEdge, visibleWindow.rightEdge, xScale]);
+  }, [
+    hiddenSeries,
+    metric,
+    seriesDefs,
+    timeline,
+    visibleWindow.leftEdge,
+    visibleWindow.rightEdge,
+    xScale,
+  ]);
 
   const chartMaxValue =
     metric === 'tokens' && contextWindowLimit > 0
@@ -375,12 +390,12 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     return seriesDefs.map((s) => ({
       ...s,
       points: timeline.map((p, i) => ({
-        x: xScale(new Date(getPointAnchorTimestamp(p))) ?? PADDING.left,
+        x: xScale(new Date(getPointChartTimestamp(p, metric))) ?? PADDING.left,
         y: yScale(s.getValue(p, i)) ?? PADDING.top + plotHeight,
         value: s.getValue(p, i),
       })),
     }));
-  }, [seriesDefs, timeline, xScale, yScale, plotHeight]);
+  }, [metric, seriesDefs, timeline, xScale, yScale, plotHeight]);
 
   // Find raw event for a timeline point
   const findRawEvent = useCallback(
@@ -419,7 +434,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
       let closestIdx = 0;
       let closestDist = Infinity;
       for (let i = 0; i < timeline.length; i++) {
-        const px = xScale(new Date(getPointAnchorTimestamp(timeline[i]))) ?? 0;
+        const px = xScale(new Date(getPointChartTimestamp(timeline[i], metric))) ?? 0;
         const d = Math.abs(px - x);
         if (d < closestDist) {
           closestDist = d;
@@ -427,7 +442,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
         }
       }
       if (closestDist < 40) {
-        const px = xScale(new Date(getPointAnchorTimestamp(timeline[closestIdx]))) ?? 0;
+        const px = xScale(new Date(getPointChartTimestamp(timeline[closestIdx], metric))) ?? 0;
         setTooltip({
           x: px,
           point: timeline[closestIdx],
@@ -437,7 +452,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
         setTooltip(null);
       }
     },
-    [plotWidth, timeline, xScale],
+    [metric, plotWidth, timeline, xScale],
   );
 
   // Scroll to end on mount
@@ -600,13 +615,14 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
               {/* Bar chart layer: each timeline point gets a bar */}
               <Group>
                 {timeline.map((point, i) => {
-                  const px = xScale(new Date(getPointAnchorTimestamp(point))) ?? PADDING.left;
+                  const px =
+                    xScale(new Date(getPointChartTimestamp(point, metric))) ?? PADDING.left;
                   const primaryValue =
                     metric === 'data'
                       ? (point.payloadKb ?? 0)
                       : metric === 'latency'
                         ? (point.latencyMs ?? 0)
-                        : (point.totalTokens ?? getTokenTotal(point));
+                        : (point.chartTotalTokens ?? point.totalTokens ?? getTokenTotal(point));
                   const barHeight = Math.max(
                     1,
                     (primaryValue / Math.max(1, chartMaxValue)) * plotHeight,
@@ -768,7 +784,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 }
               >
                 <div className="profiler-tooltip-time">
-                  {new Date(getPointAnchorTimestamp(tooltip.point)).toLocaleString()}
+                  {new Date(getPointChartTimestamp(tooltip.point, metric)).toLocaleString()}
                 </div>
                 <div className="profiler-tooltip-data">
                   {visibleSeries.map((s) => (

@@ -36,12 +36,12 @@ suite('ProfilerService', () => {
         '{"timestamp":"2026-03-11T12:00:00.000Z","type":"session_meta","payload":{"id":"sess-1","timestamp":"2026-03-11T12:00:00.000Z","cwd":"/tmp/project","model_provider":"openai"}}',
         '{"timestamp":"2026-03-11T12:00:01.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-1"}}',
         '{"timestamp":"2026-03-11T12:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"First prompt"}}',
-        '{"timestamp":"2026-03-11T12:00:05.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":40,"total_tokens":160},"model_context_window":200000}}}',
+        '{"timestamp":"2026-03-11T12:00:05.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":40,"total_tokens":160},"last_token_usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":40,"total_tokens":160},"model_context_window":200000}}}',
         '{"timestamp":"2026-03-11T12:00:08.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Reply one"}}',
         '{"timestamp":"2026-03-11T12:00:09.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"turn-1","last_agent_message":"Reply one"}}',
         '{"timestamp":"2026-03-11T12:01:00.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-2"}}',
         '{"timestamp":"2026-03-11T12:01:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Second prompt"}}',
-        '{"timestamp":"2026-03-11T12:01:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":180,"cached_input_tokens":40,"output_tokens":100,"total_tokens":320},"model_context_window":200000}}}',
+        '{"timestamp":"2026-03-11T12:01:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":220,"cached_input_tokens":40,"output_tokens":110,"total_tokens":330},"last_token_usage":{"input_tokens":120,"cached_input_tokens":20,"output_tokens":30,"total_tokens":150},"model_context_window":200000}}}',
         '{"timestamp":"2026-03-11T12:01:06.000Z","type":"event_msg","payload":{"type":"custom_tool_call","name":"read_file"}}',
         '{"timestamp":"2026-03-11T12:01:10.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"turn-2","last_agent_message":"Reply two"}}',
       ].join('\n'),
@@ -53,13 +53,29 @@ suite('ProfilerService', () => {
     const summary = await service.summarizeCodexFile({ agent: 'codex', filePath, stat });
     const detail = await service.analyzeCodexSession({ agent: 'codex', filePath, stat }, summary);
 
-    assert.strictEqual(summary.totalTokens, 320);
+    assert.strictEqual(summary.totalTokens, 330);
     assert.strictEqual(summary.requestCount, 2);
     assert.strictEqual(detail.timeline.length, 2);
     assert.strictEqual(detail.timeline[0].label, 'T01');
     assert.strictEqual(detail.timeline[0].totalTokens, 160);
-    assert.strictEqual(detail.timeline[1].totalTokens, 160);
+    assert.strictEqual(detail.timeline[0].chartInputTokens, 100);
+    assert.strictEqual(detail.timeline[0].chartOutputTokens, 40);
+    assert.strictEqual(detail.timeline[0].chartCachedTokens, 20);
+    assert.strictEqual(detail.timeline[0].chartTotalTokens, 160);
+    assert.strictEqual(detail.timeline[1].totalTokens, 150);
+    assert.strictEqual(detail.timeline[1].chartInputTokens, 120);
+    assert.strictEqual(detail.timeline[1].chartOutputTokens, 30);
+    assert.strictEqual(detail.timeline[1].chartCachedTokens, 20);
+    assert.strictEqual(detail.timeline[1].chartTotalTokens, 150);
+    assert.strictEqual(detail.timeline[1].chartTimestamp, '2026-03-11T12:01:04.000Z');
+    assert.strictEqual(detail.timeline[1].sourceEventId, `${summary.id}:9`);
     assert.strictEqual(detail.timeline[1].detail, 'Second prompt');
+    const tokenSnapshots = detail.rawEvents.filter((event) => event.eventType === 'token_count');
+    assert.strictEqual(tokenSnapshots.length, 2);
+    assert.strictEqual(tokenSnapshots[1].inputTokens, 120);
+    assert.strictEqual(tokenSnapshots[1].outputTokens, 30);
+    assert.strictEqual(tokenSnapshots[1].cachedTokens, 20);
+    assert.strictEqual(tokenSnapshots[1].totalTokens, 150);
   });
 
   test('groups claude requests by request id with usage totals', async () => {
