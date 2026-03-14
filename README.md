@@ -1,97 +1,85 @@
 # iAgent Engineer
 
-iAgent Engineer is a VS Code extension for turning Figma context into implementation-ready code, previews, and diagnostics without leaving the editor.
+iAgent Engineer is a VS Code extension for moving from Figma context to generated UI code, previews, and agent-session analysis without leaving the editor.
 
-It combines four workflows in one extension:
-
-- Figma MCP connection and design-data retrieval
-- AI-assisted code generation across multiple providers
-- Editor and preview handoff for generated output
-- Session profiling for Claude, Codex, and Gemini activity logs
-
-![iAgent Engineer screenshot](images/screenshot-3.png)
+![iAgent Engineer screenshot](images/screenshot-4.png)
 
 Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=YmeUWzeAsxw)
 
-## What It Does
+## Current Product Scope
 
-- Connects to a local or remote MCP endpoint for Figma data access
-- Fetches design context, metadata, variable definitions, screenshots, and source assets
-- Generates `tsx`, `html`, `vue`, or `tailwind` output from a single prompt workflow
-- Opens generated results in the editor, a VS Code preview panel, or a browser preview flow
-- Stores API keys in VS Code secret storage
-- Includes an Agent Session Profiler with both overview and detailed timeline analysis
-- Supports Korean and English UI copy
+- Local Figma MCP connection and design-data retrieval
+- Multi-provider UI generation with streaming output
+- Generated-result handoff to the editor, Preview Panel, or browser preview
+- Agent Session Profiler for Claude and Codex logs, with a detailed `iProfiler` panel
+- English and Korean UI strings
 
-## Main Views
+## What Ships Today
 
-### Setup
+### Setup View
 
-The Setup view is where you connect to MCP and prepare design input.
+The `Setup` sidebar combines Figma connection tools and AI provider settings.
 
-- Select `local` or `remote` connection mode
-- Connect to your MCP endpoint
+- Connect to a local MCP endpoint
 - Paste a Figma URL or JSON payload
-- Fetch context, metadata, variable definitions, screenshots, or source assets
-- Open fetched results directly in the editor when desired
+- Fetch design context, metadata, variable definitions, screenshots, and source-data assets
+- Open fetched payloads directly in the editor
+- Save API keys and preferred models for `Gemini`, `Claude`, `DeepSeek`, `Qwen`, and `OpenRouter`
+- Open provider API-key pages and inspect model metadata
 
-### Prompt
+### Prompt View
 
-The Prompt view is the generation workspace.
+The `Prompt` sidebar is the generation workspace.
 
-- Choose an agent and model
-- Save and reuse provider API keys
-- Select an output format
-- Generate code from your prompt plus fetched MCP data
-- Open the result in the editor or preview it immediately
+- Choose whether to include design context or metadata
+- Optionally include the latest fetched screenshot
+- Generate `tsx`, `html`, `vue`, or `tailwind`
+- See prompt-size estimates and selected-model token limits
+- Stream output with progress and cancel support
+- Reopen the latest generated file, Preview Panel, or browser preview
 
-### Log
+### Profiler View
 
-The Log view keeps a running trace of extension activity for debugging and support.
+The `Profiler` sidebar scans supported agent session files and opens details in the bottom panel.
 
-- Inspect info, warning, success, and error events
-- Clear the log
-- Copy the full log output
+- Scan local Claude and Codex session stores
+- Sort sessions by name, time, input tokens, output tokens, or file size
+- Select a session to open the detailed `iProfiler` panel
+- Start live monitoring for likely-active session files
+- Jump from chart points or raw events back to the source log line
 
-### Profiler
+### Output Channel
 
-The Profiler helps inspect historical AI-agent session files.
+There is no separate Log webview in the current build. Extension logs are written to the `iAgent Engineer` output channel, and the extension contributes commands to clear or copy that log.
 
-- Scan available session archives by agent
-- Review aggregate token and size statistics
-- Open a detailed timeline in the `iProfiler` panel
-- Jump from chart/raw events back to source log lines
+## Current Limitations
 
-## Supported Providers
-
-- Google Gemini
-- Anthropic Claude
-- DeepSeek
-- Alibaba Qwen
-- OpenRouter
+- `remote` Figma mode is scaffolded in the codebase, but actual remote auth/fetch/screenshot flows are currently disabled in the extension UI. Use `local` MCP mode for working Figma retrieval.
+- The profiler service contains Gemini parsing support internally, but the Gemini tab is intentionally disabled in the current sidebar UI.
+- The profiler archive flow exists host-side, but there is no archive button in the current webview.
+- Browser preview falls back to the Preview Panel when packaged runtime dependencies are unavailable.
 
 ## Requirements
 
 - VS Code `1.85+`
-- A reachable MCP endpoint
-  - Local workflow: Figma Desktop MCP server
-  - Remote workflow: configured remote endpoint and auth URL
-- At least one model provider API key
-  - [Google AI Studio](https://aistudio.google.com)
-  - [Anthropic Console](https://console.anthropic.com)
+- Node.js `20+` for local development
+- A reachable local Figma MCP endpoint for Figma data features
+- At least one provider API key if you want to generate code
+  - [Google AI Studio](https://aistudio.google.com/app/apikey)
+  - [Anthropic Console](https://console.anthropic.com/settings/keys)
   - [DeepSeek Platform](https://platform.deepseek.com/api_keys)
   - [DashScope Console](https://dashscope.console.aliyun.com/apiKey)
   - [OpenRouter Keys](https://openrouter.ai/keys)
 
 ## Quick Start
 
-1. Install the extension and open **iAgent Engineer** in the VS Code activity bar.
-2. In **Setup**, select your MCP mode and connect.
-3. Paste a Figma URL or JSON payload and fetch context or screenshots.
-4. In **Prompt**, choose an agent, save an API key, and load a model.
-5. Select an output format and generate code.
-6. Open the result in the editor or preview it directly inside VS Code.
-7. Use **Profiler** and `iProfiler` when you want to inspect historical session logs.
+1. Install the extension and open **iAgent Engineer** from the activity bar.
+2. In `Setup`, leave the connection mode on `local` and connect to your MCP endpoint.
+3. Paste a Figma URL or MCP JSON and fetch design context, metadata, variables, screenshots, or source data.
+4. In the same view, choose your agent, save an API key, and load models.
+5. Open `Prompt`, pick an output format, and generate code.
+6. Open the latest result in the editor, Preview Panel, or browser preview.
+7. Open `Profiler` when you want to inspect local Claude or Codex session logs in `iProfiler`.
 
 ## Key Settings
 
@@ -105,6 +93,9 @@ Common settings live under the `iagent-engineer.*` namespace.
 - `iagent-engineer.remoteMcpAuthUrl`
 - `iagent-engineer.openFetchedDataInEditor`
 - `iagent-engineer.claudeModels`
+- `iagent-engineer.deepseekModels`
+- `iagent-engineer.qwenModels`
+- `iagent-engineer.openrouterModels`
 - `iagent-engineer.profiler.*`
 
 ## Development
@@ -116,16 +107,25 @@ npm run verify
 
 Useful scripts:
 
+- `npm run build`
 - `npm run watch`
+- `npm run lint`
 - `npm run test:unit`
 - `npm run test:e2e`
 - `npm run verify`
 - `npm run verify:coverage`
 - `npm run package`
 
-Release checklist:
+The bundled `workers/` project contains the Cloudflare Worker used for the remote Figma prototype. It is still in the repository, but the extension's remote Figma workflow is not currently exposed as a supported end-to-end feature.
 
-- [docs/release-checklist.md](docs/release-checklist.md)
+## Additional Docs
+
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Release checklist](docs/release-checklist.md)
+- [Profiler screen guide](docs/info-profiler.md)
+- [iProfiler summary data guide](docs/iprofiler-summary-data.md)
+- [iProfiler key event guide](docs/iprofiler-key-events-data.md)
 
 ## Repository
 

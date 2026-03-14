@@ -4,8 +4,16 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
-- Renamed the extension package, namespace, and repository metadata from `figma-mcp-helper` to `iagent-engineer`.
-- Updated user-facing documentation and worker identifiers to the new `iAgent Engineer` product naming.
+- Refreshed the repository markdown docs so the current `0.7.x` implementation, supported workflows, and known limitations are described consistently.
+- Clarified that local Figma MCP is the supported integration path, while remote Figma remains scaffolded but disabled in the extension UI.
+- Updated profiler and release documentation to match the current sidebar and bottom-panel experience.
+
+## [0.7.0] - 2026-03-14
+
+- Shipped the current `iAgent Engineer` baseline with Setup, Prompt, Profiler, and `iProfiler` views under the renamed extension namespace.
+- Consolidated AI provider configuration around `Gemini`, `Claude`, `DeepSeek`, `Qwen`, and `OpenRouter`.
+- Kept local Figma MCP design fetch, screenshot, and source-data flows in the active product surface.
+- Added the current profiler workflow for Claude and Codex session discovery, detail analysis, and live monitoring.
 
 ## [0.6.1] - 2026-03-11
 
