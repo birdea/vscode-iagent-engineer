@@ -1567,6 +1567,26 @@ body[data-section='profiler'] .profiler-session-card-token-out {
   stroke-width: 1;
 }
 
+.profiler-chart-limit-line {
+  stroke: var(--vscode-editorError-foreground, #f14c4c);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+  opacity: 0.95;
+}
+
+.profiler-chart-limit-axis-line {
+  stroke: var(--vscode-editorError-foreground, #f14c4c);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+  opacity: 0.95;
+}
+
+.profiler-chart-limit-label {
+  fill: var(--vscode-editorError-foreground, #f14c4c);
+  font-size: 9px;
+  font-weight: 700;
+}
+
 .profiler-chart-hotspots {
   position: absolute;
   inset: 0;
