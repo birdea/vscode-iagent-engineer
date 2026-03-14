@@ -1333,18 +1333,18 @@ a:hover {
   color: var(--vscode-foreground);
 }
 
-.profiler-chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
 .profiler-chart-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+.profiler-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .profiler-chart-title {
@@ -1364,7 +1364,44 @@ a:hover {
   align-items: center;
   gap: 5px;
   font-size: 10px;
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.profiler-legend-toggle {
+  appearance: none;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--vscode-button-secondaryBackground) 82%,
+    var(--vscode-editorWidget-background)
+  );
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.profiler-legend-toggle:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.profiler-legend-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.profiler-legend-hidden {
+  background: color-mix(
+    in srgb,
+    var(--vscode-editorWidget-background) 92%,
+    var(--vscode-editor-background)
+  );
   color: var(--vscode-descriptionForeground);
+  border-color: color-mix(in srgb, var(--vscode-panel-border) 72%, transparent);
 }
 
 .profiler-legend-marker {
@@ -1560,7 +1597,21 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--vscode-icon-foreground);
+  color: color-mix(in srgb, var(--vscode-icon-foreground) 72%, var(--vscode-foreground) 28%);
+}
+
+.brand-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.88;
+  filter: grayscale(1) invert(0.78);
 }
 
 .brand-text .vendor {
@@ -1581,15 +1632,55 @@ a:hover {
   color: var(--vscode-descriptionForeground);
 }
 
-.profiler-live-indicator {
+.profiler-header-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.profiler-live-badge,
+.profiler-info-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 88%, transparent);
+  font: inherit;
   font-size: 11px;
-  padding: 2px 8px;
-  background: var(--vscode-badge-background);
+  cursor: pointer;
+}
+
+.profiler-live-badge {
+  background: color-mix(
+    in srgb,
+    var(--vscode-badge-background) 74%,
+    var(--vscode-editorWidget-background)
+  );
   color: var(--vscode-badge-foreground);
-  border-radius: 2px;
+}
+
+.profiler-info-button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.profiler-info-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.profiler-info-button:focus-visible,
+.profiler-live-badge:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.profiler-info-button i {
+  font-size: 13px;
 }
 
 .profiler-metric-board {
@@ -1782,6 +1873,16 @@ a:hover {
 }
 
 @media (max-width: 1024px) {
+  .profiler-hero {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .profiler-header-actions,
+  .profiler-chart-legend {
+    justify-content: flex-start;
+  }
+
   .profiler-metric-board {
     grid-template-columns: repeat(3, 1fr);
   }

@@ -1163,9 +1163,14 @@ suite('UI Components Consolidated', () => {
       });
 
       postMessageStub.resetHistory();
-      // Info buttons might not be present in the new matrix layout unless added.
-      // I'll skip these or adjust based on the implementation.
-      // In my implementation I didn't add info buttons to the matrix overview yet.
+      (document.querySelector('[data-info-doc="profiler"]') as HTMLButtonElement | null)?.click();
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.openInfoDoc',
+          kind: 'profiler',
+        }),
+      );
     });
 
     test('renders live updates and allows stopping live mode', async () => {

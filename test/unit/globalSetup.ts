@@ -35,6 +35,7 @@ const mockVscode = {
     showInformationMessage: sinon.stub(),
     showWarningMessage: sinon.stub(),
     showErrorMessage: sinon.stub(),
+    showQuickPick: sinon.stub(),
     showTextDocument: sinon.stub(),
     createWebviewPanel: sinon.stub(),
     showSaveDialog: sinon.stub(),
@@ -106,6 +107,21 @@ const mockVscode = {
       public line: number,
       public character: number,
     ) {}
+  },
+  Selection: class {
+    constructor(
+      public anchor: any,
+      public active: any,
+    ) {}
+  },
+  Range: class {
+    constructor(
+      public start: any,
+      public end: any,
+    ) {}
+  },
+  TextEditorRevealType: {
+    InCenter: 0,
   },
   EventEmitter: class {
     event = sinon.stub();

@@ -4,6 +4,7 @@ export const window = {
   showInformationMessage: sinon.stub(),
   showWarningMessage: sinon.stub(),
   showErrorMessage: sinon.stub(),
+  showQuickPick: sinon.stub(),
   showTextDocument: sinon.stub(),
   createWebviewPanel: sinon.stub(),
   showSaveDialog: sinon.stub(),
@@ -82,6 +83,24 @@ export class Position {
     public line: number,
     public character: number,
   ) {}
+}
+
+export class Selection {
+  constructor(
+    public anchor: Position,
+    public active: Position,
+  ) {}
+}
+
+export class Range {
+  constructor(
+    public start: Position,
+    public end: Position,
+  ) {}
+}
+
+export enum TextEditorRevealType {
+  InCenter = 0,
 }
 
 export class EventEmitter {
