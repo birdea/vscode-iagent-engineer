@@ -38,11 +38,7 @@
       "label": "iAgent Engineer — Setup & Code Generation"
     }
   ],
-  "activationEvents": [
-    "onView:iagent-engineer.setup",
-    "onView:iagent-engineer.profiler",
-    "onView:iagent-engineer.profiler-detail"
-  ],
+  "activationEvents": [],
   "icon": "resources/icon.png",
   "main": "./dist/extension.js",
   "contributes": {
