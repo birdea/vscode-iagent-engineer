@@ -6,6 +6,7 @@ import { Logger } from '../../logger/Logger';
 import { ProfilerLiveMonitor } from '../../profiler/ProfilerLiveMonitor';
 import { ProfilerService } from '../../profiler/ProfilerService';
 import { ProfilerStateManager } from '../../profiler/ProfilerStateManager';
+import { isSessionLikelyLive } from '../../profiler/ProfilerLiveUtils';
 import { HostToWebviewMessage, ProfilerAgentType } from '../../types';
 
 export class ProfilerCommandHandler {
@@ -60,7 +61,6 @@ export class ProfilerCommandHandler {
   async selectSession(id: string, agent: ProfilerAgentType) {
     this.profilerLiveMonitor.stop({ silent: true });
     this.profilerStateManager.setSelectedSession(agent, id);
-    this.profilerStateManager.setDetailLoading(id, '로딩중..');
     Logger.info('profiler', 'Profiler session selected', `${agent}:${id}`);
     try {
       await vscode.commands.executeCommand(
@@ -70,6 +70,14 @@ export class ProfilerCommandHandler {
       // Ignore focus errors; detail updates are still pushed to the panel state.
     }
 
+    const sessions = this.profilerStateManager.getOverviewState().sessionsByAgent[agent] ?? [];
+    const summary = sessions.find((session) => session.id === id);
+    if (summary && isSessionLikelyLive(summary, sessions)) {
+      await this.profilerLiveMonitor.startSession(summary, { focusPanel: false });
+      return;
+    }
+
+    this.profilerStateManager.setDetailLoading(id, '로딩중..');
     try {
       const detail = await this.profilerService.getDetail(id);
       this.profilerStateManager.setDetail(detail);

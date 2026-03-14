@@ -5,12 +5,12 @@ import {
   ProfilerAgentType,
 } from '../../../types';
 import { getProfilerAgentDescriptor } from '../../../profiler/ProfilerCatalog';
+import { isSessionLikelyLive } from '../../../profiler/ProfilerLiveUtils';
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 
 type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
-const LIVE_SESSION_WINDOW_MS = 15 * 60 * 1000;
 
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
@@ -291,8 +291,9 @@ export class ProfilerLayer {
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
+  ${liveBadge}
   <span class="profiler-session-head">
-    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}"><span class="profiler-session-name">${this.escapeHtml(fileName)}</span>${liveBadge}</span>
+    <span class="profiler-session-file" title="${this.escapeAttr(fileName)}"><span class="profiler-session-name">${this.escapeHtml(fileName)}</span></span>
     <span class="profiler-session-size">${this.formatBytes(session.fileSizeBytes)}</span>
   </span>
   <span class="profiler-session-meta">
@@ -304,24 +305,7 @@ export class ProfilerLayer {
 
   private isLiveSession(session: SessionSummary): boolean {
     const sessions = this.state.sessionsByAgent[session.agent] ?? [];
-    if (sessions.length === 0) {
-      return false;
-    }
-
-    const latestModifiedMs = sessions.reduce((latest, candidate) => {
-      const candidateMs = Date.parse(candidate.modifiedAt);
-      return Number.isFinite(candidateMs) ? Math.max(latest, candidateMs) : latest;
-    }, 0);
-    const sessionModifiedMs = Date.parse(session.modifiedAt);
-
-    if (!Number.isFinite(sessionModifiedMs) || latestModifiedMs === 0) {
-      return false;
-    }
-
-    return (
-      sessionModifiedMs === latestModifiedMs &&
-      Date.now() - sessionModifiedMs <= LIVE_SESSION_WINDOW_MS
-    );
+    return isSessionLikelyLive(session, sessions);
   }
 
   private renderStatusBadge(): string {
