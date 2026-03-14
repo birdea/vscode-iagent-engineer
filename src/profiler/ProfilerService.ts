@@ -94,17 +94,23 @@ interface CodexTurnDraft {
   startedAt?: string;
   firstResponseAt?: string;
   completedAt?: string;
+  lastTokenAt?: string;
   lastTimestamp?: string;
   inputTokens: number;
   outputTokens: number;
   cachedTokens: number;
   totalTokens: number;
+  chartInputTokens?: number;
+  chartOutputTokens?: number;
+  chartCachedTokens?: number;
+  chartTotalTokens?: number;
   payloadKb: number;
   maxTokens?: number;
   prompt?: string;
   response?: string;
   eventType: string;
   sourceEventId?: string;
+  chartSourceEventId?: string;
 }
 
 interface ClaudeRequestDraft {
@@ -484,7 +490,7 @@ export class ProfilerService {
       }
 
       if (record.payloadType === 'token_count') {
-        latestUsage = this.extractCodexUsage(record) ?? latestUsage;
+        latestUsage = this.extractCodexUsage(record, 'total') ?? latestUsage;
       }
     }
 
@@ -723,11 +729,22 @@ export class ProfilerService {
 
     for (const record of parsed.records) {
       const rawEventId = `${summary.id}:${record.lineNumber}`;
-      const summaryLine = this.summarizeCodexRecord(record);
-      const usage = this.extractCodexUsage(record);
+      let summaryLine = this.summarizeCodexRecord(record);
       const payloadType = record.payloadType ?? record.recordType;
+      const usage = this.extractCodexUsage(record, 'total');
+      const lastUsageSnapshot = this.extractCodexUsage(record, 'last');
+      const usageDelta =
+        payloadType === 'token_count'
+          ? (lastUsageSnapshot ?? (usage ? this.diffUsage(usage, lastUsage) : undefined))
+          : usage;
       const payload = this.readRecord(record.data, 'payload');
       const excerpt = record.raw.length > 260 ? `${record.raw.slice(0, 260)}...` : record.raw;
+      if (payloadType === 'token_count' && usageDelta) {
+        summaryLine = {
+          title: 'Token snapshot',
+          detail: this.formatTokenUsageSnapshot(usageDelta),
+        };
+      }
       rawEvents.push({
         id: rawEventId,
         filePath: file.filePath,
@@ -739,10 +756,10 @@ export class ProfilerService {
         excerpt,
         payloadKb: record.payloadKb,
         payloadBytes: Buffer.byteLength(record.raw, 'utf8'),
-        inputTokens: usage?.inputTokens,
-        outputTokens: usage?.outputTokens,
-        cachedTokens: usage?.cachedTokens,
-        totalTokens: usage?.totalTokens,
+        inputTokens: usageDelta?.inputTokens,
+        outputTokens: usageDelta?.outputTokens,
+        cachedTokens: usageDelta?.cachedTokens,
+        totalTokens: usageDelta?.totalTokens,
         messagePreview:
           this.readString(payload, 'message') ??
           this.readString(payload, 'last_agent_message') ??
@@ -792,13 +809,19 @@ export class ProfilerService {
       }
 
       if (payloadType === 'token_count') {
-        if (usage && turn) {
-          const delta = this.diffUsage(usage, lastUsage);
+        if (turn && usageDelta) {
+          const delta = usageDelta;
           turn.inputTokens += delta.inputTokens;
           turn.outputTokens += delta.outputTokens;
           turn.cachedTokens += delta.cachedTokens;
           turn.totalTokens += delta.totalTokens;
-          turn.maxTokens = Math.max(turn.maxTokens ?? 0, usage.maxTokens ?? 0) || turn.maxTokens;
+          turn.chartInputTokens = delta.inputTokens || undefined;
+          turn.chartOutputTokens = delta.outputTokens || undefined;
+          turn.chartCachedTokens = delta.cachedTokens || undefined;
+          turn.chartTotalTokens = delta.totalTokens || undefined;
+          turn.lastTokenAt = timestamp ?? turn.lastTokenAt;
+          turn.chartSourceEventId = rawEventId;
+          turn.maxTokens = Math.max(turn.maxTokens ?? 0, delta.maxTokens ?? 0) || turn.maxTokens;
           turn.payloadKb += record.payloadKb;
           turn.lastTimestamp = timestamp ?? turn.lastTimestamp;
         }
@@ -852,10 +875,15 @@ export class ProfilerService {
         id: `${summary.id}:turn:${index + 1}`,
         timestamp: startedAt,
         endTimestamp: endedAt,
+        chartTimestamp: turn.lastTokenAt,
         inputTokens: this.positiveOrUndefined(turn.inputTokens),
         outputTokens: this.positiveOrUndefined(turn.outputTokens),
         cachedTokens: this.positiveOrUndefined(turn.cachedTokens),
         totalTokens: this.positiveOrUndefined(turn.totalTokens),
+        chartInputTokens: this.positiveOrUndefined(turn.chartInputTokens),
+        chartOutputTokens: this.positiveOrUndefined(turn.chartOutputTokens),
+        chartCachedTokens: this.positiveOrUndefined(turn.chartCachedTokens),
+        chartTotalTokens: this.positiveOrUndefined(turn.chartTotalTokens),
         maxTokens: turn.maxTokens,
         payloadKb: this.positiveOrUndefined(turn.payloadKb),
         latencyMs: completedLatency ?? firstResponseLatency ?? undefined,
@@ -867,7 +895,7 @@ export class ProfilerService {
         eventType: turn.eventType,
         label: `T${String(index + 1).padStart(2, '0')}`,
         detail: turn.prompt ?? turn.response ?? 'Request',
-        sourceEventId: turn.sourceEventId,
+        sourceEventId: turn.chartSourceEventId ?? turn.sourceEventId,
       });
     });
 
@@ -2180,12 +2208,12 @@ export class ProfilerService {
     }
   }
 
-  private extractCodexUsage(record: ParsedRecord): TokenUsageSnapshot | undefined {
-    const usage = this.readRecord(
-      this.readRecord(record.data, 'payload'),
-      'info',
-      'total_token_usage',
-    );
+  private extractCodexUsage(
+    record: ParsedRecord,
+    mode: 'total' | 'last' = 'total',
+  ): TokenUsageSnapshot | undefined {
+    const info = this.readRecord(this.readRecord(record.data, 'payload'), 'info');
+    const usage = this.readRecord(info, mode === 'last' ? 'last_token_usage' : 'total_token_usage');
     if (!usage) {
       return undefined;
     }
@@ -2195,7 +2223,6 @@ export class ProfilerService {
     const cachedTokens = this.readNumber(usage, 'cached_input_tokens') ?? 0;
     const totalTokens =
       this.readNumber(usage, 'total_tokens') ?? inputTokens + outputTokens + cachedTokens;
-    const info = this.readRecord(this.readRecord(record.data, 'payload'), 'info');
 
     return {
       inputTokens,
@@ -2304,11 +2331,15 @@ export class ProfilerService {
   }
 
   private formatCodexTokenUsage(record: ParsedRecord): string {
-    const usage = this.extractCodexUsage(record);
+    const usage = this.extractCodexUsage(record, 'last') ?? this.extractCodexUsage(record, 'total');
     if (!usage) {
       return 'Token usage updated';
     }
 
+    return this.formatTokenUsageSnapshot(usage);
+  }
+
+  private formatTokenUsageSnapshot(usage: TokenUsageSnapshot): string {
     return `in ${usage.inputTokens.toLocaleString()} / out ${usage.outputTokens.toLocaleString()} / total ${usage.totalTokens.toLocaleString()}`;
   }
 

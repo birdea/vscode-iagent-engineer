@@ -149,10 +149,15 @@ export interface SessionTimelinePoint {
   id: string;
   timestamp: string;
   endTimestamp?: string;
+  chartTimestamp?: string;
   inputTokens?: number;
   outputTokens?: number;
   cachedTokens?: number;
   totalTokens?: number;
+  chartInputTokens?: number;
+  chartOutputTokens?: number;
+  chartCachedTokens?: number;
+  chartTotalTokens?: number;
   maxTokens?: number;
   payloadKb?: number;
   latencyMs?: number;

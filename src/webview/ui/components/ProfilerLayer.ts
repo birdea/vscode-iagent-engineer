@@ -42,6 +42,7 @@ const MESSAGES: Record<
     | 'input'
     | 'output'
     | 'fileSize'
+    | 'geminiSoon'
     | 'noSelection'
     | 'archiveDone',
     string
@@ -57,6 +58,7 @@ const MESSAGES: Record<
     input: 'Input',
     output: 'Output',
     fileSize: 'Size',
+    geminiSoon: 'Gemini profiler support is coming soon.',
     noSelection: 'Select a session to inspect details.',
     archiveDone: 'Archive completed',
   },
@@ -70,6 +72,7 @@ const MESSAGES: Record<
     input: 'Input',
     output: 'Output',
     fileSize: '크기',
+    geminiSoon: 'Gemini profiler는 추후 지원 예정입니다.',
     noSelection: '세션을 선택하면 상세 분석이 표시됩니다.',
     archiveDone: '아카이브 완료',
   },
@@ -118,10 +121,16 @@ export class ProfilerLayer {
       if (!agent) {
         return;
       }
+      if (agent === 'gemini') {
+        this.notice = this.msg('geminiSoon');
+        this.renderDynamicContent();
+        return;
+      }
       this.state = {
         ...this.state,
         selectedAgent: agent,
       };
+      this.notice = this.state.message ?? '';
       this.renderDynamicContent();
     });
     document.getElementById('profiler-sort-bar')?.addEventListener('click', (event) => {
@@ -162,8 +171,12 @@ export class ProfilerLayer {
   }
 
   onState(state: ProfilerOverviewState) {
-    this.state = state;
-    this.notice = state.message ?? '';
+    const selectedAgent = state.selectedAgent === 'gemini' ? 'codex' : state.selectedAgent;
+    this.state = {
+      ...state,
+      selectedAgent,
+    };
+    this.notice = state.message ?? (state.selectedAgent === 'gemini' ? this.msg('geminiSoon') : '');
     this.renderDynamicContent();
   }
 
@@ -203,9 +216,10 @@ export class ProfilerLayer {
     return (['claude', 'codex', 'gemini'] as const)
       .map((agent) => {
         const isActive = this.state.selectedAgent === agent;
+        const isDisabled = agent === 'gemini';
         const count = this.state.sessionsByAgent[agent].length;
         const descriptor = getProfilerAgentDescriptor(agent);
-        return `<button class="profiler-tab ${isActive ? 'active' : ''}" data-agent="${agent}" role="tab" aria-selected="${isActive ? 'true' : 'false'}">
+        return `<button class="profiler-tab ${isActive ? 'active' : ''} ${isDisabled ? 'is-disabled' : ''}" data-agent="${agent}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" aria-disabled="${isDisabled ? 'true' : 'false'}" title="${isDisabled ? this.msg('geminiSoon') : descriptor.label}">
   <span class="profiler-tab-brand">
     <span class="profiler-agent-icon" aria-hidden="true">${descriptor.iconMarkup}</span>
     <span class="profiler-tab-label">${descriptor.label}</span>
