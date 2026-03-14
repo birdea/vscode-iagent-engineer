@@ -80,6 +80,10 @@ body {
   background: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #4caf50));
 }
 
+.status-dot.disconnected {
+  background: var(--vscode-errorForeground);
+}
+
 .status-text {
   font-size: 11px;
   color: var(--vscode-foreground);
@@ -1782,6 +1786,11 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 }
 
 .profiler-live-badge {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.profiler-live-badge.is-active {
   background: color-mix(
     in srgb,
     var(--vscode-badge-background) 74%,
@@ -1791,6 +1800,10 @@ body[data-section='profiler'] .profiler-session-card-token-out {
 }
 
 .profiler-live-badge:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.profiler-live-badge.is-active:hover {
   background: color-mix(
     in srgb,
     var(--vscode-badge-background) 88%,
