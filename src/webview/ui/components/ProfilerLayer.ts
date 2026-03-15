@@ -5,13 +5,14 @@ import {
   ProfilerAgentType,
 } from '../../../types';
 import { getProfilerAgentDescriptor } from '../../../profiler/ProfilerCatalog';
-import { isSessionLikelyLive } from '../../../profiler/ProfilerLiveUtils';
+import { isSessionLatest, isSessionLikelyLive } from '../../../profiler/ProfilerLiveUtils';
 import { vscode } from '../vscodeApi';
 import { getDocumentLocale, UiLocale } from '../../../i18n';
 
 type SortField = 'name' | 'time' | 'tin' | 'tout' | 'size';
 type SortDirection = 'asc' | 'desc';
 const DEFAULT_SELECTED_AGENT: ProfilerAgentType = 'claude';
+const AUTO_REFRESH_OPTIONS = [0, 1000, 3000, 5000, 10000, 30000, 60000] as const;
 
 const EMPTY_STATE: ProfilerOverviewState = {
   status: 'idle',
@@ -44,13 +45,17 @@ const MESSAGES: Record<
     | 'fileSize'
     | 'agentSoon'
     | 'noSelection'
-    | 'archiveDone',
+    | 'archiveDone'
+    | 'updated'
+    | 'never'
+    | 'autoRefresh'
+    | 'off',
     string
   >
 > = {
   en: {
     title: 'Agent Session Profiler',
-    scan: 'Find',
+    scan: 'Refresh',
     loading: '로딩중..',
     empty: 'No sessions found.',
     sessions: 'Sessions',
@@ -60,10 +65,14 @@ const MESSAGES: Record<
     agentSoon: 'Profiler support is coming soon.',
     noSelection: 'Select a session to inspect details.',
     archiveDone: 'Archive completed',
+    updated: 'Updated',
+    never: 'Never',
+    autoRefresh: 'Auto Refresh',
+    off: 'Off',
   },
   ko: {
     title: 'Agent 세션 프로파일러',
-    scan: 'Find',
+    scan: '새로고침',
     loading: '로딩중..',
     empty: '검색된 세션이 없습니다.',
     sessions: '세션',
@@ -73,6 +82,10 @@ const MESSAGES: Record<
     agentSoon: '추후 지원 예정입니다.',
     noSelection: '세션을 선택하면 상세 분석이 표시됩니다.',
     archiveDone: '아카이브 완료',
+    updated: '업데이트',
+    never: '기록 없음',
+    autoRefresh: '자동 새로고침',
+    off: '끔',
   },
 };
 
@@ -82,15 +95,26 @@ export class ProfilerLayer {
   private notice = '';
   private sortField: SortField = 'time';
   private sortDirection: SortDirection = 'desc';
+  private autoRefreshMs = 0;
+  private autoRefreshTimer?: number;
 
   render(): string {
     return `
 <section class="panel panel-compact profiler-panel-shell">
   <div class="section-heading">
-    <div>
+    <div class="profiler-heading-copy">
       <div class="panel-title">${this.msg('title')}</div>
+      <div class="section-status profiler-updated-at" id="profiler-updated-at" title="${this.escapeAttr(this.getUpdatedAtTitle())}">${this.renderUpdatedAt()}</div>
     </div>
-    <button class="secondary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
+    <div class="profiler-heading-actions">
+      <label class="profiler-auto-refresh-control" for="profiler-auto-refresh-select">
+        <span class="profiler-auto-refresh-label">${this.msg('autoRefresh')}</span>
+        <select id="profiler-auto-refresh-select" class="profiler-auto-refresh-select">
+          ${this.renderAutoRefreshOptions()}
+        </select>
+      </label>
+      <button class="secondary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
+    </div>
   </div>
   <div class="profiler-toolbar profiler-toolbar-status">
     <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
@@ -104,7 +128,14 @@ export class ProfilerLayer {
   mount() {
     document
       .getElementById('profiler-start-analysis')
-      ?.addEventListener('click', () => vscode.postMessage({ command: 'profiler.scan' }));
+      ?.addEventListener('click', () =>
+        vscode.postMessage({ command: 'profiler.refreshOverview' }),
+      );
+    document.getElementById('profiler-auto-refresh-select')?.addEventListener('change', (event) => {
+      const target = event.target as HTMLSelectElement | null;
+      this.autoRefreshMs = Number(target?.value ?? '0');
+      this.syncAutoRefreshTimer();
+    });
     document.getElementById('profiler-tab-row')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
       const button = target?.closest<HTMLButtonElement>('[data-agent]');
@@ -192,12 +223,17 @@ export class ProfilerLayer {
       'profiler-start-analysis',
     ) as HTMLButtonElement | null;
     const badge = document.getElementById('profiler-status-badge');
+    const updatedAt = document.getElementById('profiler-updated-at');
     const tabs = document.getElementById('profiler-tab-row');
     const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
     if (startButton) startButton.disabled = loading;
     if (badge) badge.innerHTML = this.renderStatusBadge();
+    if (updatedAt) {
+      updatedAt.innerHTML = this.renderUpdatedAt();
+      updatedAt.setAttribute('title', this.getUpdatedAtTitle());
+    }
     if (tabs) {
       tabs.innerHTML = this.renderTabs();
     }
@@ -301,9 +337,7 @@ export class ProfilerLayer {
     const title = this.getDisplayFileName(session);
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
-    const liveBadge = this.isLiveSession(session)
-      ? '<span class="profiler-session-card-badge">Live</span>'
-      : '';
+    const badges = this.renderSessionBadges(session);
     return `
 <button
   class="profiler-session-card ${isSelected ? 'selected' : ''}"
@@ -311,11 +345,11 @@ export class ProfilerLayer {
   data-agent="${session.agent}"
   title="${this.escapeAttr(session.filePath)}"
 >
-  <span class="profiler-session-card-main">
-    <span class="profiler-session-card-title-row">
+    <span class="profiler-session-card-main">
+      <span class="profiler-session-card-title-row">
       <span class="profiler-session-card-title-wrap">
         <span class="profiler-session-card-name" title="${this.escapeAttr(title)}">${this.escapeHtml(title)}</span>
-        ${liveBadge}
+        ${badges}
       </span>
       <span class="profiler-session-card-size">${this.formatBytes(session.fileSizeBytes)}</span>
     </span>
@@ -335,11 +369,91 @@ export class ProfilerLayer {
     return isSessionLikelyLive(session, sessions);
   }
 
+  private isLatestSession(session: SessionSummary): boolean {
+    const sessions = this.state.sessionsByAgent[session.agent] ?? [];
+    return isSessionLatest(session, sessions);
+  }
+
+  private renderSessionBadges(session: SessionSummary): string {
+    const badges: string[] = [];
+
+    if (this.isLatestSession(session)) {
+      badges.push(
+        '<span class="profiler-session-card-badge is-latest" data-profiler-badge="latest">Latest</span>',
+      );
+    }
+    if (this.isLiveSession(session)) {
+      badges.push(
+        '<span class="profiler-session-card-badge is-live" data-profiler-badge="live">Live</span>',
+      );
+    }
+
+    return badges.join('');
+  }
+
   private renderStatusBadge(): string {
     const loading = this.state.status === 'loading';
     const statusLabel = loading ? this.msg('loading') : this.state.status.toUpperCase();
     const detail = this.notice && !loading ? ` · ${this.notice}` : '';
     return `<span class="profiler-status-chip ${this.state.status}">${statusLabel}${detail}</span>`;
+  }
+
+  private renderUpdatedAt(): string {
+    return `${this.msg('updated')} ${this.formatUpdatedAt(this.state.updatedAt)}`;
+  }
+
+  private getUpdatedAtTitle(): string {
+    if (!this.state.updatedAt) {
+      return `${this.msg('updated')} ${this.msg('never')}`;
+    }
+    return `${this.msg('updated')} ${this.formatDateTime(this.state.updatedAt)}`;
+  }
+
+  private renderAutoRefreshOptions(): string {
+    return AUTO_REFRESH_OPTIONS.map((value) => {
+      const selected = this.autoRefreshMs === value ? ' selected' : '';
+      return `<option value="${value}"${selected}>${this.getAutoRefreshLabel(value)}</option>`;
+    }).join('');
+  }
+
+  private getAutoRefreshLabel(value: number): string {
+    if (value === 0) {
+      return `${this.msg('autoRefresh')}: ${this.msg('off')}`;
+    }
+    if (value < 60_000) {
+      return `${this.msg('autoRefresh')}: ${value / 1000}s`;
+    }
+    return `${this.msg('autoRefresh')}: 1m`;
+  }
+
+  private syncAutoRefreshTimer() {
+    if (this.autoRefreshTimer) {
+      window.clearInterval(this.autoRefreshTimer);
+      this.autoRefreshTimer = undefined;
+    }
+
+    if (this.autoRefreshMs <= 0) {
+      return;
+    }
+
+    this.autoRefreshTimer = window.setInterval(() => {
+      vscode.postMessage({ command: 'profiler.refreshOverview' });
+    }, this.autoRefreshMs);
+  }
+
+  private formatUpdatedAt(value?: string): string {
+    if (!value) {
+      return this.msg('never');
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.valueOf())) {
+      return value;
+    }
+
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    return `${hour}:${minute}:${second}`;
   }
 
   private formatDate(value?: string): string {
@@ -357,6 +471,24 @@ export class ProfilerLayer {
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
+  }
+
+  private formatDateTime(value?: string): string {
+    if (!value) {
+      return '-';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.valueOf())) {
+      return value;
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   }
 
   private formatTokensK(value?: number): string {

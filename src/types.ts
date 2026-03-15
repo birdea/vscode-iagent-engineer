@@ -224,6 +224,7 @@ export interface ProfilerLiveState {
 export interface ProfilerOverviewState {
   status: ProfilerStatus;
   message?: string;
+  updatedAt?: string;
   selectedAgent: ProfilerAgentType;
   selectedSessionId?: string;
   aggregate: ProfilerAggregate;
@@ -274,6 +275,7 @@ export type WebviewToHostMessage =
   | { command: 'editor.saveFile'; code: string; filename: string }
   | { command: 'profiler.getState' }
   | { command: 'profiler.scan' }
+  | { command: 'profiler.refreshOverview' }
   | { command: 'profiler.selectAgent'; agent: ProfilerAgentType }
   | { command: 'profiler.startLiveData'; id?: string; agent?: ProfilerAgentType }
   | { command: 'profiler.stopLiveData' }

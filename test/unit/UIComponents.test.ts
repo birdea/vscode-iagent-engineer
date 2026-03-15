@@ -1500,6 +1500,35 @@ suite('UI Components Consolidated', () => {
       );
     });
 
+    test('chart hotspots keep sample clicks stable even with overlay lines present', async () => {
+      const { act } = await import('react');
+      act(() => {
+        layer.onState({
+          status: 'ready',
+          sessionId: 'codex:test',
+          detail: createProfilerDetail(),
+        });
+      });
+
+      postMessageStub.resetHistory();
+      const hotspot = document.querySelector(
+        '.profiler-chart-hotspot[data-line-number="8"]',
+      ) as HTMLButtonElement | null;
+      assert.ok(hotspot);
+
+      act(() => {
+        hotspot?.click();
+      });
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.openSource',
+          filePath: '/tmp/session.jsonl',
+          lineNumber: 8,
+        }),
+      );
+    });
+
     test('info buttons open markdown guides in the editor', async () => {
       const { act } = await import('react');
       act(() => {
@@ -1730,6 +1759,7 @@ suite('UI Components Consolidated', () => {
     test('renders session rows with a clamped session label and metadata line', () => {
       layer.onState({
         status: 'ready',
+        updatedAt: '2026-03-11T14:06:07.000Z',
         selectedAgent: 'codex',
         selectedSessionId: 'codex:1',
         aggregate: {
@@ -1772,6 +1802,12 @@ suite('UI Components Consolidated', () => {
       assert.ok(row);
       assert.strictEqual(document.querySelectorAll('.profiler-session-card').length, 1);
       assert.deepStrictEqual(sortButtons, ['name', 'time ↓', 'in', 'out', 'size']);
+      assert.ok(
+        document
+          .getElementById('profiler-updated-at')
+          ?.getAttribute('title')
+          ?.includes('2026-03-11'),
+      );
       assert.ok(main);
       assert.ok(titleRow);
       assert.ok(fileCell);
@@ -1786,12 +1822,13 @@ suite('UI Components Consolidated', () => {
       assert.ok(row.textContent?.includes('OUT 0K'));
     });
 
-    test('marks the latest recently-updated session as live', () => {
-      const liveTimestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    test('marks the latest session and only shows live within the recent activity window', () => {
+      const liveTimestamp = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       const historyTimestamp = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
       layer.onState({
         status: 'ready',
+        updatedAt: new Date().toISOString(),
         selectedAgent: 'codex',
         selectedSessionId: 'codex:live',
         aggregate: {
@@ -1830,12 +1867,75 @@ suite('UI Components Consolidated', () => {
         },
       });
 
-      const badges = Array.from(document.querySelectorAll('.profiler-session-card-badge')).map(
-        (node) => node.textContent?.trim(),
+      const badges = Array.from(
+        document.querySelectorAll(
+          '.profiler-session-card:first-of-type .profiler-session-card-badge',
+        ),
+      ).map((node) => node.textContent?.trim());
+
+      const historyBadges = Array.from(
+        document.querySelectorAll(
+          '.profiler-session-card:last-of-type .profiler-session-card-badge',
+        ),
       );
 
-      assert.deepStrictEqual(badges, ['Live']);
+      assert.deepStrictEqual(badges, ['Latest', 'Live']);
+      assert.strictEqual(historyBadges.length, 0);
       assert.ok(document.querySelector('.profiler-session-card')?.textContent?.includes('Live'));
+    });
+
+    test('keeps the latest badge when the newest session is no longer live', () => {
+      const latestTimestamp = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const historyTimestamp = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+      layer.onState({
+        status: 'ready',
+        updatedAt: new Date().toISOString(),
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:latest',
+        aggregate: {
+          totalSessions: 2,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 2048,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:latest',
+              agent: 'codex',
+              filePath: '/tmp/latest-session.jsonl',
+              fileName: 'latest-session.jsonl',
+              modifiedAt: latestTimestamp,
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+            {
+              id: 'codex:history',
+              agent: 'codex',
+              filePath: '/tmp/history-session.jsonl',
+              fileName: 'history-session.jsonl',
+              modifiedAt: historyTimestamp,
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const badges = Array.from(
+        document.querySelectorAll(
+          '.profiler-session-card:first-of-type .profiler-session-card-badge',
+        ),
+      ).map((node) => node.textContent?.trim());
+
+      assert.deepStrictEqual(badges, ['Latest']);
     });
 
     test('falls back to the session path basename when fileName is blank', () => {
@@ -1915,9 +2015,12 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(fileCell.getAttribute('title'), 'Refactor profiler startup flow');
     });
 
-    test('find button stays in the header, archive button is removed, and scan posts correctly', () => {
+    test('refresh controls stay in the header and manual refresh posts correctly', () => {
       const button = document.getElementById('profiler-start-analysis') as HTMLButtonElement | null;
       const statusBadge = document.getElementById('profiler-status-badge') as HTMLElement | null;
+      const autoRefreshSelect = document.getElementById(
+        'profiler-auto-refresh-select',
+      ) as HTMLSelectElement | null;
       const archiveButton = document.getElementById(
         'profiler-archive-all',
       ) as HTMLButtonElement | null;
@@ -1925,6 +2028,7 @@ suite('UI Components Consolidated', () => {
       assert.ok(button?.querySelector('.codicon-refresh'));
       assert.strictEqual(button?.textContent?.trim() ?? '', '');
       assert.ok(statusBadge);
+      assert.ok(autoRefreshSelect);
       assert.strictEqual(archiveButton, null);
       assert.ok(
         Boolean(
@@ -1936,7 +2040,23 @@ suite('UI Components Consolidated', () => {
 
       document.getElementById('profiler-start-analysis')?.click();
 
-      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.scan' }));
+      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.refreshOverview' }));
+    });
+
+    test('auto refresh selector schedules overview refreshes', async () => {
+      const clock = sandbox.useFakeTimers();
+      const autoRefreshSelect = document.getElementById(
+        'profiler-auto-refresh-select',
+      ) as HTMLSelectElement | null;
+
+      assert.ok(autoRefreshSelect);
+      postMessageStub.resetHistory();
+      autoRefreshSelect!.value = '1000';
+      autoRefreshSelect!.dispatchEvent(new window.Event('change'));
+
+      await clock.tickAsync(1000);
+
+      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.refreshOverview' }));
     });
 
     test('gemini tab stays disabled and tab selection is posted for enabled agents', () => {

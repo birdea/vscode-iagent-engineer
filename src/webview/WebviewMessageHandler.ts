@@ -172,6 +172,9 @@ export class WebviewMessageHandler {
         case 'profiler.scan':
           await this.profilerHandler?.scan();
           break;
+        case 'profiler.refreshOverview':
+          await this.profilerHandler?.refreshOverview();
+          break;
         case 'profiler.selectAgent':
           await this.profilerHandler?.selectAgent(msg.agent);
           break;

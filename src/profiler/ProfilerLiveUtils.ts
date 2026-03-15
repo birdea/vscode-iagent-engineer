@@ -1,12 +1,8 @@
 import { SessionSummary } from '../types';
 
-export const LIVE_SESSION_WINDOW_MS = 15 * 60 * 1000;
+export const LIVE_SESSION_WINDOW_MS = 3 * 60 * 1000;
 
-export function isSessionLikelyLive(
-  session: SessionSummary,
-  sessions: SessionSummary[],
-  nowMs = Date.now(),
-): boolean {
+export function isSessionLatest(session: SessionSummary, sessions: SessionSummary[]): boolean {
   if (sessions.length === 0) {
     return false;
   }
@@ -21,7 +17,19 @@ export function isSessionLikelyLive(
     return false;
   }
 
-  return (
-    sessionModifiedMs === latestModifiedMs && nowMs - sessionModifiedMs <= LIVE_SESSION_WINDOW_MS
-  );
+  return sessionModifiedMs === latestModifiedMs;
+}
+
+export function isSessionLikelyLive(
+  session: SessionSummary,
+  sessions: SessionSummary[],
+  nowMs = Date.now(),
+): boolean {
+  const sessionModifiedMs = Date.parse(session.modifiedAt);
+
+  if (!isSessionLatest(session, sessions) || !Number.isFinite(sessionModifiedMs)) {
+    return false;
+  }
+
+  return nowMs - sessionModifiedMs <= LIVE_SESSION_WINDOW_MS;
 }

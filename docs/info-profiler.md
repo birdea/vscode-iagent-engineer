@@ -32,8 +32,9 @@
 
 #### Session List
 
-- 각 세션 카드는 파일명, live 여부, 파일 크기, 시간, 입력/출력 토큰을 보여줍니다.
-- `Live` 배지는 아직 갱신 중일 가능성이 높은 세션을 뜻합니다.
+- 각 세션 카드는 파일명, latest/live 여부, 파일 크기, 시간, 입력/출력 토큰을 보여줍니다.
+- `Latest` 배지는 같은 agent 탭에서 가장 최근에 업데이트된 세션을 뜻합니다.
+- `Live` 배지는 `Latest` 세션 중에서도 아주 최근까지 갱신된 세션을 뜻합니다.
 - 선택된 카드는 하단 상세 패널과 연결됩니다.
 
 #### Sort Row
@@ -51,6 +52,8 @@
 #### Header
 
 - vendor, 모델명, 세션 ID가 표시됩니다.
+- 제목 우측에 마지막 overview 갱신 시각인 `Updated`가 표시됩니다.
+- `Auto Refresh`로 overview 새로고침 주기를 선택할 수 있습니다.
 - `Info` 버튼으로 이 문서를 다시 열 수 있습니다.
 - `Live` 버튼은 라이브 모니터링을 시작하거나 중지합니다.
 - `Info` 버튼을 누르면 한국어/English 중 원하는 섹션으로 바로 이동할 수 있습니다.
@@ -82,6 +85,7 @@
 - 라이브 모드에서는 세션 파일이 바뀔 때 차트와 이벤트 로그가 다시 계산됩니다.
 - 모니터링을 중지하면 마지막 스냅샷은 유지되고 자동 갱신만 멈춥니다.
 - 라이브 모니터링은 현재 선택 세션이 `Live` 후보로 판단되는 경우 자동 연결될 수 있습니다.
+- overview의 `Auto Refresh`는 세션 목록과 `Latest`/`Live` 배지를 조용히 다시 계산하고, 선택된 상세 패널은 유지합니다.
 
 ### 참고
 
@@ -122,8 +126,9 @@ The `Profiler` helps you browse local agent session logs and inspect a selected 
 
 #### Session List
 
-- Each card shows file name, live status, file size, timestamp, and input/output totals.
-- A `Live` badge marks a session that is likely still being updated.
+- Each card shows file name, latest/live status, file size, timestamp, and input/output totals.
+- A `Latest` badge marks the most recently updated session within the current agent tab.
+- A `Live` badge marks a `Latest` session that still appears to be actively updating.
 - The selected card is linked to the bottom detail panel.
 
 #### Sort Row
@@ -141,6 +146,8 @@ Clicking the same control again reverses the direction.
 #### Header
 
 - Shows vendor, model name, and session ID.
+- `Updated` shows when the overview list was last refreshed.
+- `Auto Refresh` lets you choose an overview refresh interval.
 - `Info` reopens this guide.
 - `Live` toggles live monitoring.
 - `Info` lets you reopen the guide in either Korean or English.
@@ -172,6 +179,7 @@ Clicking the same control again reverses the direction.
 - In live mode, the chart and event log are recomputed when the source file changes.
 - Stopping live mode keeps the latest snapshot and disables automatic refresh.
 - Live monitoring can auto-attach when the selected session is considered likely active.
+- Overview auto refresh quietly updates the session list and badge state without replacing the current detail view.
 
 ### Notes
 

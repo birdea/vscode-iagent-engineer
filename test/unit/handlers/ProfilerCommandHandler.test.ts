@@ -22,7 +22,7 @@ suite('ProfilerCommandHandler', () => {
     agent: 'codex' as const,
     filePath: '/tmp/live-session.jsonl',
     fileName: 'live-session.jsonl',
-    modifiedAt: '2026-03-11T10:01:05.000Z',
+    modifiedAt: '2026-03-11T10:09:05.000Z',
     startedAt: '2026-03-11T10:00:00.000Z',
     fileSizeBytes: 1024,
     totalTokens: 160,
@@ -42,7 +42,7 @@ suite('ProfilerCommandHandler', () => {
       {
         id: 'turn-1',
         timestamp: '2026-03-11T10:00:00.000Z',
-        endTimestamp: '2026-03-11T10:01:05.000Z',
+        endTimestamp: '2026-03-11T10:09:05.000Z',
         totalTokens: 160,
         eventType: 'turn',
         label: 'T01',
@@ -342,7 +342,55 @@ suite('ProfilerCommandHandler', () => {
 
     assert.ok(profilerService.scan.calledWith('codex'));
     assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
+    assert.ok(profilerStateManager.getOverviewState().updatedAt);
     assert.strictEqual(profilerStateManager.getDetailState().detail?.summary.id, startupSummary.id);
+  });
+
+  test('refreshOverview preserves the current detail selection while updating overview metadata', async () => {
+    profilerStateManager.setOverviewState({
+      status: 'ready',
+      selectedAgent: 'claude',
+      selectedSessionId: manualDetail.summary.id,
+      aggregate: {
+        totalSessions: 1,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: manualDetail.summary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [manualDetail.summary],
+        codex: [],
+        gemini: [],
+      },
+    });
+    profilerStateManager.setDetail(manualDetail);
+    profilerService.scan.resolves({
+      status: 'ready',
+      selectedAgent: 'claude',
+      aggregate: {
+        totalSessions: 1,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: manualDetail.summary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [manualDetail.summary],
+        codex: [],
+        gemini: [],
+      },
+    });
+
+    await overviewHandler.refreshOverview();
+
+    const overview = profilerStateManager.getOverviewState();
+    const detail = profilerStateManager.getDetailState();
+    assert.strictEqual(overview.selectedSessionId, manualDetail.summary.id);
+    assert.ok(overview.updatedAt);
+    assert.strictEqual(detail.detail?.summary.id, manualDetail.summary.id);
   });
 
   test('selectAgent persists the tab selection', async () => {
