@@ -16,6 +16,7 @@ suite('ProfilerCommandHandler', () => {
   let overviewHandler: ProfilerCommandHandler;
   let detailHandler: ProfilerCommandHandler;
   let context: any;
+  let configurationUpdateStub: sinon.SinonStub;
 
   const liveSummary = {
     id: 'codex:live',
@@ -125,6 +126,7 @@ suite('ProfilerCommandHandler', () => {
 
   setup(() => {
     sandbox = sinon.createSandbox();
+    configurationUpdateStub = sandbox.stub().resolves();
     profilerStateManager = new ProfilerStateManager();
     context = {
       globalState: {
@@ -163,6 +165,10 @@ suite('ProfilerCommandHandler', () => {
           gemini: [],
         },
       }),
+      deleteSessions: sandbox.stub().resolves({
+        deletedIds: [],
+        failedIds: [],
+      }),
       archiveAll: sandbox.stub(),
     };
     editorIntegration = {
@@ -188,7 +194,12 @@ suite('ProfilerCommandHandler', () => {
       liveMonitor,
     );
     sandbox.stub(fs.promises, 'stat').resolves({ size: 1024, mtimeMs: 10 } as fs.Stats);
+    (vscode.workspace.getConfiguration as sinon.SinonStub).returns({
+      get: sandbox.stub(),
+      update: configurationUpdateStub,
+    });
     (vscode.commands.executeCommand as sinon.SinonStub).resetHistory();
+    (vscode.window.showWarningMessage as sinon.SinonStub).resetHistory();
   });
 
   teardown(() => {
@@ -393,11 +404,148 @@ suite('ProfilerCommandHandler', () => {
     assert.strictEqual(detail.detail?.summary.id, manualDetail.summary.id);
   });
 
+  test('refreshOverview uses the requested agent instead of changing tabs implicitly', async () => {
+    await overviewHandler.refreshOverview('codex');
+
+    assert.ok(profilerService.scan.calledWith('codex'));
+    assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
+  });
+
   test('selectAgent persists the tab selection', async () => {
     await overviewHandler.selectAgent('codex');
 
     assert.strictEqual(profilerStateManager.getOverviewState().selectedAgent, 'codex');
     assert.ok(context.globalState.update.calledWith(CONFIG_KEYS.PROFILER_SELECTED_TAB, 'codex'));
+  });
+
+  test('setRefreshPeriod persists the selected profiler refresh interval', async () => {
+    await overviewHandler.setRefreshPeriod(5000);
+
+    assert.ok(
+      configurationUpdateStub.calledWith(
+        CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS,
+        5000,
+        vscode.ConfigurationTarget.Global,
+      ),
+    );
+  });
+
+  test('deleteSessions confirms selection deletion and resets the deleted detail session', async () => {
+    profilerStateManager.setOverviewState({
+      status: 'ready',
+      selectedAgent: 'codex',
+      selectedSessionId: liveSummary.id,
+      aggregate: {
+        totalSessions: 2,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: liveSummary.fileSizeBytes + startupSummary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [],
+        codex: [liveSummary, startupSummary],
+        gemini: [],
+      },
+    });
+    profilerStateManager.setDetail(liveDetail);
+    profilerService.deleteSessions.resolves({
+      deletedIds: [liveSummary.id],
+      failedIds: [],
+    });
+    profilerService.scan.resolves({
+      status: 'ready',
+      selectedAgent: 'codex',
+      aggregate: {
+        totalSessions: 1,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: startupSummary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [],
+        codex: [startupSummary],
+        gemini: [],
+      },
+    });
+    (vscode.window.showWarningMessage as sinon.SinonStub).resolves('휴지통으로 이동');
+
+    await detailHandler.deleteSessions([liveSummary.id], 'codex');
+
+    const overview = profilerStateManager.getOverviewState();
+    const detail = profilerStateManager.getDetailState();
+    assert.ok(
+      (vscode.window.showWarningMessage as sinon.SinonStub).calledWithMatch(
+        `선택한 1개 세션 파일을 휴지통으로 이동할까요?`,
+      ),
+    );
+    assert.ok(profilerService.deleteSessions.calledWith([liveSummary.id]));
+    assert.strictEqual(overview.selectedAgent, 'codex');
+    assert.strictEqual(overview.selectedSessionId, undefined);
+    assert.strictEqual(detail.detail, undefined);
+    assert.strictEqual(detail.live?.active, false);
+    assert.ok(overview.message?.includes('선택 세션 1개를 휴지통으로 이동했습니다.'));
+  });
+
+  test('deleteAllSessions only deletes files from the current tab after confirmation', async () => {
+    profilerStateManager.setOverviewState({
+      status: 'ready',
+      selectedAgent: 'claude',
+      selectedSessionId: manualDetail.summary.id,
+      aggregate: {
+        totalSessions: 2,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: manualDetail.summary.fileSizeBytes + startupSummary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [manualDetail.summary],
+        codex: [startupSummary],
+        gemini: [],
+      },
+    });
+    profilerService.deleteSessions.resolves({
+      deletedIds: [manualDetail.summary.id],
+      failedIds: [],
+    });
+    profilerService.scan.resolves({
+      status: 'ready',
+      selectedAgent: 'claude',
+      aggregate: {
+        totalSessions: 1,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCachedTokens: 0,
+        totalTokens: 0,
+        totalFileSizeBytes: startupSummary.fileSizeBytes,
+      },
+      sessionsByAgent: {
+        claude: [],
+        codex: [startupSummary],
+        gemini: [],
+      },
+    });
+    (vscode.window.showWarningMessage as sinon.SinonStub).resolves('휴지통으로 이동');
+
+    await overviewHandler.deleteAllSessions('claude');
+
+    assert.ok(
+      (vscode.window.showWarningMessage as sinon.SinonStub).calledWithMatch(
+        `현재 Claude 탭의 세션 파일 1개 전체를 휴지통으로 이동할까요?`,
+      ),
+    );
+    assert.ok(profilerService.deleteSessions.calledWith([manualDetail.summary.id]));
+    assert.ok(profilerService.deleteSessions.neverCalledWith([startupSummary.id]));
+    assert.ok(
+      profilerStateManager
+        .getOverviewState()
+        .message?.includes('Claude 탭 세션 1개를 휴지통으로 이동했습니다.'),
+    );
   });
 
   test('copyFilePath delegates to editor integration', async () => {

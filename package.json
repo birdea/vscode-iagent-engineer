@@ -108,9 +108,63 @@
         "command": "iagent-engineer.log.copy",
         "title": "%command.logCopy.title%",
         "icon": "$(copy)"
+      },
+      {
+        "command": "iagent-engineer.profiler.openSettings",
+        "title": "%command.profilerOpenSettings.title%",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "iagent-engineer.profiler.refresh",
+        "title": "%command.profilerRefresh.title%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "iagent-engineer.profiler.deleteSelected",
+        "title": "%command.profilerDeleteSelected.title%",
+        "icon": "$(trash)",
+        "enablement": "iagentEngineer.profiler.hasSelection"
+      },
+      {
+        "command": "iagent-engineer.profiler.selectAll",
+        "title": "%command.profilerSelectAll.title%",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "iagent-engineer.profiler.deselectAll",
+        "title": "%command.profilerDeselectAll.title%",
+        "icon": "$(clear-all)"
       }
     ],
-    "menus": {},
+    "menus": {
+      "view/title": [
+        {
+          "command": "iagent-engineer.profiler.openSettings",
+          "when": "view == iagent-engineer.profiler",
+          "group": "navigation@1"
+        },
+        {
+          "command": "iagent-engineer.profiler.refresh",
+          "when": "view == iagent-engineer.profiler",
+          "group": "navigation@2"
+        },
+        {
+          "command": "iagent-engineer.profiler.selectAll",
+          "when": "view == iagent-engineer.profiler && iagentEngineer.profiler.hasSessions && !iagentEngineer.profiler.allSelected",
+          "group": "navigation@3"
+        },
+        {
+          "command": "iagent-engineer.profiler.deselectAll",
+          "when": "view == iagent-engineer.profiler && iagentEngineer.profiler.hasSessions && iagentEngineer.profiler.allSelected",
+          "group": "navigation@3"
+        },
+        {
+          "command": "iagent-engineer.profiler.deleteSelected",
+          "when": "view == iagent-engineer.profiler",
+          "group": "navigation@4"
+        }
+      ]
+    },
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
@@ -205,6 +259,20 @@
           "type": "boolean",
           "default": true,
           "description": "%configuration.profiler.archivePreserveStructure.description%"
+        },
+        "iagent-engineer.profiler.refreshPeriodMs": {
+          "type": "number",
+          "enum": [
+            0,
+            1000,
+            3000,
+            5000,
+            10000,
+            30000,
+            60000
+          ],
+          "default": 1000,
+          "description": "%configuration.profiler.refreshPeriodMs.description%"
         },
         "iagent-engineer.claudeModels": {
           "type": "array",

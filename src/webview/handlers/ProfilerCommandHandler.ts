@@ -18,6 +18,7 @@ import {
 export class ProfilerCommandHandler {
   private isScanning = false;
   private isArchiving = false;
+  private isDeleting = false;
   private startupPromise?: Promise<void>;
 
   constructor(
@@ -50,8 +51,9 @@ export class ProfilerCommandHandler {
     });
   }
 
-  async refreshOverview() {
+  async refreshOverview(agent?: ProfilerAgentType) {
     await this.runOverviewScan({
+      preferredAgent: agent,
       preserveDetail: true,
       stopLiveMonitoring: false,
       resetDetailWhenDone: false,
@@ -70,8 +72,32 @@ export class ProfilerCommandHandler {
     await this.loadSession(id, agent);
   }
 
+  async setRefreshPeriod(refreshPeriodMs: number) {
+    const nextValue = Number.isFinite(refreshPeriodMs)
+      ? Math.max(0, Math.trunc(refreshPeriodMs))
+      : 0;
+    await vscode.workspace
+      .getConfiguration()
+      .update(CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS, nextValue, vscode.ConfigurationTarget.Global);
+  }
+
+  async deleteSessions(ids: string[], agent: ProfilerAgentType) {
+    await this.deleteSessionSet(ids, agent, 'selected');
+  }
+
+  async deleteAllSessions(agent: ProfilerAgentType) {
+    const normalizedAgent = this.normalizeSelectedAgent(agent);
+    const sessions =
+      this.profilerStateManager.getOverviewState().sessionsByAgent[normalizedAgent] ?? [];
+    await this.deleteSessionSet(
+      sessions.map((session) => session.id),
+      normalizedAgent,
+      'agent',
+    );
+  }
+
   async startLiveData(id?: string, agent?: ProfilerAgentType) {
-    if (this.isScanning || this.isArchiving) {
+    if (this.isScanning || this.isArchiving || this.isDeleting) {
       return;
     }
     if (id && agent) {
@@ -153,6 +179,83 @@ export class ProfilerCommandHandler {
   }
 
   dispose() {}
+
+  private async deleteSessionSet(
+    sessionIds: string[],
+    agent: ProfilerAgentType,
+    scope: 'selected' | 'agent',
+  ) {
+    if (this.isDeleting || this.isScanning || this.isArchiving) {
+      return;
+    }
+
+    const selectedAgent = this.normalizeSelectedAgent(agent);
+    const sessions =
+      this.profilerStateManager.getOverviewState().sessionsByAgent[selectedAgent] ?? [];
+    const availableIds = new Set(sessions.map((session) => session.id));
+    const targetIds = [...new Set(sessionIds)].filter((id) => availableIds.has(id));
+
+    if (targetIds.length === 0) {
+      this.profilerStateManager.setOverviewStatus(
+        'error',
+        scope === 'selected' ? '삭제할 선택 세션이 없습니다.' : '현재 탭에 삭제할 세션이 없습니다.',
+      );
+      return;
+    }
+
+    const confirmed = await this.confirmDelete(scope, selectedAgent, targetIds.length);
+    if (!confirmed) {
+      return;
+    }
+
+    const currentDetail = this.profilerStateManager.getDetailState();
+    const shouldResetDetail = Boolean(
+      currentDetail.sessionId && targetIds.includes(currentDetail.sessionId),
+    );
+
+    if (shouldResetDetail) {
+      this.profilerLiveMonitor.stop({ silent: true });
+      this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
+    }
+
+    this.isDeleting = true;
+    this.profilerStateManager.setOverviewStatus('loading', '로딩중..');
+
+    try {
+      const result = await this.profilerService.deleteSessions(targetIds);
+      await this.runOverviewScan({
+        preferredAgent: selectedAgent,
+        preserveDetail: !shouldResetDetail,
+        stopLiveMonitoring: false,
+        resetDetailWhenDone: false,
+        showLoading: false,
+        logLabel: 'Profiler delete refresh',
+      });
+
+      const message = this.getDeleteResultMessage(
+        scope,
+        selectedAgent,
+        result.deletedIds.length,
+        result.failedIds.length,
+      );
+      this.profilerStateManager.setOverviewStatus(
+        result.failedIds.length > 0 ? 'error' : 'ready',
+        message,
+      );
+
+      if (result.failedIds.length > 0) {
+        Logger.error('profiler', 'Profiler delete partially failed', message);
+      } else {
+        Logger.success('profiler', 'Profiler delete completed', message);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.profilerStateManager.setOverviewStatus('error', message);
+      Logger.error('profiler', 'Profiler delete failed', message);
+    } finally {
+      this.isDeleting = false;
+    }
+  }
 
   private async loadSession(
     id: string,
@@ -309,6 +412,46 @@ export class ProfilerCommandHandler {
   private pickInitialSession(overview: ProfilerOverviewState): SessionSummary | undefined {
     const selectedSessions = overview.sessionsByAgent[overview.selectedAgent] ?? [];
     return selectedSessions[0];
+  }
+
+  private async confirmDelete(
+    scope: 'selected' | 'agent',
+    agent: ProfilerAgentType,
+    fileCount: number,
+  ): Promise<boolean> {
+    const agentLabel = this.getAgentLabel(agent);
+    const message =
+      scope === 'selected'
+        ? `선택한 ${fileCount}개 세션 파일을 휴지통으로 이동할까요?`
+        : `현재 ${agentLabel} 탭의 세션 파일 ${fileCount}개 전체를 휴지통으로 이동할까요?`;
+    const detail =
+      scope === 'selected'
+        ? `${agentLabel} 탭에서 선택한 파일만 삭제합니다.`
+        : '이 작업은 현재 탭에 보이는 세션 파일 전체에 적용됩니다.';
+    const confirmLabel = '휴지통으로 이동';
+    const choice = await vscode.window.showWarningMessage(
+      message,
+      { modal: true, detail },
+      confirmLabel,
+    );
+    return choice === confirmLabel;
+  }
+
+  private getDeleteResultMessage(
+    scope: 'selected' | 'agent',
+    agent: ProfilerAgentType,
+    deletedCount: number,
+    failedCount: number,
+  ): string {
+    const targetLabel = scope === 'selected' ? '선택 세션' : `${this.getAgentLabel(agent)} 탭 세션`;
+    if (failedCount > 0) {
+      return `${targetLabel} ${deletedCount}개 삭제, ${failedCount}개 실패`;
+    }
+    return `${targetLabel} ${deletedCount}개를 휴지통으로 이동했습니다.`;
+  }
+
+  private getAgentLabel(agent: ProfilerAgentType): string {
+    return agent === 'codex' ? 'Codex' : agent === 'claude' ? 'Claude' : 'Gemini';
   }
 
   private findSessionById(

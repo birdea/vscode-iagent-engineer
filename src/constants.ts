@@ -12,6 +12,11 @@ export const VIEW_IDS = {
 export const COMMANDS = {
   CONNECT: 'iagent-engineer.connect',
   GENERATE: 'iagent-engineer.generate',
+  PROFILER_OPEN_SETTINGS: 'iagent-engineer.profiler.openSettings',
+  PROFILER_REFRESH: 'iagent-engineer.profiler.refresh',
+  PROFILER_DELETE_SELECTED: 'iagent-engineer.profiler.deleteSelected',
+  PROFILER_SELECT_ALL: 'iagent-engineer.profiler.selectAll',
+  PROFILER_DESELECT_ALL: 'iagent-engineer.profiler.deselectAll',
 } as const;
 
 export const CONFIG_KEYS = {
@@ -33,6 +38,7 @@ export const CONFIG_KEYS = {
   PROFILER_MAX_FILES_PER_AGENT: 'iagent-engineer.profiler.maxFilesPerAgent',
   PROFILER_MAX_FILE_SIZE_MB: 'iagent-engineer.profiler.maxFileSizeMB',
   PROFILER_ARCHIVE_PRESERVE_STRUCTURE: 'iagent-engineer.profiler.archivePreserveStructure',
+  PROFILER_REFRESH_PERIOD_MS: 'iagent-engineer.profiler.refreshPeriodMs',
 } as const;
 
 export const SECRET_KEYS = {

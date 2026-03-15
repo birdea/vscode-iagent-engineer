@@ -71,29 +71,18 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 .profiler-updated-at {
   white-space: nowrap;
 }
 
-.profiler-auto-refresh-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--vscode-descriptionForeground);
-  font-size: 11px;
-}
-
-.profiler-auto-refresh-label {
-  white-space: nowrap;
-}
-
 .profiler-auto-refresh-select {
-  min-width: 122px;
-  max-width: 150px;
+  min-width: 88px;
+  max-width: 104px;
+  flex: 0 0 auto;
 }
 
 .section-status {
@@ -757,29 +746,6 @@ a:hover {
   gap: 12px;
 }
 
-.profiler-toolbar {
-  justify-content: flex-start;
-}
-
-.profiler-toolbar-status {
-  display: flex;
-  min-width: 0;
-}
-
-.profiler-toolbar-status .section-status {
-  width: 100%;
-  margin-top: 0;
-}
-
-.profiler-refresh-button {
-  flex: 0 0 38px;
-  padding: 0;
-}
-
-.profiler-refresh-button .codicon {
-  font-size: 16px;
-}
-
 .profiler-status-chip {
   display: inline-flex;
   align-items: center;
@@ -790,6 +756,10 @@ a:hover {
   text-transform: uppercase;
   background: color-mix(in srgb, var(--vscode-editorWidget-background) 82%, transparent);
   border: 1px solid var(--vscode-panel-border);
+}
+
+.profiler-heading-actions .section-status {
+  margin-top: 0;
 }
 
 .profiler-status-chip.loading {
@@ -1020,6 +990,33 @@ a:hover {
   gap: 8px;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.profiler-session-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.profiler-session-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  min-height: 100%;
+  cursor: pointer;
+}
+
+.profiler-session-check-input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--vscode-focusBorder);
+}
+
+.profiler-session-check-mark {
+  display: none;
 }
 
 body[data-section='profiler'] .profiler-session-card {

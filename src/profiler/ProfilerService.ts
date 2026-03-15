@@ -131,6 +131,11 @@ interface ClaudeRequestDraft {
   eventType: string;
 }
 
+interface DeleteSessionsResult {
+  deletedIds: string[];
+  failedIds: string[];
+}
+
 const DEFAULT_MAX_FILES_PER_AGENT = 500;
 const DEFAULT_MAX_FILE_SIZE_MB = 20;
 const SESSION_SUMMARY_CONCURRENCY = 8;
@@ -260,6 +265,38 @@ export class ProfilerService {
     const detail = await this.analyzeSessionFile(file, summary);
     this.detailCache.set(summary.id, detail);
     return { summary, detail, stat };
+  }
+
+  async deleteSessions(sessionIds: string[]): Promise<DeleteSessionsResult> {
+    const uniqueIds = [...new Set(sessionIds)];
+    const deletedIds: string[] = [];
+    const failedIds: string[] = [];
+
+    for (const sessionId of uniqueIds) {
+      const summary = this.summaryCache.get(sessionId);
+      if (!summary) {
+        failedIds.push(sessionId);
+        continue;
+      }
+
+      try {
+        await vscode.workspace.fs.delete(vscode.Uri.file(summary.filePath), {
+          recursive: false,
+          useTrash: true,
+        });
+        deletedIds.push(sessionId);
+        this.summaryCache.delete(sessionId);
+        this.fileCache.delete(sessionId);
+        this.detailCache.delete(sessionId);
+      } catch {
+        failedIds.push(sessionId);
+      }
+    }
+
+    return {
+      deletedIds,
+      failedIds,
+    };
   }
 
   async archiveAll(targetRoot: string): Promise<ProfilerArchiveResult> {

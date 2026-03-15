@@ -1875,7 +1875,7 @@ suite('UI Components Consolidated', () => {
 
       const historyBadges = Array.from(
         document.querySelectorAll(
-          '.profiler-session-card:last-of-type .profiler-session-card-badge',
+          '.profiler-session-row:last-of-type .profiler-session-card-badge',
         ),
       );
 
@@ -2015,48 +2015,254 @@ suite('UI Components Consolidated', () => {
       assert.strictEqual(fileCell.getAttribute('title'), 'Refactor profiler startup flow');
     });
 
-    test('refresh controls stay in the header and manual refresh posts correctly', () => {
-      const button = document.getElementById('profiler-start-analysis') as HTMLButtonElement | null;
+    test('status badge stays in the header top-right and inline profiler controls are removed', () => {
       const statusBadge = document.getElementById('profiler-status-badge') as HTMLElement | null;
-      const autoRefreshSelect = document.getElementById(
-        'profiler-auto-refresh-select',
-      ) as HTMLSelectElement | null;
-      const archiveButton = document.getElementById(
-        'profiler-archive-all',
+      const refreshButton = document.getElementById(
+        'profiler-start-analysis',
       ) as HTMLButtonElement | null;
+      const bulkActions = document.getElementById('profiler-bulk-actions') as HTMLElement | null;
+      const headingActions = document.querySelector(
+        '.profiler-heading-actions',
+      ) as HTMLElement | null;
 
-      assert.ok(button?.querySelector('.codicon-refresh'));
-      assert.strictEqual(button?.textContent?.trim() ?? '', '');
       assert.ok(statusBadge);
-      assert.ok(autoRefreshSelect);
-      assert.strictEqual(archiveButton, null);
-      assert.ok(
-        Boolean(
-          button &&
-          statusBadge &&
-          button.compareDocumentPosition(statusBadge) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-      );
-
-      document.getElementById('profiler-start-analysis')?.click();
-
-      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.refreshOverview' }));
+      assert.ok(headingActions);
+      assert.strictEqual(statusBadge?.closest('.profiler-heading-actions'), headingActions);
+      assert.strictEqual(refreshButton, null);
+      assert.strictEqual(bulkActions, null);
+      assert.strictEqual(document.getElementById('profiler-auto-refresh-select'), null);
     });
 
-    test('auto refresh selector schedules overview refreshes', async () => {
-      const clock = sandbox.useFakeTimers();
-      const autoRefreshSelect = document.getElementById(
-        'profiler-auto-refresh-select',
-      ) as HTMLSelectElement | null;
+    test('session selection is still reported to the host even without inline bulk controls', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:1',
+        aggregate: {
+          totalSessions: 2,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 2048,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:1',
+              agent: 'codex',
+              filePath: '/tmp/codex-1.jsonl',
+              fileName: 'codex-1.jsonl',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+            {
+              id: 'codex:2',
+              agent: 'codex',
+              filePath: '/tmp/codex-2.jsonl',
+              fileName: 'codex-2.jsonl',
+              modifiedAt: '2026-03-11T14:06:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
 
-      assert.ok(autoRefreshSelect);
+      const checkbox = document.querySelector(
+        '[data-session-select="codex:1"]',
+      ) as HTMLInputElement | null;
+
+      assert.ok(checkbox);
+      assert.strictEqual(document.getElementById('profiler-bulk-actions'), null);
+
+      checkbox!.checked = true;
+      checkbox!.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.reportSelectionState',
+          summary: {
+            agent: 'codex',
+            selectedCount: 1,
+            totalCount: 2,
+            allSelected: false,
+          },
+        }),
+      );
+    });
+
+    test('selection state is pruned when a checked session disappears after refresh', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:1',
+        aggregate: {
+          totalSessions: 1,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 1024,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:1',
+              agent: 'codex',
+              filePath: '/tmp/codex-1.jsonl',
+              fileName: 'codex-1.jsonl',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+
+      const checkbox = document.querySelector(
+        '[data-session-select="codex:1"]',
+      ) as HTMLInputElement | null;
+      checkbox!.checked = true;
+      checkbox!.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        aggregate: {
+          totalSessions: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 0,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [],
+          gemini: [],
+        },
+      });
+
+      assert.strictEqual(document.querySelector('[data-session-select="codex:1"]'), null);
+      assert.strictEqual(document.getElementById('profiler-bulk-actions'), null);
+    });
+
+    test('settings-driven auto refresh schedules overview refreshes without inline control', async () => {
+      const clock = sandbox.useFakeTimers({ shouldClearNativeTimers: true });
       postMessageStub.resetHistory();
-      autoRefreshSelect!.value = '1000';
-      autoRefreshSelect!.dispatchEvent(new window.Event('change'));
+      layer.onSettingsChanged(1000);
 
       await clock.tickAsync(1000);
 
-      assert.ok(postMessageStub.calledWithMatch({ command: 'profiler.refreshOverview' }));
+      assert.strictEqual(document.getElementById('profiler-auto-refresh-select'), null);
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.refreshOverview',
+          agent: 'claude',
+        }),
+      );
+    });
+
+    test('host-driven profiler actions reuse the existing refresh, delete, and toggle-select flows', () => {
+      layer.onState({
+        status: 'ready',
+        selectedAgent: 'codex',
+        selectedSessionId: 'codex:1',
+        aggregate: {
+          totalSessions: 2,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCachedTokens: 0,
+          totalTokens: 0,
+          totalFileSizeBytes: 2048,
+        },
+        sessionsByAgent: {
+          claude: [],
+          codex: [
+            {
+              id: 'codex:1',
+              agent: 'codex',
+              filePath: '/tmp/codex-1.jsonl',
+              fileName: 'codex-1.jsonl',
+              modifiedAt: '2026-03-11T14:05:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+            {
+              id: 'codex:2',
+              agent: 'codex',
+              filePath: '/tmp/codex-2.jsonl',
+              fileName: 'codex-2.jsonl',
+              modifiedAt: '2026-03-11T14:06:00.000Z',
+              fileSizeBytes: 1024,
+              parseStatus: 'ok',
+              warnings: [],
+            },
+          ],
+          gemini: [],
+        },
+      });
+      postMessageStub.resetHistory();
+
+      layer.onPerformAction('toggleSelectAll');
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.reportSelectionState',
+          summary: {
+            agent: 'codex',
+            selectedCount: 2,
+            totalCount: 2,
+            allSelected: true,
+          },
+        }),
+      );
+
+      layer.onPerformAction('deleteSelected');
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.deleteSessions',
+          ids: ['codex:1', 'codex:2'],
+          agent: 'codex',
+        }),
+      );
+
+      layer.onPerformAction('refresh');
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.refreshOverview',
+          agent: 'codex',
+        }),
+      );
+
+      layer.onPerformAction('toggleSelectAll');
+      assert.ok(
+        postMessageStub.calledWithMatch({
+          command: 'profiler.reportSelectionState',
+          summary: {
+            agent: 'codex',
+            selectedCount: 0,
+            totalCount: 2,
+            allSelected: false,
+          },
+        }),
+      );
+    });
+
+    test('settings changes from the host keep auto refresh active without inline controls', () => {
+      layer.onSettingsChanged(3000);
+
+      assert.strictEqual(document.getElementById('profiler-auto-refresh-select'), null);
+      assert.ok(document.getElementById('profiler-status-badge'));
     });
 
     test('gemini tab stays disabled and tab selection is posted for enabled agents', () => {

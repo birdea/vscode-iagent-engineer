@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SidebarProvider } from './webview/SidebarProvider';
 import { Logger } from './logger/Logger';
 import { AgentFactory } from './agent/AgentFactory';
-import { COMMANDS, VIEW_IDS, getSecretStorageKey } from './constants';
+import { COMMANDS, CONFIG_KEYS, VIEW_IDS, getSecretStorageKey } from './constants';
 import { RemoteFigmaAuthService } from './figma/RemoteFigmaAuthService';
 import { AgentType } from './types';
 import { StateManager } from './state/StateManager';
@@ -14,6 +14,7 @@ import { resolveLocale, t } from './i18n';
 let outputChannelRef: vscode.OutputChannel | undefined;
 let sidebarProviders: SidebarProvider[] = [];
 let profilerLiveMonitorRef: ProfilerLiveMonitor | undefined;
+let profilerProviderRef: SidebarProvider | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const locale = resolveLocale(vscode.env.language);
@@ -63,6 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
     profilerService,
     profilerLiveMonitor,
   );
+  profilerProviderRef = profilerProvider;
   const profilerDetailProvider = new SidebarProvider(
     VIEW_IDS.PROFILER_DETAIL,
     'profiler-detail',
@@ -110,6 +112,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (!e.affectsConfiguration('iagent-engineer')) return;
 
+      if (e.affectsConfiguration(CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS)) {
+        profilerProviderRef?.syncProfilerSettings();
+      }
+
       Logger.info('system', 'Configuration changed — reloading agent API keys');
       for (const agent of agents) {
         const key = await context.secrets.get(getSecretStorageKey(agent));
@@ -127,6 +133,24 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand(COMMANDS.GENERATE, () => {
       vscode.commands.executeCommand('workbench.view.extension.iagent-engineer');
+    }),
+    vscode.commands.registerCommand(COMMANDS.PROFILER_OPEN_SETTINGS, async () => {
+      await vscode.commands.executeCommand(
+        'workbench.action.openSettings',
+        CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS,
+      );
+    }),
+    vscode.commands.registerCommand(COMMANDS.PROFILER_REFRESH, () => {
+      profilerProviderRef?.performProfilerAction('refresh');
+    }),
+    vscode.commands.registerCommand(COMMANDS.PROFILER_DELETE_SELECTED, () => {
+      profilerProviderRef?.performProfilerAction('deleteSelected');
+    }),
+    vscode.commands.registerCommand(COMMANDS.PROFILER_SELECT_ALL, () => {
+      profilerProviderRef?.performProfilerAction('toggleSelectAll');
+    }),
+    vscode.commands.registerCommand(COMMANDS.PROFILER_DESELECT_ALL, () => {
+      profilerProviderRef?.performProfilerAction('toggleSelectAll');
     }),
     vscode.commands.registerCommand('iagent-engineer.prompt.generate', () => {
       promptProvider.postMessage({ event: 'prompt.generateRequested' });
@@ -149,6 +173,7 @@ export async function deactivate(): Promise<void> {
   Logger.info('system', 'iAgent Engineer deactivated');
   profilerLiveMonitorRef?.dispose();
   profilerLiveMonitorRef = undefined;
+  profilerProviderRef = undefined;
   await Promise.allSettled(sidebarProviders.splice(0).map((provider) => provider.dispose()));
   AgentFactory.clear();
   Logger.clear();

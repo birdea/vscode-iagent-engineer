@@ -46,6 +46,7 @@ const mockVscode = {
   workspace: {
     getConfiguration: sinon.stub().returns({
       get: sinon.stub(),
+      update: sinon.stub().resolves(),
     }),
     getWorkspaceFolder: sinon.stub(),
     onDidChangeConfiguration: sinon.stub().returns({ dispose: sinon.stub() }),
@@ -101,6 +102,11 @@ const mockVscode = {
   ViewColumn: {
     One: 1,
     Two: 2,
+  },
+  ConfigurationTarget: {
+    Global: 1,
+    Workspace: 2,
+    WorkspaceFolder: 3,
   },
   Position: class {
     constructor(

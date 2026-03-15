@@ -78,6 +78,12 @@ export const ViewColumn = {
   Two: 2,
 };
 
+export const ConfigurationTarget = {
+  Global: 1,
+  Workspace: 2,
+  WorkspaceFolder: 3,
+};
+
 export class Position {
   constructor(
     public line: number,

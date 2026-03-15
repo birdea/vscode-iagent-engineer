@@ -106,6 +106,8 @@ suite('UI Main Initialization', () => {
         },
       },
     });
+    dispatch({ event: 'profiler.settingsChanged', refreshPeriodMs: 3000 });
+    dispatch({ event: 'profiler.performAction', action: 'toggleSelectAll' });
     dispatch({ event: 'profiler.archiveResult', result: { targetPath: '/tmp/x', fileCount: 1 } });
     dispatch({ event: 'error', source: 'profiler', message: 'profiler error' });
     dispatch({ event: 'unknown.event' });
