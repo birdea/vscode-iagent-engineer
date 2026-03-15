@@ -173,7 +173,7 @@ export class WebviewMessageHandler {
           await this.profilerHandler?.scan();
           break;
         case 'profiler.refreshOverview':
-          await this.profilerHandler?.refreshOverview();
+          await this.profilerHandler?.refreshOverview(msg.agent);
           break;
         case 'profiler.selectAgent':
           await this.profilerHandler?.selectAgent(msg.agent);
@@ -186,6 +186,15 @@ export class WebviewMessageHandler {
           break;
         case 'profiler.selectSession':
           await this.profilerHandler?.selectSession(msg.id, msg.agent);
+          break;
+        case 'profiler.setRefreshPeriod':
+          await this.profilerHandler?.setRefreshPeriod(msg.refreshPeriodMs);
+          break;
+        case 'profiler.deleteSessions':
+          await this.profilerHandler?.deleteSessions(msg.ids, msg.agent);
+          break;
+        case 'profiler.deleteAllSessions':
+          await this.profilerHandler?.deleteAllSessions(msg.agent);
           break;
         case 'profiler.archiveAll':
           await this.profilerHandler?.archiveAll();

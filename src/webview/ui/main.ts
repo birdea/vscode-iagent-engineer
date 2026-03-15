@@ -130,6 +130,12 @@ export function init() {
           case 'profiler.state':
             layer.onState(msg.state);
             break;
+          case 'profiler.settingsChanged':
+            layer.onSettingsChanged(msg.refreshPeriodMs);
+            break;
+          case 'profiler.performAction':
+            layer.onPerformAction(msg.action);
+            break;
           case 'profiler.archiveResult':
             layer.onArchiveResult(msg.result);
             break;

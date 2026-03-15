@@ -46,9 +46,11 @@ const MESSAGES: Record<
     | 'agentSoon'
     | 'noSelection'
     | 'archiveDone'
+    | 'deleteSelected'
+    | 'deleteAll'
+    | 'selected'
     | 'updated'
     | 'never'
-    | 'autoRefresh'
     | 'off',
     string
   >
@@ -65,9 +67,11 @@ const MESSAGES: Record<
     agentSoon: 'Profiler support is coming soon.',
     noSelection: 'Select a session to inspect details.',
     archiveDone: 'Archive completed',
+    deleteSelected: 'Delete Selected',
+    deleteAll: 'Delete All',
+    selected: 'selected',
     updated: 'Updated',
     never: 'Never',
-    autoRefresh: 'Auto Refresh',
     off: 'Off',
   },
   ko: {
@@ -82,9 +86,11 @@ const MESSAGES: Record<
     agentSoon: '추후 지원 예정입니다.',
     noSelection: '세션을 선택하면 상세 분석이 표시됩니다.',
     archiveDone: '아카이브 완료',
+    deleteSelected: '선택 삭제',
+    deleteAll: '전체 삭제',
+    selected: '선택',
     updated: '업데이트',
     never: '기록 없음',
-    autoRefresh: '자동 새로고침',
     off: '끔',
   },
 };
@@ -95,8 +101,13 @@ export class ProfilerLayer {
   private notice = '';
   private sortField: SortField = 'time';
   private sortDirection: SortDirection = 'desc';
-  private autoRefreshMs = 0;
+  private autoRefreshMs = this.readInitialRefreshPeriod();
   private autoRefreshTimer?: number;
+  private selectedIdsByAgent: Record<ProfilerAgentType, Set<string>> = {
+    claude: new Set<string>(),
+    codex: new Set<string>(),
+    gemini: new Set<string>(),
+  };
 
   render(): string {
     return `
@@ -107,17 +118,8 @@ export class ProfilerLayer {
       <div class="section-status profiler-updated-at" id="profiler-updated-at" title="${this.escapeAttr(this.getUpdatedAtTitle())}">${this.renderUpdatedAt()}</div>
     </div>
     <div class="profiler-heading-actions">
-      <label class="profiler-auto-refresh-control" for="profiler-auto-refresh-select">
-        <span class="profiler-auto-refresh-label">${this.msg('autoRefresh')}</span>
-        <select id="profiler-auto-refresh-select" class="profiler-auto-refresh-select">
-          ${this.renderAutoRefreshOptions()}
-        </select>
-      </label>
-      <button class="secondary icon-btn profiler-refresh-button" id="profiler-start-analysis" aria-label="${this.msg('scan')}" title="${this.msg('scan')}"><i class="codicon codicon-refresh"></i></button>
+      <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
     </div>
-  </div>
-  <div class="profiler-toolbar profiler-toolbar-status">
-    <div class="section-status" id="profiler-status-badge">${this.renderStatusBadge()}</div>
   </div>
   <div class="profiler-tab-row" id="profiler-tab-row" role="tablist" aria-label="Agents"></div>
   <div class="profiler-sort-bar" id="profiler-sort-bar"></div>
@@ -126,16 +128,6 @@ export class ProfilerLayer {
   }
 
   mount() {
-    document
-      .getElementById('profiler-start-analysis')
-      ?.addEventListener('click', () =>
-        vscode.postMessage({ command: 'profiler.refreshOverview' }),
-      );
-    document.getElementById('profiler-auto-refresh-select')?.addEventListener('change', (event) => {
-      const target = event.target as HTMLSelectElement | null;
-      this.autoRefreshMs = Number(target?.value ?? '0');
-      this.syncAutoRefreshTimer();
-    });
     document.getElementById('profiler-tab-row')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
       const button = target?.closest<HTMLButtonElement>('[data-agent]');
@@ -157,6 +149,7 @@ export class ProfilerLayer {
       };
       this.notice = this.state.message ?? '';
       this.renderDynamicContent();
+      this.reportSelectionState();
       vscode.postMessage({ command: 'profiler.selectAgent', agent });
     });
     document.getElementById('profiler-sort-bar')?.addEventListener('click', (event) => {
@@ -177,6 +170,22 @@ export class ProfilerLayer {
       }
       this.renderDynamicContent();
     });
+    document.getElementById('profiler-session-list')?.addEventListener('change', (event) => {
+      const target = event.target as HTMLInputElement | null;
+      if (!target?.matches('[data-session-select]')) {
+        return;
+      }
+
+      const id = target.dataset.sessionSelect;
+      const agent = target.dataset.agent as ProfilerAgentType | undefined;
+      if (!id || !agent) {
+        return;
+      }
+
+      this.setSessionSelected(agent, id, target.checked);
+      this.renderDynamicContent();
+      this.reportSelectionState();
+    });
     document.getElementById('profiler-session-list')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
       const row = target?.closest<HTMLButtonElement>('[data-session-id]');
@@ -194,6 +203,8 @@ export class ProfilerLayer {
     });
     vscode.postMessage({ command: 'profiler.getState' });
     this.renderDynamicContent();
+    this.syncAutoRefreshTimer();
+    this.reportSelectionState();
   }
 
   onState(state: ProfilerOverviewState) {
@@ -209,7 +220,9 @@ export class ProfilerLayer {
       (this.isDisabledAgent(state.selectedAgent)
         ? this.getDisabledAgentNotice(state.selectedAgent)
         : '');
+    this.pruneSelectedIds();
     this.renderDynamicContent();
+    this.reportSelectionState();
   }
 
   onArchiveResult(result: ProfilerArchiveResult) {
@@ -217,18 +230,34 @@ export class ProfilerLayer {
     this.renderDynamicContent();
   }
 
+  onSettingsChanged(refreshPeriodMs: number) {
+    this.autoRefreshMs = this.normalizeRefreshPeriod(refreshPeriodMs);
+    this.syncAutoRefreshTimer();
+    this.renderDynamicContent();
+  }
+
+  onPerformAction(action: 'refresh' | 'deleteSelected' | 'toggleSelectAll') {
+    switch (action) {
+      case 'refresh':
+        this.runRefresh();
+        return;
+      case 'deleteSelected':
+        this.runDeleteSelected();
+        return;
+      case 'toggleSelectAll':
+        this.toggleSelectAll();
+        return;
+    }
+  }
+
   private renderDynamicContent() {
     const loading = this.state.status === 'loading';
-    const startButton = document.getElementById(
-      'profiler-start-analysis',
-    ) as HTMLButtonElement | null;
     const badge = document.getElementById('profiler-status-badge');
     const updatedAt = document.getElementById('profiler-updated-at');
     const tabs = document.getElementById('profiler-tab-row');
     const sortBar = document.getElementById('profiler-sort-bar');
     const list = document.getElementById('profiler-session-list');
 
-    if (startButton) startButton.disabled = loading;
     if (badge) badge.innerHTML = this.renderStatusBadge();
     if (updatedAt) {
       updatedAt.innerHTML = this.renderUpdatedAt();
@@ -293,6 +322,40 @@ export class ProfilerLayer {
 </div>`;
   }
 
+  private runRefresh() {
+    this.notice = this.msg('loading');
+    this.renderDynamicContent();
+    vscode.postMessage({ command: 'profiler.refreshOverview', agent: this.state.selectedAgent });
+  }
+
+  private runDeleteSelected() {
+    const agent = this.state.selectedAgent;
+    const ids = this.getSelectedIds(agent);
+    if (ids.length === 0) {
+      return;
+    }
+
+    this.notice = this.msg('loading');
+    this.renderDynamicContent();
+    vscode.postMessage({ command: 'profiler.deleteSessions', ids, agent });
+  }
+
+  private toggleSelectAll() {
+    const agent = this.state.selectedAgent;
+    const sessions = this.state.sessionsByAgent[agent] ?? [];
+    const allSelected =
+      sessions.length > 0 && sessions.every((session) => this.isSessionSelected(agent, session.id));
+
+    if (allSelected) {
+      this.selectedIdsByAgent[agent].clear();
+    } else {
+      this.selectedIdsByAgent[agent] = new Set(sessions.map((session) => session.id));
+    }
+
+    this.renderDynamicContent();
+    this.reportSelectionState();
+  }
+
   private renderSessionList(): string {
     if (this.state.status === 'loading' && this.state.aggregate.totalSessions === 0) {
       return `<div class="profiler-empty">${this.msg('loading')}</div>`;
@@ -333,16 +396,29 @@ export class ProfilerLayer {
 
   private renderSessionRow(session: SessionSummary): string {
     const isSelected = this.state.selectedSessionId === session.id;
+    const isChecked = this.isSessionSelected(session.agent, session.id);
     const timestamp = session.startedAt ?? session.modifiedAt;
     const title = this.getDisplayFileName(session);
     const inK = this.formatTokensK(session.totalInputTokens);
     const outK = this.formatTokensK(session.totalOutputTokens);
     const badges = this.renderSessionBadges(session);
     return `
+<div class="profiler-session-row">
+  <label class="profiler-session-check" title="${this.escapeAttr(`${this.msg('selected')} ${title}`)}">
+    <input
+      type="checkbox"
+      class="profiler-session-check-input"
+      data-session-select="${session.id}"
+      data-agent="${session.agent}"
+      ${isChecked ? 'checked' : ''}
+    />
+    <span class="profiler-session-check-mark" aria-hidden="true"></span>
+  </label>
 <button
   class="profiler-session-card ${isSelected ? 'selected' : ''}"
   data-session-id="${session.id}"
   data-agent="${session.agent}"
+  type="button"
   title="${this.escapeAttr(session.filePath)}"
 >
     <span class="profiler-session-card-main">
@@ -361,7 +437,8 @@ export class ProfilerLayer {
       </span>
     </span>
   </span>
-</button>`;
+</button>
+</div>`;
   }
 
   private isLiveSession(session: SessionSummary): boolean {
@@ -409,23 +486,6 @@ export class ProfilerLayer {
     return `${this.msg('updated')} ${this.formatDateTime(this.state.updatedAt)}`;
   }
 
-  private renderAutoRefreshOptions(): string {
-    return AUTO_REFRESH_OPTIONS.map((value) => {
-      const selected = this.autoRefreshMs === value ? ' selected' : '';
-      return `<option value="${value}"${selected}>${this.getAutoRefreshLabel(value)}</option>`;
-    }).join('');
-  }
-
-  private getAutoRefreshLabel(value: number): string {
-    if (value === 0) {
-      return `${this.msg('autoRefresh')}: ${this.msg('off')}`;
-    }
-    if (value < 60_000) {
-      return `${this.msg('autoRefresh')}: ${value / 1000}s`;
-    }
-    return `${this.msg('autoRefresh')}: 1m`;
-  }
-
   private syncAutoRefreshTimer() {
     if (this.autoRefreshTimer) {
       window.clearInterval(this.autoRefreshTimer);
@@ -437,7 +497,7 @@ export class ProfilerLayer {
     }
 
     this.autoRefreshTimer = window.setInterval(() => {
-      vscode.postMessage({ command: 'profiler.refreshOverview' });
+      vscode.postMessage({ command: 'profiler.refreshOverview', agent: this.state.selectedAgent });
     }, this.autoRefreshMs);
   }
 
@@ -529,6 +589,57 @@ export class ProfilerLayer {
     const normalizedPath = session.filePath.replace(/\\/g, '/');
     const fallback = normalizedPath.split('/').pop()?.trim();
     return fallback || 'session';
+  }
+
+  private getSelectedIds(agent: ProfilerAgentType): string[] {
+    return [...this.selectedIdsByAgent[agent]];
+  }
+
+  private isSessionSelected(agent: ProfilerAgentType, id: string): boolean {
+    return this.selectedIdsByAgent[agent].has(id);
+  }
+
+  private setSessionSelected(agent: ProfilerAgentType, id: string, selected: boolean) {
+    if (selected) {
+      this.selectedIdsByAgent[agent].add(id);
+      return;
+    }
+    this.selectedIdsByAgent[agent].delete(id);
+  }
+
+  private pruneSelectedIds() {
+    for (const agent of ['claude', 'codex', 'gemini'] as const) {
+      const validIds = new Set(this.state.sessionsByAgent[agent].map((session) => session.id));
+      this.selectedIdsByAgent[agent] = new Set(
+        [...this.selectedIdsByAgent[agent]].filter((id) => validIds.has(id)),
+      );
+    }
+  }
+
+  private reportSelectionState() {
+    const agent = this.state.selectedAgent;
+    const totalCount = this.state.sessionsByAgent[agent]?.length ?? 0;
+    const selectedCount = this.getSelectedIds(agent).length;
+    vscode.postMessage({
+      command: 'profiler.reportSelectionState',
+      summary: {
+        agent,
+        selectedCount,
+        totalCount,
+        allSelected: totalCount > 0 && selectedCount === totalCount,
+      },
+    });
+  }
+
+  private readInitialRefreshPeriod(): number {
+    const rawValue = document.body.dataset.profilerRefreshPeriodMs;
+    return this.normalizeRefreshPeriod(Number(rawValue ?? '1000'));
+  }
+
+  private normalizeRefreshPeriod(value: number): number {
+    return AUTO_REFRESH_OPTIONS.includes(value as (typeof AUTO_REFRESH_OPTIONS)[number])
+      ? value
+      : 1000;
   }
 
   private escapeHtml(value: string): string {

@@ -244,6 +244,13 @@ export interface ProfilerArchiveResult {
   fileCount: number;
 }
 
+export interface ProfilerSelectionSummary {
+  agent: ProfilerAgentType;
+  selectedCount: number;
+  totalCount: number;
+  allSelected: boolean;
+}
+
 // Webview → Host messages
 export type WebviewToHostMessage =
   | { command: 'figma.connect'; mode?: ConnectionMode }
@@ -275,11 +282,15 @@ export type WebviewToHostMessage =
   | { command: 'editor.saveFile'; code: string; filename: string }
   | { command: 'profiler.getState' }
   | { command: 'profiler.scan' }
-  | { command: 'profiler.refreshOverview' }
+  | { command: 'profiler.refreshOverview'; agent?: ProfilerAgentType }
   | { command: 'profiler.selectAgent'; agent: ProfilerAgentType }
   | { command: 'profiler.startLiveData'; id?: string; agent?: ProfilerAgentType }
   | { command: 'profiler.stopLiveData' }
   | { command: 'profiler.selectSession'; id: string; agent: ProfilerAgentType }
+  | { command: 'profiler.setRefreshPeriod'; refreshPeriodMs: number }
+  | { command: 'profiler.reportSelectionState'; summary: ProfilerSelectionSummary }
+  | { command: 'profiler.deleteSessions'; ids: string[]; agent: ProfilerAgentType }
+  | { command: 'profiler.deleteAllSessions'; agent: ProfilerAgentType }
   | { command: 'profiler.archiveAll' }
   | { command: 'profiler.openSource'; filePath: string; lineNumber?: number }
   | { command: 'profiler.copyFilePath'; filePath: string }
@@ -315,5 +326,10 @@ export type HostToWebviewMessage =
   | { event: 'prompt.error'; message: string; code?: 'cancelled' | 'failed' }
   | { event: 'profiler.state'; state: ProfilerOverviewState }
   | { event: 'profiler.detailState'; state: ProfilerDetailState }
+  | { event: 'profiler.settingsChanged'; refreshPeriodMs: number }
+  | {
+      event: 'profiler.performAction';
+      action: 'refresh' | 'deleteSelected' | 'toggleSelectAll';
+    }
   | { event: 'profiler.archiveResult'; result: ProfilerArchiveResult }
   | { event: 'error'; source: LayerType; message: string };

@@ -45,6 +45,9 @@ suite('Extension Comprehensive', () => {
     vscode.commands.registerCommand = sandbox.stub();
     vscode.window.registerWebviewViewProvider = sandbox.stub();
     vscode.commands.executeCommand = sandbox.stub();
+    sandbox.stub(SidebarProvider.prototype, 'postMessage');
+    sandbox.stub(SidebarProvider.prototype, 'performProfilerAction');
+    sandbox.stub(SidebarProvider.prototype, 'syncProfilerSettings');
     sandbox.stub(SidebarProvider.prototype, 'dispose').resolves();
   });
 
@@ -74,6 +77,47 @@ suite('Extension Comprehensive', () => {
     )?.[1];
     assert.ok(promptGenerate);
     promptGenerate();
+
+    const profilerSettings = commands.find(
+      (c: any) => c[0] === 'iagent-engineer.profiler.openSettings',
+    )?.[1];
+    assert.ok(profilerSettings);
+    await profilerSettings();
+    assert.ok(
+      vscode.commands.executeCommand.calledWith(
+        'workbench.action.openSettings',
+        'iagent-engineer.profiler.refreshPeriodMs',
+      ),
+    );
+
+    const profilerRefresh = commands.find(
+      (c: any) => c[0] === 'iagent-engineer.profiler.refresh',
+    )?.[1];
+    const profilerDelete = commands.find(
+      (c: any) => c[0] === 'iagent-engineer.profiler.deleteSelected',
+    )?.[1];
+    const profilerSelectAll = commands.find(
+      (c: any) => c[0] === 'iagent-engineer.profiler.selectAll',
+    )?.[1];
+    const profilerDeselectAll = commands.find(
+      (c: any) => c[0] === 'iagent-engineer.profiler.deselectAll',
+    )?.[1];
+    assert.ok(profilerRefresh);
+    assert.ok(profilerDelete);
+    assert.ok(profilerSelectAll);
+    assert.ok(profilerDeselectAll);
+    profilerRefresh();
+    profilerDelete();
+    profilerSelectAll();
+    profilerDeselectAll();
+
+    assert.ok((SidebarProvider.prototype.performProfilerAction as any).calledWith('refresh'));
+    assert.ok(
+      (SidebarProvider.prototype.performProfilerAction as any).calledWith('deleteSelected'),
+    );
+    assert.ok(
+      (SidebarProvider.prototype.performProfilerAction as any).calledWith('toggleSelectAll'),
+    );
 
     const uriHandler = vscode.window.registerUriHandler.args[0][0];
     assert.ok(uriHandler);
@@ -121,6 +165,21 @@ suite('Extension Comprehensive', () => {
     );
 
     assert.ok(vscode.window.showErrorMessage.calledOnce);
+  });
+
+  test('profiler refresh-period config changes sync the profiler view settings', async () => {
+    const vscode = require('vscode');
+    await activate(mockContext);
+
+    const changeListener = vscode.workspace.onDidChangeConfiguration.args[0]?.[0];
+    assert.ok(changeListener);
+
+    await changeListener({
+      affectsConfiguration: (key: string) =>
+        key === 'iagent-engineer' || key === 'iagent-engineer.profiler.refreshPeriodMs',
+    });
+
+    assert.ok((SidebarProvider.prototype.syncProfilerSettings as any).called);
   });
 
   test('deactivate disposes providers and output channel', async () => {

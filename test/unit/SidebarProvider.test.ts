@@ -71,6 +71,67 @@ suite('SidebarProvider', () => {
     assert.ok(!mockWebviewView.webview.html.includes("'unsafe-inline'"));
   });
 
+  test('profiler provider embeds refresh-period config and updates titlebar contexts from selection reports', async () => {
+    const vscode = require('vscode');
+    const configGet = sandbox.stub();
+    configGet.withArgs('iagent-engineer.mcpEndpoint').returns('http://localhost:3845');
+    configGet.withArgs('iagent-engineer.mcpConnectionMode', 'local').returns('local');
+    configGet.withArgs('iagent-engineer.profiler.refreshPeriodMs', 1000).returns(3000);
+    vscode.workspace.getConfiguration.returns({
+      get: configGet,
+      update: sandbox.stub().resolves(),
+    });
+
+    provider = new SidebarProvider(
+      'viewId',
+      'profiler',
+      mockContext.extensionUri,
+      asExtensionContext(mockContext),
+      stateManager,
+      remoteAuthService,
+      {
+        getOverviewState: sandbox.stub().returns({}),
+        onOverviewChange: sandbox.stub().returns({ dispose: sandbox.stub() }),
+      } as any,
+    );
+    provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
+
+    assert.ok(mockWebviewView.webview.html.includes('data-profiler-refresh-period-ms="3000"'));
+
+    const listener = mockWebviewView.webview.onDidReceiveMessage.args[0][0];
+    await listener({
+      command: 'profiler.reportSelectionState',
+      summary: {
+        agent: 'codex',
+        selectedCount: 2,
+        totalCount: 2,
+        allSelected: true,
+      },
+    });
+
+    assert.ok(
+      vscode.commands.executeCommand.calledWith(
+        'setContext',
+        'iagentEngineer.profiler.hasSelection',
+        true,
+      ),
+    );
+    assert.ok(
+      vscode.commands.executeCommand.calledWith(
+        'setContext',
+        'iagentEngineer.profiler.hasSessions',
+        true,
+      ),
+    );
+    assert.ok(
+      vscode.commands.executeCommand.calledWith(
+        'setContext',
+        'iagentEngineer.profiler.allSelected',
+        true,
+      ),
+    );
+  });
+
   test('postMessage handles null view gracefully', () => {
     provider.postMessage({ some: 'data' });
     // Should not throw
@@ -80,6 +141,39 @@ suite('SidebarProvider', () => {
     provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
     provider.postMessage({ some: 'data' });
     assert.ok(mockWebviewView.webview.postMessage.calledWith({ some: 'data' }));
+  });
+
+  test('profiler helper methods post actions and settings updates to the webview', () => {
+    const vscode = require('vscode');
+    vscode.workspace.getConfiguration.returns({
+      get: sandbox.stub().withArgs('iagent-engineer.profiler.refreshPeriodMs', 1000).returns(5000),
+      update: sandbox.stub().resolves(),
+    });
+    provider = new SidebarProvider(
+      'viewId',
+      'profiler',
+      mockContext.extensionUri,
+      asExtensionContext(mockContext),
+      stateManager,
+      remoteAuthService,
+    );
+    provider.resolveWebviewView(asWebviewView(mockWebviewView), {} as never, {} as never);
+
+    provider.performProfilerAction('toggleSelectAll');
+    provider.syncProfilerSettings();
+
+    assert.ok(
+      mockWebviewView.webview.postMessage.calledWithMatch({
+        event: 'profiler.performAction',
+        action: 'toggleSelectAll',
+      }),
+    );
+    assert.ok(
+      mockWebviewView.webview.postMessage.calledWithMatch({
+        event: 'profiler.settingsChanged',
+        refreshPeriodMs: 5000,
+      }),
+    );
   });
 
   test('onDidReceiveMessage listener works', async () => {

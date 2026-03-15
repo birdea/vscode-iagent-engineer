@@ -4,12 +4,18 @@ import { WebviewMessageHandler } from './WebviewMessageHandler';
 import { Logger } from '../logger/Logger';
 import { DEFAULT_MCP_ENDPOINT, CONFIG_KEYS, getSecretStorageKey } from '../constants';
 import { RemoteFigmaAuthService } from '../figma/RemoteFigmaAuthService';
-import { WebviewToHostMessage } from '../types';
+import { ProfilerSelectionSummary, WebviewToHostMessage } from '../types';
 import { StateManager } from '../state/StateManager';
 import { ProfilerLiveMonitor } from '../profiler/ProfilerLiveMonitor';
 import { ProfilerStateManager } from '../profiler/ProfilerStateManager';
 import { ProfilerService } from '../profiler/ProfilerService';
 import { resolveLocale } from '../i18n';
+
+const PROFILER_CONTEXT_KEYS = {
+  hasSelection: 'iagentEngineer.profiler.hasSelection',
+  hasSessions: 'iagentEngineer.profiler.hasSessions',
+  allSelected: 'iagentEngineer.profiler.allSelected',
+} as const;
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
@@ -73,6 +79,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
 
     if (this.section === 'profiler' && this.profilerStateManager) {
+      this.updateProfilerSelectionContext();
       this.profilerOverviewSubscription?.dispose();
       this.profilerOverviewSubscription = this.profilerStateManager.onOverviewChange((state) => {
         this.postMessage({ event: 'profiler.state', state });
@@ -104,6 +111,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.messageSubscription?.dispose();
     this.messageSubscription = webviewView.webview.onDidReceiveMessage(
       async (msg: WebviewToHostMessage) => {
+        if (this.section === 'profiler' && this.handleProfilerUiMessage(msg)) {
+          return;
+        }
         if (!this.handler) {
           Logger.error('system', `Handler not initialized for ${this.viewId}`);
           return;
@@ -138,6 +148,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const locale = resolveLocale(vscode.env.language);
     const config = vscode.workspace.getConfiguration();
     const connectionMode = config.get<string>(CONFIG_KEYS.MCP_CONNECTION_MODE, 'local');
+    const profilerRefreshPeriodMs = config.get<number>(
+      CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS,
+      1000,
+    );
 
     return `<!DOCTYPE html>
 <html lang="${locale}">
@@ -149,7 +163,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   <link rel="stylesheet" href="${codiconUri}" />
   <link rel="stylesheet" href="${styleUri}" />
 </head>
-<body data-section="${this.section}" data-locale="${locale}" data-mcp-mode="${connectionMode}">
+<body data-section="${this.section}" data-locale="${locale}" data-mcp-mode="${connectionMode}" data-profiler-refresh-period-ms="${profilerRefreshPeriodMs}">
   <div id="app"></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
@@ -158,6 +172,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
   postMessage(msg: unknown) {
     this.view?.webview.postMessage(msg);
+  }
+
+  performProfilerAction(action: 'refresh' | 'deleteSelected' | 'toggleSelectAll') {
+    if (this.section !== 'profiler') {
+      return;
+    }
+    this.postMessage({ event: 'profiler.performAction', action });
+  }
+
+  syncProfilerSettings() {
+    if (this.section !== 'profiler') {
+      return;
+    }
+    const refreshPeriodMs = vscode.workspace
+      .getConfiguration()
+      .get<number>(CONFIG_KEYS.PROFILER_REFRESH_PERIOD_MS, 1000);
+    this.postMessage({ event: 'profiler.settingsChanged', refreshPeriodMs });
   }
 
   async dispose(): Promise<void> {
@@ -176,6 +207,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.viewDisposeSubscription?.dispose();
     this.viewDisposeSubscription = undefined;
 
+    if (this.section === 'profiler') {
+      this.updateProfilerSelectionContext();
+    }
+
     const handler = this.handler;
     this.handler = undefined;
     this.view = undefined;
@@ -188,5 +223,36 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private async postAgentState(agent: import('../types').AgentType, model: string) {
     const hasApiKey = Boolean(await this.context.secrets.get(getSecretStorageKey(agent)));
     this.postMessage({ event: 'agent.state', agent, model, hasApiKey });
+  }
+
+  private handleProfilerUiMessage(msg: WebviewToHostMessage): boolean {
+    if (msg.command !== 'profiler.reportSelectionState') {
+      return false;
+    }
+
+    this.updateProfilerSelectionContext(msg.summary);
+    return true;
+  }
+
+  private updateProfilerSelectionContext(summary?: ProfilerSelectionSummary) {
+    const hasSelection = (summary?.selectedCount ?? 0) > 0;
+    const hasSessions = (summary?.totalCount ?? 0) > 0;
+    const allSelected = Boolean(summary?.allSelected) && hasSessions;
+
+    void vscode.commands.executeCommand(
+      'setContext',
+      PROFILER_CONTEXT_KEYS.hasSelection,
+      hasSelection,
+    );
+    void vscode.commands.executeCommand(
+      'setContext',
+      PROFILER_CONTEXT_KEYS.hasSessions,
+      hasSessions,
+    );
+    void vscode.commands.executeCommand(
+      'setContext',
+      PROFILER_CONTEXT_KEYS.allSelected,
+      allSelected,
+    );
   }
 }
