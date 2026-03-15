@@ -16,6 +16,7 @@ suite('UI Components Consolidated', () => {
     sandbox = sinon.createSandbox();
     postMessageStub = sandbox.stub(vscode, 'postMessage');
     document.body.innerHTML = '<div id="app"></div>';
+    delete document.body.dataset.profilerRefreshPeriodMs;
   });
 
   teardown(() => {
@@ -1751,9 +1752,15 @@ suite('UI Components Consolidated', () => {
     let layer: ProfilerLayer;
 
     setup(() => {
+      document.body.dataset.profilerRefreshPeriodMs = '0';
       layer = new ProfilerLayer();
       document.getElementById('app')!.innerHTML = layer.render();
       layer.mount();
+    });
+
+    teardown(() => {
+      layer.dispose();
+      delete document.body.dataset.profilerRefreshPeriodMs;
     });
 
     test('renders session rows with a clamped session label and metadata line', () => {
@@ -2345,6 +2352,7 @@ suite('UI Main Initialization', () => {
   setup(() => {
     document.body.innerHTML = '<div id="app"></div>';
     document.body.dataset.section = 'setup';
+    document.body.dataset.profilerRefreshPeriodMs = '0';
     // Clear cache for main.ts to re-run init()
     delete require.cache[require.resolve('../../src/webview/ui/main')];
   });

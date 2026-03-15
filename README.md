@@ -8,11 +8,11 @@ Demo video: [YouTube quick guide](https://www.youtube.com/watch?v=YmeUWzeAsxw)
 
 ## Release Highlights
 
-### v0.7.2
+### v0.7.3
 
-- Added direct file actions in the bottom-panel `iProfiler` summary so session files can be revealed in Finder / Explorer or copied to the clipboard.
-- Restored context-window limit rendering for Claude Haiku 4.5 session files in the profiler chart.
-- Added chart fallbacks for Claude `history.jsonl` logs so non-token history records still render as payload-based timelines instead of an empty chart.
+- Added `Latest` and `Live` badges to profiler session cards so active sessions stand out immediately.
+- Added `iProfiler` title-bar controls for overview auto-refresh and quicker detail-view actions.
+- Improved section toggle ergonomics and chart hit targets so dense profiler sessions are easier to inspect.
 
 ## Current Product Scope
 

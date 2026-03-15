@@ -10,6 +10,7 @@ suite('UI Main Initialization', () => {
 
   function setupDom(section: string) {
     dom = installDom(section).dom;
+    dom.window.document.body.dataset.profilerRefreshPeriodMs = '0';
   }
 
   function dispatch(data: object) {

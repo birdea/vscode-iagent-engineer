@@ -4,6 +4,12 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-03-15
+
+- Added `Latest` and `Live` badges in the profiler session list, along with overview auto-refresh controls in the `iProfiler` title bar.
+- Added title-bar actions and clickable section headers so the `iProfiler` detail view can be refreshed and folded with less pointer travel.
+- Improved profiler chart hit targets so timeline points are easier to inspect and reopen from dense sessions.
+
 ## [0.7.2] - 2026-03-14
 
 - Added direct file actions in the `iProfiler` summary so the selected session file can be revealed in Finder / Explorer or copied to the clipboard.

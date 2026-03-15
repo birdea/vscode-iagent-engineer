@@ -2,7 +2,7 @@
   "name": "iagent-engineer",
   "displayName": "iAgent Engineer",
   "description": "iAgent Engineer for VSCode",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "publisher": "bd-creative",
   "license": "MIT",
   "repository": {
@@ -477,7 +477,7 @@
     "format:check": "prettier . --check",
     "test": "npm run test:unit",
     "test:all": "npm run test:unit",
-    "test:unit": "mocha --ui tdd --require tsx --require test/unit/globalSetup.ts \"test/unit/**/*.test.ts\"",
+    "test:unit": "mocha --ui tdd --exit --require tsx --require test/unit/globalSetup.ts \"test/unit/**/*.test.ts\"",
     "test:e2e": "mocha --ui tdd --timeout 15000 --require tsx --require test/unit/globalSetup.ts \"test/e2e/**/*.test.ts\"",
     "test:coverage": "c8 --all --check-coverage --lines 83 --branches 75 --functions 92 --statements 83 --src \"src\" --exclude \"src/types.ts\" --exclude \"test/**\" --reporter text --reporter html npm run test:all",
     "typecheck:workers": "npm --prefix workers run typecheck",

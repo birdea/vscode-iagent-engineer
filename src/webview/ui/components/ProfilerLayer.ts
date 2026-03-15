@@ -207,6 +207,13 @@ export class ProfilerLayer {
     this.reportSelectionState();
   }
 
+  dispose() {
+    if (this.autoRefreshTimer) {
+      window.clearInterval(this.autoRefreshTimer);
+      this.autoRefreshTimer = undefined;
+    }
+  }
+
   onState(state: ProfilerOverviewState) {
     const selectedAgent = this.isDisabledAgent(state.selectedAgent)
       ? DEFAULT_SELECTED_AGENT
@@ -251,7 +258,6 @@ export class ProfilerLayer {
   }
 
   private renderDynamicContent() {
-    const loading = this.state.status === 'loading';
     const badge = document.getElementById('profiler-status-badge');
     const updatedAt = document.getElementById('profiler-updated-at');
     const tabs = document.getElementById('profiler-tab-row');

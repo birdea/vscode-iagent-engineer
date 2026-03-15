@@ -24,6 +24,7 @@
 - `Find`: 설정된 search root를 기준으로 세션 파일을 다시 스캔합니다.
 - 상태 칩은 현재 상태(`idle`, `loading`, `ready`, `error`)와 마지막 알림을 보여줍니다.
 - 스캔 중에는 `Find` 버튼이 잠시 비활성화됩니다.
+- 자동 갱신이 켜져 있으면 `Latest` / `Live` 배지가 조용히 다시 계산됩니다.
 
 #### Agent Tabs
 
@@ -54,6 +55,7 @@
 - vendor, 모델명, 세션 ID가 표시됩니다.
 - 제목 우측에 마지막 overview 갱신 시각인 `Updated`가 표시됩니다.
 - `Auto Refresh`로 overview 새로고침 주기를 선택할 수 있습니다.
+- 제목 영역의 액션으로 overview를 즉시 다시 불러올 수 있습니다.
 - `Info` 버튼으로 이 문서를 다시 열 수 있습니다.
 - `Live` 버튼은 라이브 모니터링을 시작하거나 중지합니다.
 - `Info` 버튼을 누르면 한국어/English 중 원하는 섹션으로 바로 이동할 수 있습니다.
@@ -62,6 +64,7 @@
 
 - `File`, `Size`, `Tokens`, `Cost`, `Turns`, `Duration`, `Peak`, `Avg/Turn`, `Cache`, `Latency`, `Total Tok`, `Date`를 한 보드에서 보여줍니다.
 - Summary 영역은 접기/펼치기가 가능합니다.
+- Summary 헤더 아무 곳이나 눌러도 접기/펼치기가 가능합니다.
 - 선택된 세션이 없거나 아직 로딩 중이면 요약 보드 대신 상태 메시지가 표시됩니다.
 
 #### Chart
@@ -69,6 +72,7 @@
 - 선택한 세션의 타임라인을 시각화합니다.
 - 토큰, 데이터 크기, 지연 시간 중심으로 분석합니다.
 - 원본 이벤트와 연결된 포인트는 클릭으로 소스 파일 위치를 열 수 있습니다.
+- 포인트 주변 클릭 영역이 넓어져 밀집된 세션에서도 선택이 쉬워졌습니다.
 - Chart 영역도 접기/펼치기가 가능합니다.
 
 #### Event Log
@@ -79,6 +83,7 @@
 - 항목을 클릭하면 대응되는 원본 로그 줄을 엽니다.
 - 라이브 모드가 켜져 있으면 실시간 상태 메시지도 같은 로그 영역에 함께 합쳐져 보일 수 있습니다.
 - Event Log 영역도 접기/펼치기가 가능합니다.
+- Event Log 헤더도 클릭으로 바로 접기/펼치기가 가능합니다.
 
 ### Live 모드
 
@@ -118,6 +123,7 @@ The `Profiler` helps you browse local agent session logs and inspect a selected 
 - `Find`: rescans session files from the configured search roots.
 - The status chip shows the current state (`idle`, `loading`, `ready`, `error`) and the latest notice.
 - The `Find` action is temporarily disabled while a scan is in progress.
+- When auto refresh is enabled, `Latest` and `Live` badges are recomputed quietly in the background.
 
 #### Agent Tabs
 
@@ -148,6 +154,7 @@ Clicking the same control again reverses the direction.
 - Shows vendor, model name, and session ID.
 - `Updated` shows when the overview list was last refreshed.
 - `Auto Refresh` lets you choose an overview refresh interval.
+- Title-bar actions can also trigger an immediate overview refresh.
 - `Info` reopens this guide.
 - `Live` toggles live monitoring.
 - `Info` lets you reopen the guide in either Korean or English.
@@ -156,6 +163,7 @@ Clicking the same control again reverses the direction.
 
 - The summary board shows `File`, `Size`, `Tokens`, `Cost`, `Turns`, `Duration`, `Peak`, `Avg/Turn`, `Cache`, `Latency`, `Total Tok`, and `Date`.
 - The section can be collapsed.
+- Clicking anywhere on the section header toggles the folded state.
 - If nothing is selected, or a detail view is still loading, a status message appears instead of the metric board.
 
 #### Chart
@@ -163,6 +171,7 @@ Clicking the same control again reverses the direction.
 - Visualizes the selected session timeline.
 - The main analysis dimensions are token volume, payload size, and latency.
 - Clickable points can reopen the linked source record.
+- Point hit targets were widened so dense timelines are easier to inspect.
 - The chart section can also be collapsed.
 
 #### Event Log
@@ -173,6 +182,7 @@ Clicking the same control again reverses the direction.
 - Clicking a row opens the matching source line in the original file.
 - During live monitoring, runtime status messages can be merged into the same log area.
 - The event log section can be collapsed.
+- Its section header also toggles folding on click.
 
 ### Live Mode
 
