@@ -40,50 +40,24 @@ export class ProfilerCommandHandler {
   }
 
   async scan(options?: { preferredAgent?: ProfilerAgentType; loadInitialSession?: boolean }) {
-    this.profilerLiveMonitor.stop({ silent: true });
-    if (this.isScanning) {
-      return;
-    }
+    await this.runOverviewScan({
+      preferredAgent: options?.preferredAgent,
+      loadInitialSession: options?.loadInitialSession,
+      stopLiveMonitoring: true,
+      resetDetailWhenDone: true,
+      showLoading: true,
+      logLabel: 'Profiler scan',
+    });
+  }
 
-    const previousOverview = this.profilerStateManager.getOverviewState();
-    const preferredAgent = this.normalizeSelectedAgent(
-      options?.preferredAgent ?? previousOverview.selectedAgent,
-    );
-    const preferredSessionId = previousOverview.selectedSessionId;
-
-    this.isScanning = true;
-    this.profilerStateManager.setOverviewStatus('loading', '로딩중..');
-    Logger.info('profiler', 'Profiler scan started');
-
-    try {
-      const overview = await this.profilerService.scan(preferredAgent);
-      const nextOverview = {
-        ...overview,
-        selectedAgent: preferredAgent,
-      };
-      this.profilerStateManager.setOverviewState(nextOverview);
-      if (options?.loadInitialSession) {
-        const initialSession = this.pickInitialSession(nextOverview, preferredSessionId);
-        if (initialSession) {
-          await this.loadSession(initialSession.id, initialSession.agent, { focusPanel: false });
-        } else {
-          this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
-        }
-      } else {
-        this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
-      }
-      Logger.success(
-        'profiler',
-        'Profiler scan completed',
-        `${overview.aggregate.totalSessions} sessions discovered`,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.profilerStateManager.setOverviewStatus('error', message);
-      Logger.error('profiler', 'Profiler scan failed', message);
-    } finally {
-      this.isScanning = false;
-    }
+  async refreshOverview() {
+    await this.runOverviewScan({
+      preserveDetail: true,
+      stopLiveMonitoring: false,
+      resetDetailWhenDone: false,
+      showLoading: false,
+      logLabel: 'Profiler refresh',
+    });
   }
 
   async selectAgent(agent: ProfilerAgentType) {
@@ -260,22 +234,98 @@ export class ProfilerCommandHandler {
     return agent === 'codex' ? 'codex' : 'claude';
   }
 
-  private pickInitialSession(
-    overview: ProfilerOverviewState,
-    preferredSessionId?: string,
-  ): SessionSummary | undefined {
-    if (preferredSessionId) {
-      for (const agent of ['claude', 'codex', 'gemini'] as const) {
-        const matched = overview.sessionsByAgent[agent].find(
-          (session) => session.id === preferredSessionId,
-        );
-        if (matched) {
-          return matched;
+  private async runOverviewScan(options: {
+    preferredAgent?: ProfilerAgentType;
+    loadInitialSession?: boolean;
+    preserveDetail?: boolean;
+    stopLiveMonitoring: boolean;
+    resetDetailWhenDone: boolean;
+    showLoading: boolean;
+    logLabel: string;
+  }) {
+    if (options.stopLiveMonitoring) {
+      this.profilerLiveMonitor.stop({ silent: true });
+    }
+    if (this.isScanning) {
+      return;
+    }
+
+    const previousOverview = this.profilerStateManager.getOverviewState();
+    const currentDetail = this.profilerStateManager.getDetailState();
+    const preferredAgent = this.normalizeSelectedAgent(
+      options.preferredAgent ?? previousOverview.selectedAgent,
+    );
+    const preferredSessionId = currentDetail.sessionId ?? previousOverview.selectedSessionId;
+
+    this.isScanning = true;
+    if (options.showLoading) {
+      this.profilerStateManager.setOverviewStatus('loading', '로딩중..');
+    }
+    Logger.info('profiler', `${options.logLabel} started`);
+
+    try {
+      const overview = await this.profilerService.scan(preferredAgent);
+      const selectedSummary = this.findSessionById(overview, preferredSessionId);
+      const nextOverview = {
+        ...overview,
+        selectedAgent: preferredAgent,
+        selectedSessionId: selectedSummary?.id,
+        updatedAt: new Date().toISOString(),
+      };
+
+      this.profilerStateManager.setOverviewState(nextOverview);
+
+      if (options.loadInitialSession) {
+        const initialSession = selectedSummary ?? this.pickInitialSession(nextOverview);
+        if (initialSession) {
+          await this.loadSession(initialSession.id, initialSession.agent, { focusPanel: false });
+        } else {
+          this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
         }
+      } else if (options.resetDetailWhenDone) {
+        this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
+      } else if (
+        !options.preserveDetail &&
+        currentDetail.detail &&
+        !this.findSessionById(nextOverview, currentDetail.detail.summary.id)
+      ) {
+        this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
+      }
+
+      Logger.success(
+        'profiler',
+        `${options.logLabel} completed`,
+        `${overview.aggregate.totalSessions} sessions discovered`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.profilerStateManager.setOverviewStatus('error', message);
+      Logger.error('profiler', `${options.logLabel} failed`, message);
+    } finally {
+      this.isScanning = false;
+    }
+  }
+
+  private pickInitialSession(overview: ProfilerOverviewState): SessionSummary | undefined {
+    const selectedSessions = overview.sessionsByAgent[overview.selectedAgent] ?? [];
+    return selectedSessions[0];
+  }
+
+  private findSessionById(
+    overview: ProfilerOverviewState,
+    sessionId?: string,
+  ): SessionSummary | undefined {
+    if (!sessionId) {
+      return undefined;
+    }
+
+    for (const agent of ['claude', 'codex', 'gemini'] as const) {
+      const matched = overview.sessionsByAgent[agent].find((session) => session.id === sessionId);
+      if (matched) {
+        return matched;
       }
     }
 
-    const selectedSessions = overview.sessionsByAgent[overview.selectedAgent] ?? [];
-    return selectedSessions[0];
+    return undefined;
   }
 }
