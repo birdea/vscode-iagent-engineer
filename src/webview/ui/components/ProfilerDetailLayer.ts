@@ -34,7 +34,11 @@ export class ProfilerDetailLayer {
     <div class="profiler-chart-wrapper" id="profiler-chart-shell"></div>
   </div>
   <div class="profiler-log-surface">
-    <div class="profiler-log-header-row profiler-section-header-row" id="profiler-log-header-row">
+    <div
+      class="profiler-log-header-row profiler-section-header-row profiler-section-header-row-clickable"
+      id="profiler-log-header-row"
+      data-profiler-log-header="true"
+    >
       <div class="profiler-log-header-copy">
         <h3 class="profiler-surface-title">Event Log</h3>
         <span class="profiler-log-count" id="profiler-log-count"></span>
@@ -82,10 +86,11 @@ export class ProfilerDetailLayer {
         this.copyFilePath(copyButton);
         return;
       }
-      const summaryToggle = target?.closest<HTMLElement>('[data-profiler-summary-toggle]');
-      if (summaryToggle) {
-        this.summaryCollapsed = !this.summaryCollapsed;
-        this.renderDynamicContent();
+      const summaryHeader = target?.closest<HTMLElement>(
+        '[data-profiler-summary-header], [data-profiler-summary-toggle]',
+      );
+      if (summaryHeader) {
+        this.toggleSummary();
         return;
       }
       const liveButton = target?.closest<HTMLElement>('[data-profiler-live-toggle]');
@@ -123,12 +128,13 @@ export class ProfilerDetailLayer {
     });
     document.getElementById('profiler-log-header-row')?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement | null;
-      const logToggle = target?.closest<HTMLElement>('[data-profiler-log-toggle]');
-      if (!logToggle) {
+      const logHeader = target?.closest<HTMLElement>(
+        '[data-profiler-log-header], [data-profiler-log-toggle]',
+      );
+      if (!logHeader) {
         return;
       }
-      this.eventLogCollapsed = !this.eventLogCollapsed;
-      this.renderDynamicContent();
+      this.toggleEventLog();
     });
 
     vscode.postMessage({ command: 'profiler.getState' });
@@ -163,6 +169,21 @@ export class ProfilerDetailLayer {
       return;
     }
     vscode.postMessage({ command: 'profiler.revealInFolder', filePath });
+  }
+
+  private toggleSummary() {
+    this.summaryCollapsed = !this.summaryCollapsed;
+    this.renderDynamicContent();
+  }
+
+  private toggleChart() {
+    this.chartCollapsed = !this.chartCollapsed;
+    this.renderDynamicContent();
+  }
+
+  private toggleEventLog() {
+    this.eventLogCollapsed = !this.eventLogCollapsed;
+    this.renderDynamicContent();
   }
 
   private renderDynamicContent() {
@@ -398,7 +419,7 @@ export class ProfilerDetailLayer {
   </div>
 </div>
 
-<div class="profiler-section-header-row">
+<div class="profiler-section-header-row profiler-section-header-row-clickable" data-profiler-summary-header="true">
   <div class="profiler-section-header-copy">
     <h3 class="profiler-surface-title">Summary</h3>
   </div>
@@ -430,7 +451,7 @@ export class ProfilerDetailLayer {
 
   private renderChartSectionHeader(): string {
     return `
-<div class="profiler-section-header-row">
+<div class="profiler-section-header-row profiler-section-header-row-clickable" data-profiler-chart-header="true">
   <div class="profiler-section-header-copy">
     <h3 class="profiler-surface-title">Chart</h3>
   </div>
@@ -447,13 +468,14 @@ export class ProfilerDetailLayer {
   }
 
   private bindChartToggle(container: HTMLElement) {
-    const button = container.querySelector<HTMLButtonElement>('[data-profiler-chart-toggle]');
-    if (!button) {
+    const header = container.querySelector<HTMLElement>(
+      '[data-profiler-chart-header], [data-profiler-chart-toggle]',
+    );
+    if (!header) {
       return;
     }
-    button.onclick = () => {
-      this.chartCollapsed = !this.chartCollapsed;
-      this.renderDynamicContent();
+    header.onclick = () => {
+      this.toggleChart();
     };
   }
 

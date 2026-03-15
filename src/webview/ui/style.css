@@ -2109,6 +2109,14 @@ button.profiler-summary-file-action.profiler-summary-file-icon {
   border-radius: 4px;
 }
 
+.profiler-section-header-row-clickable {
+  cursor: pointer;
+}
+
+.profiler-section-header-row-clickable:hover {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
 .profiler-header-surface .profiler-section-header-row {
   margin-bottom: 6px;
 }
