@@ -457,6 +457,54 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
     [rawEventById],
   );
 
+  const clickHotspots = useMemo(() => {
+    return timeline
+      .map((point, index) => {
+        const raw = findRawEvent(point);
+        if (!raw) {
+          return null;
+        }
+
+        const x = xScale(new Date(getPointChartTimestamp(point, metric))) ?? PADDING.left;
+        const previousX =
+          index > 0
+            ? (xScale(new Date(getPointChartTimestamp(timeline[index - 1], metric))) ??
+              PADDING.left)
+            : PADDING.left;
+        const nextX =
+          index < timeline.length - 1
+            ? (xScale(new Date(getPointChartTimestamp(timeline[index + 1], metric))) ??
+              PADDING.left)
+            : PADDING.left + plotWidth;
+        const left = index === 0 ? PADDING.left : Math.max(PADDING.left, (previousX + x) / 2);
+        const right =
+          index === timeline.length - 1
+            ? PADDING.left + plotWidth
+            : Math.min(PADDING.left + plotWidth, (x + nextX) / 2);
+
+        return {
+          point,
+          index,
+          raw,
+          x,
+          left,
+          width: Math.max(BAR_WIDTH + 14, right - left),
+        };
+      })
+      .filter(
+        (
+          hotspot,
+        ): hotspot is {
+          point: SessionTimelinePoint;
+          index: number;
+          raw: SessionRawEventRef;
+          x: number;
+          left: number;
+          width: number;
+        } => hotspot !== null,
+      );
+  }, [findRawEvent, metric, plotWidth, timeline, xScale]);
+
   // Handle bar click
   const handleBarClick = useCallback(
     (point: SessionTimelinePoint) => {
@@ -701,6 +749,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 stroke="var(--vscode-panel-border, #333)"
                 strokeOpacity={0.72}
                 strokeDasharray="3 8"
+                pointerEvents="none"
               />
 
               {metric === 'tokens' && contextWindowLimit > 0 && (
@@ -710,6 +759,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                   x2={PADDING.left + plotWidth}
                   y2={yScale(contextWindowLimit)}
                   className="profiler-chart-limit-line"
+                  pointerEvents="none"
                 />
               )}
 
@@ -741,9 +791,9 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                       rx={2}
                       className={`profiler-chart-bar ${hasRawRef ? 'profiler-chart-bar-clickable' : ''}`}
                       fill={SERIES_COLORS.total}
-                      fillOpacity={0.12}
+                      fillOpacity={0.18}
                       stroke={SERIES_COLORS.total}
-                      strokeOpacity={0.25}
+                      strokeOpacity={0.34}
                       strokeWidth={0.5}
                       style={{ cursor: hasRawRef ? 'pointer' : 'default' }}
                       onClick={() => handleBarClick(point)}
@@ -764,6 +814,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                   }
                   fill={visibleSeries[0].color}
                   opacity={0.08}
+                  pointerEvents="none"
                 />
               )}
 
@@ -779,6 +830,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity={s.opacity}
+                  pointerEvents="none"
                 />
               ))}
 
@@ -789,6 +841,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 x2={PADDING.left + plotWidth}
                 y2={PADDING.top + plotHeight}
                 className="profiler-chart-baseline"
+                pointerEvents="none"
               />
 
               {/* Bottom X-axis */}
@@ -817,6 +870,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                     strokeWidth={1}
                     strokeDasharray="4 4"
                     opacity={0.6}
+                    pointerEvents="none"
                   />
                   {visibleSeries.map((s) => {
                     const pt = s.points[tooltip.index];
@@ -830,6 +884,7 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                         fill={s.color}
                         stroke="white"
                         strokeWidth={1.5}
+                        pointerEvents="none"
                       />
                     );
                   })}
@@ -843,8 +898,43 @@ export function ProfilerChart({ detail, metric, onOpenSource }: ProfilerChartPro
                 width={plotWidth}
                 height={plotHeight}
                 fill="transparent"
+                pointerEvents="none"
               />
             </svg>
+
+            <div className="profiler-chart-hotspots">
+              {clickHotspots.map((hotspot) => (
+                <button
+                  key={`hotspot-${hotspot.point.id}`}
+                  type="button"
+                  className="profiler-chart-hotspot"
+                  data-profiler-chart-hotspot="true"
+                  data-line-number={String(hotspot.raw.lineNumber)}
+                  style={{
+                    left: hotspot.left,
+                    top: PADDING.top,
+                    width: hotspot.width,
+                    height: plotHeight,
+                  }}
+                  title={`Open source line ${hotspot.raw.lineNumber}`}
+                  onMouseEnter={() =>
+                    setTooltip({
+                      x: hotspot.x,
+                      point: hotspot.point,
+                      index: hotspot.index,
+                    })
+                  }
+                  onFocus={() =>
+                    setTooltip({
+                      x: hotspot.x,
+                      point: hotspot.point,
+                      index: hotspot.index,
+                    })
+                  }
+                  onClick={() => handleBarClick(hotspot.point)}
+                />
+              ))}
+            </div>
 
             {/* Tooltip card */}
             {tooltip && (
