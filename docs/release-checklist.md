@@ -35,7 +35,9 @@ Confirm the core user flows in a fresh VS Code window.
 - Prompt view: open the browser preview and confirm it either launches correctly or falls back to the Preview Panel with a clear notice.
 - Agent settings: save, clear, and reload provider settings for at least one supported provider.
 - Profiler view: confirm startup scan loads the selected agent tab and populates session cards without UI stalls.
+- Profiler view: confirm `Latest` / `Live` badges update correctly after a refresh or auto-refresh tick.
 - Profiler detail: open a scanned session, inspect chart/event log output, and jump back to the source file.
+- Profiler detail: verify title-bar controls refresh the overview cleanly and section headers fold/unfold on click.
 - Profiler detail: use the `File` actions in the summary card to reveal the session file in Finder / Explorer and copy the file path.
 - Profiler live mode: attach to a likely-live session and confirm the detail panel updates over time.
 - Profiler fallback parsing: open a Claude `history.jsonl` style file and confirm the chart falls back to payload-based samples instead of staying empty.
