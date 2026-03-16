@@ -298,7 +298,7 @@ export class ProfilerLayer {
       .join('');
   }
 
-  private isDisabledAgent(agent: ProfilerAgentType): boolean {
+  private isDisabledAgent(_agent: ProfilerAgentType): boolean {
     return false;
   }
 

@@ -370,16 +370,18 @@ export class ProfilerCommandHandler {
 
     try {
       const overview = await this.profilerService.scan(preferredAgent);
-      
+
       const latestOverview = this.profilerStateManager.getOverviewState();
-      const finalAgent = latestOverview.selectedAgent !== previousOverview.selectedAgent
-        ? latestOverview.selectedAgent
-        : preferredAgent;
+      const finalAgent =
+        latestOverview.selectedAgent !== previousOverview.selectedAgent
+          ? latestOverview.selectedAgent
+          : preferredAgent;
 
       const latestDetail = this.profilerStateManager.getDetailState();
-      const targetSessionId = latestDetail.sessionId !== currentDetail.sessionId
-        ? latestDetail.sessionId
-        : preferredSessionId;
+      const targetSessionId =
+        latestDetail.sessionId !== currentDetail.sessionId
+          ? latestDetail.sessionId
+          : preferredSessionId;
 
       const selectedSummary = this.findSessionById(overview, targetSessionId);
       const nextOverview = {
