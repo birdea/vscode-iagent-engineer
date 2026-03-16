@@ -299,7 +299,7 @@ export class ProfilerLayer {
   }
 
   private isDisabledAgent(agent: ProfilerAgentType): boolean {
-    return agent === 'gemini';
+    return false;
   }
 
   private getDisabledAgentNotice(agent: ProfilerAgentType): string {

@@ -334,7 +334,9 @@ export class ProfilerCommandHandler {
   }
 
   private normalizeSelectedAgent(agent?: ProfilerAgentType): ProfilerAgentType {
-    return agent === 'codex' ? 'codex' : 'claude';
+    if (agent === 'codex') return 'codex';
+    if (agent === 'gemini') return 'gemini';
+    return 'claude';
   }
 
   private async runOverviewScan(options: {
@@ -368,10 +370,21 @@ export class ProfilerCommandHandler {
 
     try {
       const overview = await this.profilerService.scan(preferredAgent);
-      const selectedSummary = this.findSessionById(overview, preferredSessionId);
+      
+      const latestOverview = this.profilerStateManager.getOverviewState();
+      const finalAgent = latestOverview.selectedAgent !== previousOverview.selectedAgent
+        ? latestOverview.selectedAgent
+        : preferredAgent;
+
+      const latestDetail = this.profilerStateManager.getDetailState();
+      const targetSessionId = latestDetail.sessionId !== currentDetail.sessionId
+        ? latestDetail.sessionId
+        : preferredSessionId;
+
+      const selectedSummary = this.findSessionById(overview, targetSessionId);
       const nextOverview = {
         ...overview,
-        selectedAgent: preferredAgent,
+        selectedAgent: finalAgent,
         selectedSessionId: selectedSummary?.id,
         updatedAt: new Date().toISOString(),
       };
@@ -389,8 +402,8 @@ export class ProfilerCommandHandler {
         this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
       } else if (
         !options.preserveDetail &&
-        currentDetail.detail &&
-        !this.findSessionById(nextOverview, currentDetail.detail.summary.id)
+        latestDetail.detail &&
+        !this.findSessionById(nextOverview, latestDetail.detail.summary.id)
       ) {
         this.profilerStateManager.resetDetail('세션을 선택하면 상세 분석이 표시됩니다.');
       }
