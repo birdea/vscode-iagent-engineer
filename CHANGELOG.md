@@ -4,6 +4,13 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-03-16
+
+- Added Gemini support in the `iProfiler` tool, including data parsing, UI display, chart rendering, and token calculation.
+- Improved Figma data extraction quality and optimized code generation guide for Antigravity agents.
+- Migrated React architecture to Webpack 5, TypeScript, and Jotai for state management.
+- Implemented multiple Figma target GUI layouts matching sidebar routing paths.
+
 ## [0.7.3] - 2026-03-15
 
 - Added `Latest` and `Live` badges in the profiler session list, along with overview auto-refresh controls in the `iProfiler` title bar.
