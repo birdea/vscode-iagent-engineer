@@ -2272,7 +2272,7 @@ suite('UI Components Consolidated', () => {
       assert.ok(document.getElementById('profiler-status-badge'));
     });
 
-    test('gemini tab stays disabled and tab selection is posted for enabled agents', () => {
+    test('gemini tab is enabled and tab selection is posted for agents', () => {
       layer.onState({
         status: 'ready',
         selectedAgent: 'claude',
@@ -2320,7 +2320,7 @@ suite('UI Components Consolidated', () => {
       const claudeTab = document.querySelector(
         '.profiler-tab[data-agent="claude"]',
       ) as HTMLButtonElement | null;
-      assert.ok(geminiTab?.classList.contains('is-disabled'));
+      assert.ok(!geminiTab?.classList.contains('is-disabled'));
       assert.ok(!claudeTab?.classList.contains('is-disabled'));
 
       claudeTab?.click();
@@ -2339,10 +2339,11 @@ suite('UI Components Consolidated', () => {
       refreshedGeminiTab?.click();
 
       assert.ok(
-        document
-          .getElementById('profiler-status-badge')
-          ?.textContent?.toLowerCase()
-          .includes('gemini'),
+        postMessageStub.calledWithMatch({ command: 'profiler.selectAgent', agent: 'gemini' }),
+      );
+      assert.strictEqual(
+        document.querySelector('.profiler-tab.active')?.getAttribute('data-agent'),
+        'gemini',
       );
     });
   });
