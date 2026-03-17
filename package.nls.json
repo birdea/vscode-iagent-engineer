@@ -15,6 +15,7 @@
   "command.profilerDeleteSelected.title": "Delete Selected Profiler Sessions",
   "command.profilerSelectAll.title": "Select All Profiler Sessions",
   "command.profilerDeselectAll.title": "Deselect All Profiler Sessions",
+  "command.setupReset.title": "Reset Setup",
   "configuration.title": "iAgent Engineer",
   "configuration.defaultAgent.description": "Default AI agent to use",
   "configuration.defaultModel.description": "Default model ID for the selected agent (synced from the Agent panel)",

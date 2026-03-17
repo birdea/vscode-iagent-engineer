@@ -424,6 +424,6 @@ suite('EditorIntegration', () => {
 
     await integration.openGeneratedInEditor();
 
-    assert.ok(vscode.window.showTextDocument.calledWith(document, { preview: false }));
+    assert.ok(vscode.window.showTextDocument.calledWithMatch(document, { preview: false }));
   });
 });

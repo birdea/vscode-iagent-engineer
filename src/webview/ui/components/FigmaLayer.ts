@@ -296,6 +296,32 @@ export class FigmaLayer {
     this.setSourceDataNotice('error', message);
   }
 
+  reset() {
+    const dataInput = document.getElementById('mcp-data') as HTMLTextAreaElement | null;
+    const sourceInput = document.getElementById('source-data-url') as HTMLTextAreaElement | null;
+
+    if (dataInput) dataInput.value = '';
+    if (sourceInput) sourceInput.value = '';
+
+    // Clear persisted webview state
+    const state = (vscode.getState() as Record<string, unknown> | null) ?? {};
+    vscode.setState({ ...state, [this.stateKey]: '', [this.sourceStateKey]: '' });
+
+    // Clear source images gallery
+    this.sourceImages = [];
+    this.renderSourceDataGallery();
+
+    // Clear all notices
+    this.clearConnectionNotice();
+    this.clearDataNotice();
+    this.setSourceDataNotice('info', '');
+
+    this.updateActionState();
+
+    // Notify host to clear cached MCP data
+    vscode.postMessage({ command: 'figma.clearData' });
+  }
+
   private renderSourceDataGallery() {
     const section = document.getElementById('source-data-gallery-section');
     const gallery = document.getElementById('source-data-gallery');

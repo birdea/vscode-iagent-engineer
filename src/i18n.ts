@@ -212,6 +212,10 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'prompt.error.alreadyInProgress': 'Code generation is already in progress.',
     'host.prompt.alreadyGenerating': 'Generation is already in progress.',
     'host.prompt.cancelled': 'Code generation was cancelled.',
+    'system.setupResetConfirm':
+      'Reset all setup data? This will clear all API keys, saved settings, and input fields.',
+    'system.setupResetConfirmButton': 'Reset',
+    'system.setupResetDone': 'Setup has been reset.',
     'system.logCopied': 'Log copied to clipboard',
     'system.saveLog': 'Save Log',
     'system.logSaved': ({ path }) => `Log saved: ${path}`,
@@ -422,6 +426,10 @@ const messages: Record<UiLocale, Record<string, MessageValue>> = {
     'prompt.error.alreadyInProgress': '이미 코드 생성이 진행 중입니다.',
     'host.prompt.alreadyGenerating': '이미 코드 생성이 진행 중입니다.',
     'host.prompt.cancelled': '코드 생성을 취소했습니다.',
+    'system.setupResetConfirm':
+      '모든 설정을 초기화하시겠습니까? API 키, 저장된 설정, 입력 내용이 모두 삭제됩니다.',
+    'system.setupResetConfirmButton': '초기화',
+    'system.setupResetDone': '설정이 초기화되었습니다.',
     'system.logCopied': '로그를 클립보드에 복사했습니다.',
     'system.saveLog': '로그 저장',
     'system.logSaved': ({ path }) => `로그를 저장했습니다: ${path}`,

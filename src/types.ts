@@ -332,4 +332,5 @@ export type HostToWebviewMessage =
       action: 'refresh' | 'deleteSelected' | 'toggleSelectAll';
     }
   | { event: 'profiler.archiveResult'; result: ProfilerArchiveResult }
+  | { event: 'setup.reset' }
   | { event: 'error'; source: LayerType; message: string };

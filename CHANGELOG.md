@@ -4,6 +4,12 @@ This project tracks release notes with `conventional-changelog`.
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-03-17
+
+- Added `iagent-engineer.setup.reset` command to clear all API keys, saved settings, and in-memory state from a single action.
+- Added `reset()` methods to `AgentLayer` and `FigmaLayer` so the webview UI resets completely when the host broadcasts a `setup.reset` event.
+- Extended i18n strings (English and Korean) for the reset confirmation dialog and result notification.
+
 ## [0.7.4] - 2026-03-16
 
 - Added Gemini support in the `iProfiler` tool, including data parsing, UI display, chart rendering, and token calculation.
