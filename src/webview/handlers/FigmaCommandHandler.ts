@@ -462,7 +462,7 @@ export class FigmaCommandHandler {
 
   private shouldOpenFetchResultInEditor(): boolean {
     const config = vscode.workspace.getConfiguration();
-    return config.get<boolean>(CONFIG_KEYS.OPEN_FETCH_RESULT_IN_EDITOR, false) ?? false;
+    return config.get<boolean>(CONFIG_KEYS.OPEN_FETCH_RESULT_IN_EDITOR, true) ?? true;
   }
 
   private async openFetchedResultInEditorIfEnabled(
