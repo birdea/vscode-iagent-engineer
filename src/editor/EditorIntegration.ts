@@ -101,7 +101,10 @@ export class EditorIntegration {
 
   async openFileAtLine(filePath: string, lineNumber = 1) {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
-    const editor = await vscode.window.showTextDocument(document, { preview: false });
+    const editor = await vscode.window.showTextDocument(document, {
+      preview: false,
+      viewColumn: this.getTargetViewColumn(),
+    });
     const lineIndex = Math.max(0, Math.min(document.lineCount - 1, lineNumber - 1));
     const position = new vscode.Position(lineIndex, 0);
     editor.selection = new vscode.Selection(position, position);
