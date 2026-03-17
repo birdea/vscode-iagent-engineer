@@ -30,7 +30,10 @@ export class EditorIntegration {
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(code));
     const doc = await vscode.workspace.openTextDocument(uri);
     const typedDoc = await this.applyLanguageIfSupported(doc, language);
-    await vscode.window.showTextDocument(typedDoc, { preview: false });
+    await vscode.window.showTextDocument(typedDoc, {
+      preview: false,
+      viewColumn: this.getTargetViewColumn(),
+    });
     this.generatedDocumentUri = uri;
     this.generatedLanguage = language;
 
@@ -89,7 +92,10 @@ export class EditorIntegration {
       throw new Error('No generated result is available yet.');
     }
 
-    await vscode.window.showTextDocument(document, { preview: false });
+    await vscode.window.showTextDocument(document, {
+      preview: false,
+      viewColumn: this.getTargetViewColumn(),
+    });
     Logger.success('editor', `Generated result focused in editor (${document.uri.fsPath})`);
   }
 
@@ -182,7 +188,9 @@ export class EditorIntegration {
       this.tempBinaryUris.push(uri);
     }
     this.binaryAssetUris.set(assetKey, uri);
-    await vscode.commands.executeCommand('vscode.open', uri);
+    await vscode.commands.executeCommand('vscode.open', uri, {
+      viewColumn: this.getTargetViewColumn(),
+    });
     Logger.success('editor', `Binary asset opened in editor (${content.byteLength} bytes)`);
   }
 
@@ -192,7 +200,9 @@ export class EditorIntegration {
       throw new Error('No cached source asset is available yet.');
     }
 
-    await vscode.commands.executeCommand('vscode.open', uri);
+    await vscode.commands.executeCommand('vscode.open', uri, {
+      viewColumn: this.getTargetViewColumn(),
+    });
     Logger.success('editor', `Binary asset reopened in editor (${assetKey})`);
   }
 
@@ -209,6 +219,20 @@ export class EditorIntegration {
         }
       }),
     );
+  }
+
+  private getTargetViewColumn(): vscode.ViewColumn {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+      return activeEditor.viewColumn ?? vscode.ViewColumn.One;
+    }
+
+    const visibleEditors = vscode.window.visibleTextEditors;
+    if (visibleEditors.length > 0) {
+      return visibleEditors[0].viewColumn ?? vscode.ViewColumn.One;
+    }
+
+    return vscode.ViewColumn.One;
   }
 
   private toUntitledName(suggestedName: string | undefined, language: string): string {
