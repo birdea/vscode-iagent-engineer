@@ -74,6 +74,10 @@ export function init() {
           case 'agent.settingsCleared':
             agent.onSettingsCleared(msg.agent);
             break;
+          case 'setup.reset':
+            figma.reset();
+            agent.reset();
+            break;
           case 'error':
             if (msg.source === 'figma') figma.onError(msg.message);
             if (msg.source === 'agent' || msg.source === 'system') agent.onError(msg.message);

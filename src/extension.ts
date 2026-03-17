@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SidebarProvider } from './webview/SidebarProvider';
 import { Logger } from './logger/Logger';
 import { AgentFactory } from './agent/AgentFactory';
-import { COMMANDS, CONFIG_KEYS, VIEW_IDS, getSecretStorageKey } from './constants';
+import { COMMANDS, CONFIG_KEYS, SECRET_KEYS, VIEW_IDS, getSecretStorageKey } from './constants';
 import { RemoteFigmaAuthService } from './figma/RemoteFigmaAuthService';
 import { AgentType } from './types';
 import { StateManager } from './state/StateManager';
@@ -162,6 +162,38 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('iagent-engineer.log.copy', async () => {
       await vscode.env.clipboard.writeText(Logger.toText());
       vscode.window.showInformationMessage(t(locale, 'system.logCopied'));
+    }),
+    vscode.commands.registerCommand('iagent-engineer.setup.reset', async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        t(locale, 'system.setupResetConfirm'),
+        { modal: true },
+        t(locale, 'system.setupResetConfirmButton'),
+      );
+      if (confirm !== t(locale, 'system.setupResetConfirmButton')) return;
+
+      // Clear all API key secrets and Figma auth
+      for (const key of Object.values(SECRET_KEYS)) {
+        await context.secrets.delete(key);
+      }
+
+      // Clear globalState
+      await context.globalState.update(CONFIG_KEYS.DEFAULT_AGENT, undefined);
+      await context.globalState.update(CONFIG_KEYS.DEFAULT_MODEL, undefined);
+
+      // Reset in-memory state
+      stateManager.resetAgentState();
+      stateManager.clearLastDesignContextData();
+      stateManager.clearLastMetadata();
+      stateManager.clearLastMcpInput();
+      stateManager.clearLastScreenshot();
+
+      // Clear AgentFactory cached keys
+      AgentFactory.clear();
+
+      // Notify webview to reset UI
+      setupProvider.postMessage({ event: 'setup.reset' });
+
+      vscode.window.showInformationMessage(t(locale, 'system.setupResetDone'));
     }),
     outputChannel,
   );

@@ -99,7 +99,9 @@ suite('FigmaCommandHandler', () => {
       sourceDataService,
     );
     configGetStub = sandbox.stub();
-    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(true);
+    configGetStub
+      .withArgs('iagent-engineer.openFetchedDataInEditor', sinon.match.any)
+      .returns(true);
     (vscode.workspace.getConfiguration as sinon.SinonStub).returns({ get: configGetStub });
     (vscode.window.showInformationMessage as sinon.SinonStub).resetHistory();
     (vscode.env.openExternal as sinon.SinonStub).resetHistory();
@@ -259,7 +261,9 @@ suite('FigmaCommandHandler', () => {
   });
 
   test('fetchData skips opening the editor when the setting is disabled', async () => {
-    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(false);
+    configGetStub
+      .withArgs('iagent-engineer.openFetchedDataInEditor', sinon.match.any)
+      .returns(false);
 
     await handler.fetchData('https://figma.com/file/ABCDE/demo?node-id=1-2');
 
@@ -406,7 +410,9 @@ suite('FigmaCommandHandler', () => {
   });
 
   test('fetchMetadata skips opening the editor when the setting is disabled', async () => {
-    configGetStub.withArgs('iagent-engineer.openFetchedDataInEditor', false).returns(false);
+    configGetStub
+      .withArgs('iagent-engineer.openFetchedDataInEditor', sinon.match.any)
+      .returns(false);
 
     await handler.fetchMetadata('https://figma.com/file/ABCDE/demo?node-id=1-2');
 

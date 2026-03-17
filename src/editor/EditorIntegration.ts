@@ -231,7 +231,7 @@ export class EditorIntegration {
     }
 
     const visibleEditors = vscode.window.visibleTextEditors;
-    if (visibleEditors.length > 0) {
+    if (visibleEditors && visibleEditors.length > 0) {
       return visibleEditors[0].viewColumn ?? vscode.ViewColumn.One;
     }
 

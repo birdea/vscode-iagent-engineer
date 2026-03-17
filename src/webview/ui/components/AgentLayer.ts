@@ -179,6 +179,20 @@ export class AgentLayer {
     this.updateStatus();
   }
 
+  reset() {
+    const agentSelect = document.getElementById('agent-select') as HTMLSelectElement | null;
+    const keyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+    if (agentSelect) agentSelect.value = 'gemini';
+    if (keyInput) {
+      keyInput.value = '';
+      keyInput.placeholder = this.msg('agent.apiKeyPlaceholder');
+    }
+    this.lastLoadSignature = '';
+    this.updateModelList([]);
+    this.updateStatus();
+    this.setNotice('info', this.msg('agent.notice.settingsCleared'));
+  }
+
   onSettingsCleared(_agent: AgentType) {
     const agentSelect = document.getElementById('agent-select') as HTMLSelectElement | null;
     const keyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
