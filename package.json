@@ -134,6 +134,11 @@
         "command": "iagent-engineer.profiler.deselectAll",
         "title": "%command.profilerDeselectAll.title%",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "iagent-engineer.setup.reset",
+        "title": "%command.setupReset.title%",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -162,6 +167,11 @@
           "command": "iagent-engineer.profiler.deleteSelected",
           "when": "view == iagent-engineer.profiler",
           "group": "navigation@4"
+        },
+        {
+          "command": "iagent-engineer.setup.reset",
+          "when": "view == iagent-engineer.setup",
+          "group": "navigation@1"
         }
       ]
     },
@@ -218,7 +228,7 @@
         },
         "iagent-engineer.openFetchedDataInEditor": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "%configuration.openFetchedDataInEditor.description%"
         },
         "iagent-engineer.profiler.claudeSearchRoots": {
