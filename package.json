@@ -535,7 +535,7 @@
     "@visx/shape": "^3.12.0",
     "@visx/tooltip": "^3.12.0",
     "@vitejs/plugin-react": "^5.1.0",
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitejs/plugin-vue": "^6.0.5",
     "@vscode/codicons": "^0.0.44",
     "esbuild": "^0.27.3",
     "react": "^18.3.1",
